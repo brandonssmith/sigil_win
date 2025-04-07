@@ -96,3 +96,5 @@ This project is designed to be simple to modify:
 *   **Backend API:** Add or modify endpoints in `backend/api/main.py`.
 *   **Frontend UI:** Modify the `curses` interface in `frontend/ui.py`.
 *   **Model Loading:** The model loading logic is in `backend/api/main.py` near the top.
+
+Support Thrasher Intelligence: patreon.com/Thrasher_Intelligence
