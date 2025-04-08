@@ -23,7 +23,7 @@ The goal is to provide a simple foundation that you can quickly get running and 
 
 1.  **Clone the repository:**
     ```bash
-    git clone <repository_url> # Replace with your repo URL
+    git clone https://github.com/Thrasher-Intelligence/prometheus
     cd prometheus
     ```
 
