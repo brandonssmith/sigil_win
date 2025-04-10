@@ -126,23 +126,6 @@ def stop_backend():
         print("Backend server already stopped.")
         backend_process = None
 
-
-def run_frontend():
-    print("Starting frontend UI...")
-    # Add frontend directory to Python path to allow importing ui
-    sys.path.insert(0, FRONTEND_DIR)
-    try:
-        from ui import main as run_ui_main
-        run_ui_main() # This will block until the curses UI exits
-    except ImportError as e:
-        print(f"Error importing frontend UI: {e}", file=sys.stderr)
-    except Exception as e:
-        print(f"Error running frontend UI: {e}", file=sys.stderr)
-    finally:
-        # Remove frontend directory from path
-        if FRONTEND_DIR in sys.path:
-            sys.path.remove(FRONTEND_DIR)
-
 def signal_handler(sig, frame):
     print("\nCtrl+C detected. Shutting down...")
     # stop_backend() is registered with atexit, so it should be called automatically
@@ -160,11 +143,23 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
 
     if start_backend(model_directory_path): # Pass path to start_backend
-        run_frontend()
+        # Remove the call to run_frontend()
+        # run_frontend()
+        print("Backend server running. Start the frontend separately (cd frontend && npm run dev).")
+        # Keep the backend running until interrupted (e.g., by Ctrl+C)
+        # The backend process runs in the background, wait for it here
+        # or simply let the script wait indefinitely.
+        try:
+            # Wait for the backend process indefinitely, or handle shutdown signals
+            backend_process.wait()
+        except KeyboardInterrupt: # Handle Ctrl+C in the main script as well
+            print("\nMain script interrupted. Shutting down...")
+            # stop_backend() is called by atexit
+            sys.exit(0)
     else:
         print("Failed to start backend. Exiting.", file=sys.stderr)
         sys.exit(1)
 
     # The script will block on run_frontend() until the UI exits.
     # stop_backend() will be called automatically via atexit.
-    print("Frontend UI finished.") 
+    # print("Frontend UI finished.") # Remove this line as well 
