@@ -13,6 +13,16 @@ The goal is to offer a starting point that you can quickly get running and adapt
 *   Backend API endpoint (`/api/v1/vram`) to report VRAM usage (if CUDA is available).
 *   Development startup script (`start_dev.sh`) manages starting/stopping the backend and frontend servers.
 
+## Demo
+
+**Launching and Loading Model:**
+
+![Application Launch and Model Loading](assets/demo.gif)
+
+**Chat Interface and Inference:**
+
+![Chat Interface Inference Example](assets/inference.gif)
+
 ## Prerequisites
 
 *   Python 3.8+ (tested with 3.9)

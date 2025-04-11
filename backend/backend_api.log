@@ -1,22 +1,19 @@
 /Users/jakeeaker/prometheus/venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
   warnings.warn(
-INFO:     Started server process [43513]
+INFO:     Started server process [58724]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:59187 - "OPTIONS /api/v1/model/load HTTP/1.1" 200 OK
 ⏳ Attempting to load model from '../tinyllama'...
    ✅ Model successfully loaded from '../tinyllama' and placed on 'CPU'
-INFO:     127.0.0.1:59187 - "POST /api/v1/model/load HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59189 - "OPTIONS /api/v1/settings/update HTTP/1.1" 200 OK
-🔄 System prompt updated to: 'You are a helpful assistant.'
+INFO:     127.0.0.1:59819 - "POST /api/v1/model/load HTTP/1.1" 200 OK
+🔄 System prompt updated to: 'You are an AI assistant that engages in role play with users.'
 🔄 Temperature updated to: 0.7
 🔄 Top P updated to: 0.95
 🔄 Max new tokens updated to: 100
-INFO:     127.0.0.1:59189 - "POST /api/v1/settings/update HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59191 - "OPTIONS /api/v1/chat HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59191 - "POST /api/v1/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59822 - "POST /api/v1/settings/update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59824 - "POST /api/v1/chat HTTP/1.1" 200 OK
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-INFO:     Finished server process [43513]
+INFO:     Finished server process [58724]
