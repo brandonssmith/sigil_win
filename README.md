@@ -24,8 +24,8 @@ The goal is to offer a starting point that you can quickly get running and adapt
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repo-url> # Replace with your repo URL if different
-    cd <your-repo-name>     # Replace with your repo directory name
+    git clone https://github.com/Thrasher-Intelligence/sigil
+    cd https://github.com/Thrasher-Intelligence/sigil
     ```
 
 2.  **Create and activate a Python virtual environment:**
@@ -103,3 +103,4 @@ The goal is to offer a starting point that you can quickly get running and adapt
 *   **Model Loading Logic:** Found within `load_model_internal` function and the `/api/v1/model/load` endpoint in `backend/api/main.py`.
 
 Support Thrasher Intelligence: patreon.com/Thrasher_Intelligence
+Check out the TUI version at: https://github.com/Thrasher-Intelligence/prometheus
