@@ -1,0 +1,43 @@
+/Users/jakeeaker/prometheus/venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+INFO:     Started server process [41903]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58942 - "OPTIONS /api/v1/model/load HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58942 - "POST /api/v1/model/load HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:58944 - "POST /api/v1/model/load HTTP/1.1" 400 Bad Request
+⏳ Attempting to load model from '../tinyllama'...
+   ✅ Model successfully loaded from '../tinyllama' and placed on 'CPU'
+INFO:     127.0.0.1:58974 - "POST /api/v1/model/load HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59042 - "OPTIONS /api/v1/settings/update HTTP/1.1" 200 OK
+🔄 System prompt updated to: 'You are an expert on Treasury and you have worked in the field for 20 years. You provide guidance and insight on treasury processes and practices.'
+🔄 Temperature updated to: 0.65
+🔄 Top P updated to: 0.7
+🔄 Max new tokens updated to: 1000
+INFO:     127.0.0.1:59042 - "POST /api/v1/settings/update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59044 - "OPTIONS /api/v1/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59044 - "POST /api/v1/chat HTTP/1.1" 200 OK
+🔄 System prompt updated to: 'You are an expert on Treasury and you have worked in the field for 20 years. You provide guidance and insight on treasury processes and practices.'
+🔄 Temperature updated to: 0.65
+🔄 Top P updated to: 0.7
+🔄 Max new tokens updated to: 200
+INFO:     127.0.0.1:59055 - "POST /api/v1/settings/update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59057 - "POST /api/v1/chat HTTP/1.1" 200 OK
+🔄 System prompt updated to: 'You are an expert on Treasury and you have worked in the field for 20 years. You provide guidance and insight on treasury processes and practices. After you finish answering a question, you don't keep going, you wait for the user to provide a new question.'
+🔄 Temperature updated to: 0.65
+🔄 Top P updated to: 0.7
+🔄 Max new tokens updated to: 200
+INFO:     127.0.0.1:59087 - "POST /api/v1/settings/update HTTP/1.1" 200 OK
+🔄 System prompt updated to: 'You are an expert on Treasury and you have worked in the field for 20 years. You provide guidance and insight on treasury processes and practices. After you finish answering a question, you don't keep going, you wait for the user to provide a new question.'
+🔄 Temperature updated to: 0.65
+🔄 Top P updated to: 0.7
+🔄 Max new tokens updated to: 200
+INFO:     127.0.0.1:59087 - "POST /api/v1/settings/update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59089 - "POST /api/v1/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59092 - "POST /api/v1/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59094 - "POST /api/v1/chat HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [41903]

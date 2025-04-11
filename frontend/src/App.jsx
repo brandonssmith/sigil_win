@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
 
+// Base API URL (makes it easier to change)
+const API_BASE_URL = 'http://localhost:8000';
+
 // Default settings (could also fetch from backend on initial load)
 const DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant.";
 const DEFAULT_TEMPERATURE = 0.7;
@@ -10,14 +13,46 @@ const DEFAULT_MAX_TOKENS = 1000;
 // Message structure (implied):
 // { sender: 'user' | 'backend' | 'system', text: string, id: string }
 
+// --- Model Load Panel Component ---
+function ModelLoadPanel({ 
+  modelPath, setModelPath, 
+  onLoadModel, modelLoadStatus, 
+  modelLoadError 
+}) {
+  const isLoading = modelLoadStatus === 'loading';
+  const isLoaded = modelLoadStatus === 'loaded';
+
+  return (
+    <div className="model-load-panel settings-group"> {/* Reusing settings-group style */}
+      <label htmlFor="model-path">Model Path:</label>
+      <input
+        type="text"
+        id="model-path"
+        value={modelPath}
+        onChange={(e) => setModelPath(e.target.value)}
+        placeholder="e.g., ./models/tinyllama or /path/to/model"
+        disabled={isLoading || isLoaded} // Disable input after load
+      />
+      <button onClick={onLoadModel} disabled={isLoading || isLoaded || !modelPath.trim()}>
+        {isLoading ? 'Loading Model...' : isLoaded ? 'Model Loaded' : 'Load Model'}
+      </button>
+      {modelLoadStatus === 'error' && <p className="error-message">Load failed: {modelLoadError}</p>}
+      {isLoaded && <p className="success-message">Model loaded successfully!</p>}
+    </div>
+  );
+}
+
 // Settings Panel Component
 function SettingsPanel({ 
     systemPrompt, setSystemPrompt,
     temperature, setTemperature,
     topP, setTopP,
     maxTokens, setMaxTokens,
-    onReload, reloadStatus
+    onReload, reloadStatus,
+    modelLoaded // New prop to disable reload if model not loaded
  }) {
+  const isLoading = reloadStatus === 'loading';
+
   return (
     <div className="settings-panel">
       <h2>Settings</h2>
@@ -28,6 +63,7 @@ function SettingsPanel({
           value={systemPrompt}
           onChange={(e) => setSystemPrompt(e.target.value)}
           rows={5}
+          disabled={!modelLoaded} // Disable if model not loaded
         />
       </div>
       <div className="settings-group">
@@ -40,6 +76,7 @@ function SettingsPanel({
           min="0"
           max="2.0" // Match backend validation
           step="0.1"
+          disabled={!modelLoaded} // Disable if model not loaded
         />
       </div>
        <div className="settings-group">
@@ -52,6 +89,7 @@ function SettingsPanel({
           min="0"
           max="1.0"
           step="0.05"
+          disabled={!modelLoaded} // Disable if model not loaded
         />
       </div>
        <div className="settings-group">
@@ -63,13 +101,14 @@ function SettingsPanel({
           onChange={(e) => setMaxTokens(parseInt(e.target.value, 10) || 1)}
           min="1"
           step="50"
+          disabled={!modelLoaded} // Disable if model not loaded
         />
       </div>
-      <button onClick={onReload} disabled={reloadStatus === 'loading'}>
-        {reloadStatus === 'loading' ? 'Reloading...' : 'Reload Model'}
+      <button onClick={onReload} disabled={isLoading || !modelLoaded}> 
+        {isLoading ? 'Applying...' : 'Apply Settings'}
       </button>
-      {reloadStatus === 'success' && <p className="reload-success">Settings updated!</p>}
-      {reloadStatus === 'error' && <p className="reload-error">Failed to update.</p>}
+      {reloadStatus === 'success' && <p className="success-message">Settings applied!</p>}
+      {reloadStatus === 'error' && <p className="error-message">Failed to apply settings.</p>}
     </div>
   );
 }
@@ -89,6 +128,11 @@ function App() {
   const [maxTokens, setMaxTokens] = useState(DEFAULT_MAX_TOKENS);
   const [reloadStatus, setReloadStatus] = useState(null); // null | 'loading' | 'success' | 'error'
 
+  // New Model Loading State
+  const [modelPathInput, setModelPathInput] = useState(''); // Input field value
+  const [modelLoadStatus, setModelLoadStatus] = useState('idle'); // 'idle' | 'loading' | 'loaded' | 'error'
+  const [modelLoadError, setModelLoadError] = useState(null); // Error message for model load
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -97,16 +141,60 @@ function App() {
     scrollToBottom();
   }, [chatHistory]);
 
-  // Handler for reloading model settings
-  const handleReloadModel = async () => {
-    setReloadStatus('loading');
+  // Handler for loading the model
+  const handleLoadModel = async () => {
+    setModelLoadStatus('loading');
+    setModelLoadError(null);
+    const path = modelPathInput.trim();
+    if (!path) {
+      setModelLoadError('Model path cannot be empty.');
+      setModelLoadStatus('error');
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:8000/reload_model', {
+      const response = await fetch(`${API_BASE_URL}/api/v1/model/load`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path: path }), // Send the path
+      });
+
+      const data = await response.json(); // Always try to parse JSON
+
+      if (!response.ok) {
+        // Use detail from JSON if available, otherwise statusText
+        throw new Error(data.detail || `HTTP error! status: ${response.status}`);
+      }
+
+      console.log("Load model response:", data);
+      setModelLoadStatus('loaded');
+       // Optional: Clear success message after delay or keep it
+      // setTimeout(() => setModelLoadStatus(null), 3000); // Example
+
+    } catch (err) {
+       console.error('Failed to load model:', err);
+       setModelLoadError(err.message || 'An unknown error occurred');
+       setModelLoadStatus('error');
+       // Optional: Clear error message after delay
+       // setTimeout(() => setModelLoadStatus('idle'), 5000);
+    }
+  };
+
+  // Handler for applying model settings (previously reload)
+  const handleApplySettings = async () => {
+    setReloadStatus('loading');
+    setError(null); // Clear main error display
+    try {
+      // Use the new endpoint path
+      const response = await fetch(`${API_BASE_URL}/api/v1/settings/update`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
+            // Ensure names match Pydantic model in backend
             system_prompt: systemPrompt,
             temperature: temperature,
             top_p: topP,
@@ -114,25 +202,20 @@ function App() {
         }),
       });
 
+      const data = await response.json(); // Always try to parse JSON
+
       if (!response.ok) {
-        // Attempt to get error details from response body
-        let errorMsg = `HTTP error! status: ${response.status}`;
-         try {
-            const errorData = await response.json();
-            errorMsg = errorData.detail || errorMsg; // Use detail if available
-        } catch (jsonError) { /* Ignore if parsing fails */ }
-        throw new Error(errorMsg);
+        throw new Error(data.detail || `HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      console.log("Reload response:", data);
+      console.log("Apply settings response:", data);
       setReloadStatus('success');
        // Hide success message after a delay
       setTimeout(() => setReloadStatus(null), 2000);
 
     } catch (err) {
-       console.error('Failed to reload model settings:', err);
-       setError(`Reload failed: ${err.message}`); // Show reload error in main error display for now
+       console.error('Failed to apply model settings:', err);
+       setError(`Apply settings failed: ${err.message}`); // Show error
        setReloadStatus('error');
        // Hide error message after a delay
        setTimeout(() => setReloadStatus(null), 3000);
@@ -142,25 +225,22 @@ function App() {
   const handleSubmit = async (event) => { // Removed event type
     event.preventDefault();
     const trimmedInput = userInput.trim();
-    if (!trimmedInput) return;
+    if (!trimmedInput || modelLoadStatus !== 'loaded') return; // Don't submit if model not loaded
 
     const userMessage = {
       sender: 'user',
       text: trimmedInput,
-      id: `user-${Date.now()}` // Simple unique ID
+      id: `user-${Date.now()}`
     };
-    // Add user message first
     setChatHistory(prev => [...prev, userMessage]);
 
-    // Generate ID and add loading message
     const loadingMsgId = `loading-${Date.now()}`;
-    loadingMessageIdRef.current = loadingMsgId; // Store the ID
+    loadingMessageIdRef.current = loadingMsgId;
     const loadingMessage = {
         sender: 'system',
         text: '...',
         id: loadingMsgId
     };
-    // Add loading message immediately after user message
     setChatHistory(prev => [...prev, loadingMessage]);
 
     setUserInput('');
@@ -168,7 +248,8 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/chat', {
+      // Use the new endpoint path
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,99 +257,106 @@ function App() {
         body: JSON.stringify({ message: trimmedInput }),
       });
 
-      // --- Remove loading message --- 
-      // Store current ID and clear ref *before* potential async state update
       const idToRemove = loadingMessageIdRef.current;
       loadingMessageIdRef.current = null;
       if (idToRemove) {
         setChatHistory(prev => prev.filter(msg => msg.id !== idToRemove));
       }
-      // -----------------------------
+      
+      const data = await response.json(); // Always parse JSON
 
       if (!response.ok) {
-        let errorMsg = response.statusText;
-        try {
-            const errorData = await response.json();
-            errorMsg = errorData.detail || errorMsg;
-        } catch (jsonError) { /* Ignore */ }
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorMsg}`);
+        throw new Error(data.detail || `HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
       console.log("Backend response data:", data);
       const backendMessage = {
         sender: 'backend',
         text: data.response || 'Backend did not provide a response.',
         id: `backend-${Date.now()}`
       };
-      // Add backend message (loading message is already removed)
       setChatHistory(prev => [...prev, backendMessage]);
 
     } catch (e) { // Removed type catch error
       console.error('Fetch error:', e);
       const errorMessage = `Failed to fetch: ${e.message}`;
-      setError(errorMessage);
+      setError(errorMessage); // Set the main error display
       
-      // --- Ensure loading message is removed on error --- 
+      // Ensure loading message is removed on error and add system error message
       const idToRemoveOnError = loadingMessageIdRef.current;
-      loadingMessageIdRef.current = null;
-      if (idToRemoveOnError) {
-         // Remove loading message AND add error message
-         setChatHistory(prev => [
-           ...prev.filter(msg => msg.id !== idToRemoveOnError),
-           { sender: 'system', text: `Error: ${e.message}`, id: `error-${Date.now()}` }
-         ]);
-      } else {
-        // Loading message was already removed, just add error
-        setChatHistory(prev => [
-           ...prev,
-           { sender: 'system', text: `Error: ${e.message}`, id: `error-${Date.now()}` }
-         ]);
-      }
-      // --------------------------------------------------
+      loadingMessageIdRef.current = null; 
+      setChatHistory(prev => [
+          ...prev.filter(msg => msg.id !== idToRemoveOnError), // Remove loading message if it was still there
+          { sender: 'system', text: `Error: ${e.message}`, id: `error-${Date.now()}` }
+      ]);
       
     } finally {
       setIsLoading(false);
-      // Final check to remove loading message if something went wrong
+      // Final check for safety, though likely redundant now
       const finalIdToRemove = loadingMessageIdRef.current;
       if (finalIdToRemove) {
          loadingMessageIdRef.current = null;
          setChatHistory(prev => prev.filter(msg => msg.id !== finalIdToRemove));
       }
-      // Use timeout to ensure scroll happens after potential re-render from history update
       setTimeout(scrollToBottom, 0);
     }
   };
 
+  const modelLoaded = modelLoadStatus === 'loaded';
+
   return (
-    <div className="app-layout"> {/* New top-level layout container */}
-      <SettingsPanel
-        systemPrompt={systemPrompt}
-        setSystemPrompt={setSystemPrompt}
-        temperature={temperature}
-        setTemperature={setTemperature}
-        topP={topP}
-        setTopP={setTopP}
-        maxTokens={maxTokens}
-        setMaxTokens={setMaxTokens}
-        onReload={handleReloadModel}
-        reloadStatus={reloadStatus}
-      />
-      <div className="chat-container"> {/* Existing chat container */}
+    <div className="app-layout"> 
+       {/* Left Panel: Settings and Model Load */}
+       <div className="left-panel">
+         <ModelLoadPanel 
+            modelPath={modelPathInput}
+            setModelPath={setModelPathInput}
+            onLoadModel={handleLoadModel}
+            modelLoadStatus={modelLoadStatus}
+            modelLoadError={modelLoadError}
+         />
+         <SettingsPanel
+            systemPrompt={systemPrompt}
+            setSystemPrompt={setSystemPrompt}
+            temperature={temperature}
+            setTemperature={setTemperature}
+            topP={topP}
+            setTopP={setTopP}
+            maxTokens={maxTokens}
+            setMaxTokens={setMaxTokens}
+            onReload={handleApplySettings} // Use the renamed handler
+            reloadStatus={reloadStatus}
+            modelLoaded={modelLoaded} // Pass model loaded status
+         />
+      </div>
+
+      {/* Right Panel: Chat Area */}
+      <div className="chat-container">
         <header className="chat-header">
-          <h1>Prometheus</h1>
+          <h1>Sigil</h1>
+          {/* Optionally display model status here */} 
+          {modelLoaded && <span className="model-status-indicator">Model Ready</span>}
+          {!modelLoaded && modelLoadStatus !== 'loading' && <span className="model-status-indicator error">Model Not Loaded</span>}
+          {modelLoadStatus === 'loading' && <span className="model-status-indicator loading">Loading Model...</span>}
         </header>
 
         <div className="messages-area">
+          {/* Display message asking user to load model if not loaded */}
+          {modelLoadStatus === 'idle' && (
+            <div className="message system-message">
+              <p>Please enter the model path and click 'Load Model' in the left panel to begin.</p>
+            </div>
+          )}
+          {modelLoadStatus === 'error' && (
+             <div className="message system-message error-message"> 
+               <p>Failed to load model. Check the path and console for details. Error: {modelLoadError}</p>
+             </div>
+          )}
+
           {chatHistory.map((msg) => (
             <div key={msg.id} className={`message ${msg.sender}-message ${msg.id.startsWith('loading-') ? 'loading-message' : ''}`}>
-              {/* Conditionally render dots as spans if it's a loading message */}
               {msg.id.startsWith('loading-') ? (
-                <div className="dots-container">
-                  <span>.</span>
-                  <span>.</span>
-                  <span>.</span>
-                </div>
+                <div className="dots-container"><span>.</span><span>.</span><span>.</span></div>
               ) : (
                 <p>{msg.text}</p>
               )}
@@ -277,21 +365,19 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
 
-         {/* Display fetch error message if it exists */}
-         {error && <p className="error-message">{error}</p>}
+         {/* Display general fetch error message if it exists */}
+         {error && <p className="error-message chat-error">Chat Error: {error}</p>}
 
         <form onSubmit={handleSubmit} className="input-bar">
           <input
             type="text"
             value={userInput}
-            // Removed event type
             onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Type your message..."
-            disabled={isLoading}
+            placeholder={modelLoaded ? "Type your message..." : "Load model first..."}
+            disabled={isLoading || !modelLoaded} // Disable if chat is loading OR model not loaded
             aria-label="Chat message input"
           />
-          <button type="submit" disabled={isLoading}>
-            {/* Keep button text simple even when loading */}
+          <button type="submit" disabled={isLoading || !modelLoaded}> 
             Send
           </button>
         </form>
