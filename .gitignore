@@ -7,3 +7,7 @@
 
 # tinyllama
 */tinyllama
+
+# logs
+*.log
+/*.log
