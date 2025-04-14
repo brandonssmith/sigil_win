@@ -4,7 +4,8 @@ from pydantic import BaseModel, Field
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import os
-# import sys
+import sys
+import re # <-- Add import for regex
 from typing import Optional
 
 app = FastAPI(
@@ -73,6 +74,14 @@ def load_model_internal(path: str):
         print(f"❌ Error loading model from '{path}': {e}", file=sys.stderr)
         # Re-raise a more specific exception or handle as needed
         raise RuntimeError(f"Failed to load model from '{path}': {e}") from e
+
+# --- Helper Function for Cleaning Response --- (Added)
+def clean_response(text: str) -> str:
+    """Removes potential speaker tags like 'User:' or 'Assistant:' from the text."""
+    # Use regex to remove the tags at the beginning of a line or after whitespace, case-insensitive
+    # Handles variations like <|user|>, User :, etc. more broadly might be needed depending on model
+    # This version targets the specific User: / Assistant: pattern from the original prompt format
+    return re.sub(r"^\s*\b(User|Assistant):\s*", "", text, flags=re.IGNORECASE | re.MULTILINE).strip()
 
 # --- Pydantic Models --- (Moved definitions up)
 class LoadModelRequest(BaseModel):
@@ -268,9 +277,21 @@ def chat(req: ChatRequest):
         current_top_p = app.state.top_p
         current_max_new_tokens = app.state.max_new_tokens
 
-        full_prompt = f"{current_system_prompt}\nUser: {req.message}\nAssistant:" # Example format
+        # --- Updated Prompt Formatting ---
+        messages = [
+            {"role": "system", "content": current_system_prompt},
+            {"role": "user", "content": req.message}
+        ]
+        prompt = current_tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True # Ensures the assistant prompt is added correctly
+        )
+        # print(f"\\n--- Generated Prompt for Model --- \\n{prompt}\\n--------------------------------\\n") # Optional: for debugging
 
-        inputs = current_tokenizer(full_prompt, return_tensors="pt").to(current_device)
+        inputs = current_tokenizer(prompt, return_tensors="pt").to(current_device)
+        # --- End Updated Prompt Formatting ---
+
         input_ids = inputs["input_ids"]
         attention_mask = inputs.get("attention_mask")
         input_length = input_ids.shape[1]
@@ -288,7 +309,10 @@ def chat(req: ChatRequest):
             )
         generated_ids = outputs[0][input_length:]
         response_text = current_tokenizer.decode(generated_ids, skip_special_tokens=True)
-        return {"response": response_text.strip()}
+
+        # Clean the response before returning
+        cleaned_response_text = clean_response(response_text)
+        return {"response": cleaned_response_text}
 
     except Exception as e:
         print(f"Error during chat generation: {e}", file=sys.stderr)
