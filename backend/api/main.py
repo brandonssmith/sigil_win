@@ -1,13 +1,13 @@
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import os
 import sys
 import re # <-- Add import for regex
-from typing import Optional
+from typing import Optional, List, Dict, Any # <-- Add List, Dict, Any
 
 app = FastAPI(
     title="Sigil Backend API",
@@ -123,6 +123,41 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+
+# --- V2 Chat Models --- (New)
+class Message(BaseModel):
+    role: str
+    content: str
+
+class ChatRequestV2(BaseModel):
+    mode: str = Field(..., description="Generation mode: 'instruction' or 'chat'.")
+    message: Optional[str] = Field(None, description="Single user message for 'instruction' mode.")
+    messages: Optional[List[Message]] = Field(None, description="List of messages for 'chat' mode.")
+    return_prompt: Optional[bool] = Field(False, description="If true, return the raw prompt string used for generation.")
+
+    @validator('mode')
+    def validate_mode(cls, v):
+        if v not in ["instruction", "chat"]:
+            raise ValueError("Mode must be either 'instruction' or 'chat'.")
+        return v
+
+    @validator('messages', always=True)
+    def check_messages_for_chat_mode(cls, v, values):
+        if values.get('mode') == 'chat' and not v:
+            raise ValueError("Messages list cannot be empty in 'chat' mode.")
+        return v
+
+    @validator('message', always=True)
+    def check_message_for_instruction_mode(cls, v, values):
+         if values.get('mode') == 'instruction' and not v:
+            raise ValueError("Message cannot be empty in 'instruction' mode.")
+         return v
+
+class ChatResponseV2(BaseModel):
+    response: str
+    raw_prompt: Optional[str] = None # Optional field for the raw prompt
+
+# --- End V2 Chat Models ---
 
 class ModelSettings(BaseModel):
     system_prompt: Optional[str] = None
@@ -338,6 +373,122 @@ def chat(req: ChatRequest):
     except Exception as e:
         print(f"Error during chat generation: {e}", file=sys.stderr)
         # Raise HTTP exception instead of returning error in response body
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error during generation: {e}"
+        )
+
+# --- Helper Function for Prompt Generation --- (New)
+def generate_prompt(
+    mode: str,
+    system_prompt: str,
+    tokenizer: AutoTokenizer,
+    message: Optional[str] = None,
+    messages: Optional[List[Dict[str, str]]] = None,
+) -> str:
+    """Generates the appropriate prompt string based on the mode."""
+    if mode == "instruction":
+        if not message:
+            raise ValueError("Message is required for 'instruction' mode.")
+        # Use apply_chat_template for instruction mode as well for consistency
+        # Create a minimal message list for instruction mode
+        instruction_messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": message}
+        ]
+        prompt = tokenizer.apply_chat_template(
+            instruction_messages,
+            tokenize=False,
+            add_generation_prompt=True # Ensures the assistant prompt is added correctly
+        )
+    elif mode == "chat":
+        if not messages:
+            raise ValueError("Messages list is required for 'chat' mode.")
+        # Prepend system prompt if not already present or update if it is
+        if not messages or messages[0].get("role") != "system":
+            chat_messages_with_system = [{"role": "system", "content": system_prompt}] + messages
+        else:
+            # Update existing system prompt if provided, otherwise keep the one from history
+            chat_messages_with_system = messages
+            chat_messages_with_system[0]["content"] = system_prompt
+
+        prompt = tokenizer.apply_chat_template(
+            chat_messages_with_system,
+            tokenize=False,
+            add_generation_prompt=True # Ensures the assistant prompt is added correctly
+        )
+    else:
+        raise ValueError("Invalid mode specified for prompt generation.")
+
+    # Optional: Print the generated prompt for debugging
+    # print(f"\\n--- Generated Prompt (Mode: {mode}) --- \\n{prompt}\\n--------------------------------\\n")
+    return prompt
+
+# --- V2 Chat Endpoint --- (New)
+@app.post("/api/v1/chat-v2", response_model=ChatResponseV2)
+def chat_v2(req: ChatRequestV2):
+    # Check if model is loaded
+    if not app.state.model or not app.state.tokenizer:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Model is not loaded. Please load a model first.",
+        )
+
+    try:
+        # Retrieve components from app.state
+        current_tokenizer = app.state.tokenizer
+        current_model = app.state.model
+        current_device = app.state.device
+        current_system_prompt = app.state.system_prompt
+        current_temperature = app.state.temperature
+        current_top_p = app.state.top_p
+        current_max_new_tokens = app.state.max_new_tokens
+
+        # Convert Pydantic messages to simple dicts if needed for the helper
+        messages_list = [msg.dict() for msg in req.messages] if req.messages else None
+
+        # Generate the prompt using the helper function
+        prompt = generate_prompt(
+            mode=req.mode,
+            system_prompt=current_system_prompt,
+            tokenizer=current_tokenizer,
+            message=req.message,
+            messages=messages_list
+        )
+
+        inputs = current_tokenizer(prompt, return_tensors="pt").to(current_device)
+        input_ids = inputs["input_ids"]
+        attention_mask = inputs.get("attention_mask")
+        input_length = input_ids.shape[1]
+
+        with torch.no_grad():
+            outputs = current_model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                max_new_tokens=current_max_new_tokens,
+                do_sample=True,
+                temperature=current_temperature,
+                top_k=50, # Keeping default top_k, adjust if needed
+                top_p=current_top_p,
+                pad_token_id=current_tokenizer.pad_token_id
+            )
+
+        generated_ids = outputs[0][input_length:]
+        response_text = current_tokenizer.decode(generated_ids, skip_special_tokens=True)
+
+        # Clean the response
+        cleaned_response_text = clean_response(response_text)
+
+        response_data = {"response": cleaned_response_text}
+        if req.return_prompt:
+            response_data["raw_prompt"] = prompt
+
+        return response_data
+
+    except ValueError as ve: # Catch specific errors from prompt generation or validation
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        print(f"Error during chat-v2 generation: {e}", file=sys.stderr)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error during generation: {e}"

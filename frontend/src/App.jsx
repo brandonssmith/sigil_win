@@ -8,6 +8,7 @@ const API_BASE_URL = 'http://localhost:8000';
 // Default settings (could also fetch from backend on initial load)
 const DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant.";
 const DEFAULT_TEMPERATURE = 0.7;
+const DEFAULT_TEMPERATURE_CHAT = 0.7;
 const DEFAULT_TOP_P = 0.95;
 const DEFAULT_MAX_TOKENS = 1000;
 
@@ -114,6 +115,39 @@ function SettingsPanel({
   );
 }
 
+// --- Chat Mode Selection Component --- (New)
+function ChatModeSelector({ chatMode, setChatMode, modelLoaded }) {
+  return (
+    <div className="settings-group chat-mode-selector">
+      <label>Chat Mode:</label>
+      <div className="radio-group">
+        <label>
+          <input
+            type="radio"
+            name="chatMode"
+            value="instruction"
+            checked={chatMode === 'instruction'}
+            onChange={() => setChatMode('instruction')}
+            disabled={!modelLoaded}
+          />
+          Instruction
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="chatMode"
+            value="chat"
+            checked={chatMode === 'chat'}
+            onChange={() => setChatMode('chat')}
+            disabled={!modelLoaded}
+          />
+          Chat
+        </label>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [userInput, setUserInput] = useState('');
   const [chatHistory, setChatHistory] = useState([]); // Array of message objects
@@ -133,6 +167,9 @@ function App() {
   const [modelPathInput, setModelPathInput] = useState(''); // Input field value
   const [modelLoadStatus, setModelLoadStatus] = useState('idle'); // 'idle' | 'loading' | 'loaded' | 'error'
   const [modelLoadError, setModelLoadError] = useState(null); // Error message for model load
+
+  // Chat Mode State (New)
+  const [chatMode, setChatMode] = useState('instruction'); // 'instruction' or 'chat'
 
   // --- THEME STATE ---
   const [themeName, setThemeName] = useState('AlienBlood'); // Default theme
@@ -238,6 +275,16 @@ function App() {
     }
   };
 
+  // Helper to format chat history for the backend
+  const formatChatHistoryForBackend = (history) => {
+    return history
+      .filter(msg => msg.sender === 'user' || msg.sender === 'backend') // Only user/backend messages
+      .map(msg => ({ // Convert to {role: ..., content: ...}
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text
+      }));
+  };
+
   const handleSubmit = async (event) => { // Removed event type
     event.preventDefault();
     const trimmedInput = userInput.trim();
@@ -248,37 +295,56 @@ function App() {
       text: trimmedInput,
       id: `user-${Date.now()}`
     };
+    // Add user message immediately
     setChatHistory(prev => [...prev, userMessage]);
+
+    // Prepare history *before* adding loading message
+    const historyForBackend = formatChatHistoryForBackend([...chatHistory, userMessage]);
 
     const loadingMsgId = `loading-${Date.now()}`;
     loadingMessageIdRef.current = loadingMsgId;
     const loadingMessage = {
-        sender: 'system',
+        sender: 'system', // Use 'system' for visual distinction
         text: '...',
         id: loadingMsgId
     };
+    // Add loading message
     setChatHistory(prev => [...prev, loadingMessage]);
 
     setUserInput('');
     setIsLoading(true);
     setError(null);
 
+    let requestBody = {};
+    if (chatMode === 'instruction') {
+      requestBody = {
+        mode: 'instruction',
+        message: trimmedInput
+      };
+    } else { // chatMode === 'chat'
+      requestBody = {
+        mode: 'chat',
+        messages: historyForBackend // Send the formatted history
+      };
+    }
+
     try {
-      // Use the new endpoint path
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat`, {
+      // Use the new v2 endpoint
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat-v2`, { // <-- Use chat-v2
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: trimmedInput }),
+        body: JSON.stringify(requestBody), // Send the appropriate body
       });
 
       const idToRemove = loadingMessageIdRef.current;
       loadingMessageIdRef.current = null;
+      // Remove loading message immediately after fetch starts
       if (idToRemove) {
         setChatHistory(prev => prev.filter(msg => msg.id !== idToRemove));
       }
-      
+
       const data = await response.json(); // Always parse JSON
 
       if (!response.ok) {
@@ -291,21 +357,22 @@ function App() {
         text: data.response || 'Backend did not provide a response.',
         id: `backend-${Date.now()}`
       };
+      // Add backend response
       setChatHistory(prev => [...prev, backendMessage]);
 
     } catch (e) { // Removed type catch error
       console.error('Fetch error:', e);
       const errorMessage = `Failed to fetch: ${e.message}`;
       setError(errorMessage); // Set the main error display
-      
+
       // Ensure loading message is removed on error and add system error message
       const idToRemoveOnError = loadingMessageIdRef.current;
-      loadingMessageIdRef.current = null; 
+      loadingMessageIdRef.current = null;
       setChatHistory(prev => [
           ...prev.filter(msg => msg.id !== idToRemoveOnError), // Remove loading message if it was still there
           { sender: 'system', text: `Error: ${e.message}`, id: `error-${Date.now()}` }
       ]);
-      
+
     } finally {
       setIsLoading(false);
       // Final check for safety, though likely redundant now
@@ -316,6 +383,12 @@ function App() {
       }
       setTimeout(scrollToBottom, 0);
     }
+  };
+
+  // Function to clear chat history (New)
+  const handleClearChat = () => {
+    setChatHistory([]);
+    setError(null); // Also clear any existing errors
   };
 
   const modelLoaded = modelLoadStatus === 'loaded';
@@ -344,6 +417,12 @@ function App() {
           setMaxTokens={setMaxTokens}
           onReload={handleApplySettings}
           reloadStatus={reloadStatus}
+          modelLoaded={modelLoaded}
+        />
+        {/* Chat Mode Selector (New) */}
+        <ChatModeSelector
+          chatMode={chatMode}
+          setChatMode={setChatMode}
           modelLoaded={modelLoaded}
         />
         {/* Theme switcher UI */}
@@ -393,6 +472,17 @@ function App() {
 
          {/* Display general fetch error message if it exists */}
          {error && <p className="error-message chat-error">Chat Error: {error}</p>}
+
+        {/* Clear Chat Button (New) - Placed near input bar for relevance */}
+        {chatHistory.length > 0 && (
+          <button
+            onClick={handleClearChat}
+            className="clear-chat-button"
+            disabled={isLoading}
+          >
+            Clear Chat
+          </button>
+        )}
 
         <form onSubmit={handleSubmit} className="input-bar">
           <input
