@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
+import ThemeLoader from './components/ThemeLoader';
 
 // Base API URL (makes it easier to change)
 const API_BASE_URL = 'http://localhost:8000';
@@ -132,6 +133,21 @@ function App() {
   const [modelPathInput, setModelPathInput] = useState(''); // Input field value
   const [modelLoadStatus, setModelLoadStatus] = useState('idle'); // 'idle' | 'loading' | 'loaded' | 'error'
   const [modelLoadError, setModelLoadError] = useState(null); // Error message for model load
+
+  // --- THEME STATE ---
+  const [themeName, setThemeName] = useState('AlienBlood'); // Default theme
+  const [themeList, setThemeList] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/themes`)
+      .then(res => res.json())
+      .then(setThemeList)
+      .catch(() => setThemeList([
+        'AlienBlood', 'Brogrammer', 'HaX0R_BLUE', 'HaX0R_GR33N', 'HaX0R_R3D',
+        'Kanagawa Dragon', 'Kanagawa Wave', 'Shaman',
+        'catppuccin-frappe', 'catppuccin-macchiato', 'catppuccin-mocha',
+      ]));
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -306,30 +322,40 @@ function App() {
 
   return (
     <div className="app-layout"> 
-       {/* Left Panel: Settings and Model Load */}
-       <div className="left-panel">
-         <ModelLoadPanel 
-            modelPath={modelPathInput}
-            setModelPath={setModelPathInput}
-            onLoadModel={handleLoadModel}
-            modelLoadStatus={modelLoadStatus}
-            modelLoadError={modelLoadError}
-         />
-         <SettingsPanel
-            systemPrompt={systemPrompt}
-            setSystemPrompt={setSystemPrompt}
-            temperature={temperature}
-            setTemperature={setTemperature}
-            topP={topP}
-            setTopP={setTopP}
-            maxTokens={maxTokens}
-            setMaxTokens={setMaxTokens}
-            onReload={handleApplySettings} // Use the renamed handler
-            reloadStatus={reloadStatus}
-            modelLoaded={modelLoaded} // Pass model loaded status
-         />
+      {/* Dynamically load the selected theme */}
+      <ThemeLoader themeName={themeName} />
+      {/* Left Panel: Settings and Model Load */}
+      <div className="left-panel">
+        <ModelLoadPanel 
+          modelPath={modelPathInput}
+          setModelPath={setModelPathInput}
+          onLoadModel={handleLoadModel}
+          modelLoadStatus={modelLoadStatus}
+          modelLoadError={modelLoadError}
+        />
+        <SettingsPanel
+          systemPrompt={systemPrompt}
+          setSystemPrompt={setSystemPrompt}
+          temperature={temperature}
+          setTemperature={setTemperature}
+          topP={topP}
+          setTopP={setTopP}
+          maxTokens={maxTokens}
+          setMaxTokens={setMaxTokens}
+          onReload={handleApplySettings}
+          reloadStatus={reloadStatus}
+          modelLoaded={modelLoaded}
+        />
+        {/* Theme switcher UI */}
+        <div className="settings-group">
+          <label htmlFor="theme-select">Theme:</label>
+          <select id="theme-select" value={themeName} onChange={e => setThemeName(e.target.value)}>
+            {themeList.map(theme => (
+              <option key={theme} value={theme}>{theme}</option>
+            ))}
+          </select>
+        </div>
       </div>
-
       {/* Right Panel: Chat Area */}
       <div className="chat-container">
         <header className="chat-header">

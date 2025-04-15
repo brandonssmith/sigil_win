@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
@@ -74,6 +75,26 @@ def load_model_internal(path: str):
         print(f"❌ Error loading model from '{path}': {e}", file=sys.stderr)
         # Re-raise a more specific exception or handle as needed
         raise RuntimeError(f"Failed to load model from '{path}': {e}") from e
+
+# --- Theme Listing Endpoint ---
+@app.get("/themes")
+def list_themes():
+    themes_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../frontend/public/themes'))
+    if not os.path.isdir(themes_dir):
+        raise HTTPException(status_code=404, detail="Themes directory not found")
+    theme_files = [f for f in os.listdir(themes_dir) if f.endswith('.css')]
+    theme_names = [os.path.splitext(f)[0] for f in theme_files]
+    return JSONResponse(content=theme_names)
+
+# --- Model Directory Listing Endpoint ---
+@app.get("/models")
+def list_models():
+    models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
+    if not os.path.isdir(models_dir):
+        raise HTTPException(status_code=404, detail="Models directory not found")
+    # Only include directories (potential models)
+    model_names = [d for d in os.listdir(models_dir) if os.path.isdir(os.path.join(models_dir, d))]
+    return JSONResponse(content=model_names)
 
 # --- Helper Function for Cleaning Response --- (Added)
 def clean_response(text: str) -> str:
