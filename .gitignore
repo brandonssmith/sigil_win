@@ -12,4 +12,8 @@
 *.log
 /*.log
 
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
+backend/backend_api.log
