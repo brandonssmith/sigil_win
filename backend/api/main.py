@@ -96,6 +96,23 @@ def list_models():
     model_names = [d for d in os.listdir(models_dir) if os.path.isdir(os.path.join(models_dir, d))]
     return JSONResponse(content=model_names)
 
+# --- Helper Function for Truncating at Stop Tokens --- (New)
+def truncate_at_stop_token(text: str, stop_tokens: list = None) -> str:
+    """Truncates the text at the first occurrence of any stop token."""
+    if not stop_tokens:
+        stop_tokens = [
+            "\nUser:", "\nuser:", "\nAssistant:", "\nassistant:", "</s>", "<|endoftext|>", "<|user|>", "<|assistant|>"
+        ]
+    min_idx = None
+    for token in stop_tokens:
+        idx = text.find(token)
+        if idx != -1:
+            if min_idx is None or idx < min_idx:
+                min_idx = idx
+    if min_idx is not None:
+        return text[:min_idx].rstrip()
+    return text
+
 # --- Helper Function for Cleaning Response --- (Added)
 def clean_response(text: str) -> str:
     """Removes potential speaker tags like 'User:' or 'Assistant:' from the text."""
@@ -314,6 +331,7 @@ def update_generation_settings(settings: ModelSettings):
     return {"message": "Generation settings updated successfully.", "updated_settings": updated_settings}
 
 # Chat endpoint - check if model is loaded
+MIN_NARRATIVE_TOKENS = 350  # Safe minimum for narrative/chat completions
 @app.post("/api/v1/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     # Check if model is loaded
@@ -331,7 +349,10 @@ def chat(req: ChatRequest):
         current_system_prompt = app.state.system_prompt
         current_temperature = app.state.temperature
         current_top_p = app.state.top_p
+        # Apply narrative buffer for chat mode (always chat mode here)
         current_max_new_tokens = app.state.max_new_tokens
+        if current_max_new_tokens < MIN_NARRATIVE_TOKENS:
+            current_max_new_tokens = MIN_NARRATIVE_TOKENS
 
         # --- Updated Prompt Formatting ---
         messages = [
@@ -343,7 +364,7 @@ def chat(req: ChatRequest):
             tokenize=False,
             add_generation_prompt=True # Ensures the assistant prompt is added correctly
         )
-        # print(f"\\n--- Generated Prompt for Model --- \\n{prompt}\\n--------------------------------\\n") # Optional: for debugging
+        # print(f"\n--- Generated Prompt for Model --- \n{prompt}\n--------------------------------\n") # Optional: for debugging
 
         inputs = current_tokenizer(prompt, return_tensors="pt").to(current_device)
         # --- End Updated Prompt Formatting ---
@@ -368,7 +389,9 @@ def chat(req: ChatRequest):
 
         # Clean the response before returning
         cleaned_response_text = clean_response(response_text)
-        return {"response": cleaned_response_text}
+        # Truncate at stop tokens for more natural output
+        truncated_response_text = truncate_at_stop_token(cleaned_response_text)
+        return {"response": truncated_response_text}
 
     except Exception as e:
         print(f"Error during chat generation: {e}", file=sys.stderr)
@@ -421,7 +444,7 @@ def generate_prompt(
         raise ValueError("Invalid mode specified for prompt generation.")
 
     # Optional: Print the generated prompt for debugging
-    # print(f"\\n--- Generated Prompt (Mode: {mode}) --- \\n{prompt}\\n--------------------------------\\n")
+    # print(f"\n--- Generated Prompt (Mode: {mode}) --- \n{prompt}\n--------------------------------\n")
     return prompt
 
 # --- V2 Chat Endpoint --- (New)
@@ -442,7 +465,10 @@ def chat_v2(req: ChatRequestV2):
         current_system_prompt = app.state.system_prompt
         current_temperature = app.state.temperature
         current_top_p = app.state.top_p
+        # Determine max_new_tokens with narrative buffer for chat mode
         current_max_new_tokens = app.state.max_new_tokens
+        if getattr(req, 'mode', None) == 'chat' and (current_max_new_tokens is None or current_max_new_tokens < MIN_NARRATIVE_TOKENS):
+            current_max_new_tokens = MIN_NARRATIVE_TOKENS
 
         # Convert Pydantic messages to simple dicts if needed for the helper
         messages_list = [msg.dict() for msg in req.messages] if req.messages else None
@@ -478,11 +504,11 @@ def chat_v2(req: ChatRequestV2):
 
         # Clean the response
         cleaned_response_text = clean_response(response_text)
-
-        response_data = {"response": cleaned_response_text}
+        # Truncate at stop tokens for more natural output
+        truncated_response_text = truncate_at_stop_token(cleaned_response_text)
+        response_data = {"response": truncated_response_text}
         if req.return_prompt:
             response_data["raw_prompt"] = prompt
-
         return response_data
 
     except ValueError as ve: # Catch specific errors from prompt generation or validation
@@ -493,6 +519,13 @@ def chat_v2(req: ChatRequestV2):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error during generation: {e}"
         )
+
+# --- System Prompt Best Practices ---
+# To encourage more graceful conclusions, consider updating your system prompt to include instructions like:
+#   "Always end your responses with a complete sentence. Do not stop mid-thought."
+# or
+#   "If you finish your answer, do not continue with 'User:' or 'Assistant:' tags."
+# This can help steer the model to avoid abrupt or mechanical endings.
 
 # Remove the direct uvicorn run block if this file is primarily for import
 # if __name__ == "__main__":
