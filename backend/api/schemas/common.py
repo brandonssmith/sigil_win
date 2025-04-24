@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 from pydantic import BaseModel, Field
 
 # --- General (non-chat) API Schemas ---
@@ -24,7 +24,7 @@ class ModelSettings(BaseModel):
 
 class SettingsUpdateResponse(BaseModel):
     message: str
-    updated_settings: Dict[str, Optional[str]]
+    updated_settings: Dict[str, Optional[Union[str, float, int]]]
 
 class VRAMInfoResponse(BaseModel):
     status: str
