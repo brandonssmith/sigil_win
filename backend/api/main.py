@@ -8,6 +8,15 @@ import os
 import sys
 import re # <-- Add import for regex
 from typing import Optional, List, Dict, Any # <-- Add List, Dict, Any
+# Use relative imports for modules within the same package level
+from .core.model_loader import load_model_internal
+from .routes.chat import router as chat_router
+from .routes.settings import router as settings_router
+# Assuming schemas are also in backend/api/schemas
+from .schemas.common import (
+    LoadModelRequest, LoadModelResponse, ModelStatusResponse,
+    ModelSettings, SettingsUpdateResponse, VRAMInfoResponse
+)
 
 app = FastAPI(
     title="Sigil Backend API",
@@ -42,40 +51,6 @@ app.add_middleware(
     allow_headers=["*"],    # Allow all headers
 )
 
-# --- Model Loading Helper --- (Moved from initial load)
-def load_model_internal(path: str):
-    """Loads the tokenizer and model from the specified path."""
-    if not path or not os.path.isdir(path):
-        raise ValueError(f"Invalid directory path provided: '{path}'")
-
-    print(f"⏳ Attempting to load model from '{path}'...")
-    try:
-        # Trust remote code can be necessary for some models, consider security implications
-        # For now, keeping it False as in the original code.
-        tokenizer = AutoTokenizer.from_pretrained(path, local_files_only=True, trust_remote_code=False)
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
-            print("   ⚠️ Added pad_token = eos_token")
-
-        model = AutoModelForCausalLM.from_pretrained(path, local_files_only=True, trust_remote_code=False)
-        model.eval()
-
-        # Determine device and move model
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        try:
-            model.to(device)
-            print(f"   ✅ Model successfully loaded from '{path}' and placed on '{device.upper()}'")
-        except Exception as move_err:
-            print(f"   ⚠️ Model loaded from '{path}' but failed to move to '{device.upper()}': {move_err}. Using CPU.")
-            device = 'cpu' # Fallback to CPU
-
-        return tokenizer, model, device
-
-    except Exception as e:
-        print(f"❌ Error loading model from '{path}': {e}", file=sys.stderr)
-        # Re-raise a more specific exception or handle as needed
-        raise RuntimeError(f"Failed to load model from '{path}': {e}") from e
-
 # --- Theme Listing Endpoint ---
 @app.get("/themes")
 def list_themes():
@@ -95,51 +70,6 @@ def list_models():
     # Only include directories (potential models)
     model_names = [d for d in os.listdir(models_dir) if os.path.isdir(os.path.join(models_dir, d))]
     return JSONResponse(content=model_names)
-
-# --- Helper Function for Truncating at Stop Tokens --- (New)
-def truncate_at_stop_token(text: str, stop_tokens: list = None) -> str:
-    """Truncates the text at the first occurrence of any stop token."""
-    if not stop_tokens:
-        stop_tokens = [
-            "\nUser:", "\nuser:", "\nAssistant:", "\nassistant:", "</s>", "<|endoftext|>", "<|user|>", "<|assistant|>"
-        ]
-    min_idx = None
-    for token in stop_tokens:
-        idx = text.find(token)
-        if idx != -1:
-            if min_idx is None or idx < min_idx:
-                min_idx = idx
-    if min_idx is not None:
-        return text[:min_idx].rstrip()
-    return text
-
-# --- Helper Function for Cleaning Response --- (Added)
-def clean_response(text: str) -> str:
-    """Removes potential speaker tags like 'User:' or 'Assistant:' from the text."""
-    # Use regex to remove the tags at the beginning of a line or after whitespace, case-insensitive
-    # Handles variations like <|user|>, User :, etc. more broadly might be needed depending on model
-    # This version targets the specific User: / Assistant: pattern from the original prompt format
-    return re.sub(r"^\s*\b(User|Assistant):\s*", "", text, flags=re.IGNORECASE | re.MULTILINE).strip()
-
-# --- Pydantic Models --- (Moved definitions up)
-class LoadModelRequest(BaseModel):
-    path: str = Field(..., description="Absolute or relative path to the model directory.")
-
-class LoadModelResponse(BaseModel):
-    message: str
-    path: str
-    device: str
-
-class ModelStatusResponse(BaseModel):
-    loaded: bool
-    path: Optional[str] = None
-    device: Optional[str] = None
-
-class ChatRequest(BaseModel):
-    message: str
-
-class ChatResponse(BaseModel):
-    response: str
 
 # --- V2 Chat Models --- (New)
 class Message(BaseModel):
@@ -176,25 +106,7 @@ class ChatResponseV2(BaseModel):
 
 # --- End V2 Chat Models ---
 
-class ModelSettings(BaseModel):
-    system_prompt: Optional[str] = None
-    temperature: Optional[float] = None
-    top_p: Optional[float] = None
-    max_new_tokens: Optional[int] = None
-
-class SettingsUpdateResponse(BaseModel):
-    message: str
-    updated_settings: dict
-
-class VRAMInfoResponse(BaseModel):
-    status: str
-    message: Optional[str] = None
-    device: Optional[str] = None
-    total_gb: Optional[float] = None
-    reserved_gb: Optional[float] = None
-    allocated_gb: Optional[float] = None
-    free_in_reserved_gb: Optional[float] = None
-
+# Models moved to schemas.common and schemas.chat
 
 # --- API Endpoints --- (Organized and updated)
 
@@ -296,238 +208,10 @@ def get_vram_info():
             "message": "CUDA not available or device is not CUDA. No VRAM info.",
         }
 
-# Endpoint to update generation settings (renamed for clarity)
-@app.post("/api/v1/settings/update", response_model=SettingsUpdateResponse)
-def update_generation_settings(settings: ModelSettings):
-    # No need to check if model is loaded, these are just parameters
-    updated_settings = {}
-    if settings.system_prompt is not None:
-        app.state.system_prompt = settings.system_prompt
-        updated_settings["system_prompt"] = app.state.system_prompt
-        print(f"🔄 System prompt updated to: '{app.state.system_prompt}'")
-    if settings.temperature is not None:
-        if not (0 < settings.temperature <= 2.0): # Allow slightly higher temp range
-             raise HTTPException(status_code=400, detail="Temperature must be between 0 (exclusive) and 2.0 (inclusive).")
-        app.state.temperature = settings.temperature
-        updated_settings["temperature"] = app.state.temperature
-        print(f"🔄 Temperature updated to: {app.state.temperature}")
-    if settings.top_p is not None:
-        if not (0 < settings.top_p <= 1.0):
-            raise HTTPException(status_code=400, detail="Top P must be between 0 (exclusive) and 1.0 (inclusive).")
-        app.state.top_p = settings.top_p
-        updated_settings["top_p"] = app.state.top_p
-        print(f"🔄 Top P updated to: {app.state.top_p}")
-    if settings.max_new_tokens is not None:
-        if settings.max_new_tokens <= 0:
-            raise HTTPException(status_code=400, detail="Max new tokens must be positive.")
-        app.state.max_new_tokens = settings.max_new_tokens
-        updated_settings["max_new_tokens"] = app.state.max_new_tokens
-        print(f"🔄 Max new tokens updated to: {app.state.max_new_tokens}")
-
-    if not updated_settings:
-         # Use 400 Bad Request if no valid settings were provided
-         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No valid settings provided to update.")
-
-    return {"message": "Generation settings updated successfully.", "updated_settings": updated_settings}
-
 # Chat endpoint - check if model is loaded
-MIN_NARRATIVE_TOKENS = 350  # Safe minimum for narrative/chat completions
-@app.post("/api/v1/chat", response_model=ChatResponse)
-def chat(req: ChatRequest):
-    # Check if model is loaded
-    if not app.state.model or not app.state.tokenizer:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, # 409 Conflict is suitable here
-            detail="Model is not loaded. Please load a model via the /api/v1/model/load endpoint first.",
-        )
+MIN_NARRATIVE_TOKENS = 350  # Keep constant here if needed elsewhere, or move to config
 
-    try:
-        # Retrieve components from app.state
-        current_tokenizer = app.state.tokenizer
-        current_model = app.state.model
-        current_device = app.state.device
-        current_system_prompt = app.state.system_prompt
-        current_temperature = app.state.temperature
-        current_top_p = app.state.top_p
-        # Apply narrative buffer for chat mode (always chat mode here)
-        current_max_new_tokens = app.state.max_new_tokens
-        if current_max_new_tokens < MIN_NARRATIVE_TOKENS:
-            current_max_new_tokens = MIN_NARRATIVE_TOKENS
+app.include_router(chat_router, prefix="/api/v1", tags=["Chat"]) # <-- INCLUDE ROUTER
+app.include_router(settings_router, prefix="/api/v1", tags=["Settings"])
 
-        # --- Updated Prompt Formatting ---
-        messages = [
-            {"role": "system", "content": current_system_prompt},
-            {"role": "user", "content": req.message}
-        ]
-        prompt = current_tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True # Ensures the assistant prompt is added correctly
-        )
-        # print(f"\n--- Generated Prompt for Model --- \n{prompt}\n--------------------------------\n") # Optional: for debugging
 
-        inputs = current_tokenizer(prompt, return_tensors="pt").to(current_device)
-        # --- End Updated Prompt Formatting ---
-
-        input_ids = inputs["input_ids"]
-        attention_mask = inputs.get("attention_mask")
-        input_length = input_ids.shape[1]
-
-        with torch.no_grad():
-            outputs = current_model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                max_new_tokens=current_max_new_tokens,
-                do_sample=True,
-                temperature=current_temperature,
-                top_k=50,
-                top_p=current_top_p,
-                pad_token_id=current_tokenizer.pad_token_id
-            )
-        generated_ids = outputs[0][input_length:]
-        response_text = current_tokenizer.decode(generated_ids, skip_special_tokens=True)
-
-        # Clean the response before returning
-        cleaned_response_text = clean_response(response_text)
-        # Truncate at stop tokens for more natural output
-        truncated_response_text = truncate_at_stop_token(cleaned_response_text)
-        return {"response": truncated_response_text}
-
-    except Exception as e:
-        print(f"Error during chat generation: {e}", file=sys.stderr)
-        # Raise HTTP exception instead of returning error in response body
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error during generation: {e}"
-        )
-
-# --- Helper Function for Prompt Generation --- (New)
-def generate_prompt(
-    mode: str,
-    system_prompt: str,
-    tokenizer: AutoTokenizer,
-    message: Optional[str] = None,
-    messages: Optional[List[Dict[str, str]]] = None,
-) -> str:
-    """Generates the appropriate prompt string based on the mode."""
-    if mode == "instruction":
-        if not message:
-            raise ValueError("Message is required for 'instruction' mode.")
-        # Use apply_chat_template for instruction mode as well for consistency
-        # Create a minimal message list for instruction mode
-        instruction_messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": message}
-        ]
-        prompt = tokenizer.apply_chat_template(
-            instruction_messages,
-            tokenize=False,
-            add_generation_prompt=True # Ensures the assistant prompt is added correctly
-        )
-    elif mode == "chat":
-        if not messages:
-            raise ValueError("Messages list is required for 'chat' mode.")
-        # Prepend system prompt if not already present or update if it is
-        if not messages or messages[0].get("role") != "system":
-            chat_messages_with_system = [{"role": "system", "content": system_prompt}] + messages
-        else:
-            # Update existing system prompt if provided, otherwise keep the one from history
-            chat_messages_with_system = messages
-            chat_messages_with_system[0]["content"] = system_prompt
-
-        prompt = tokenizer.apply_chat_template(
-            chat_messages_with_system,
-            tokenize=False,
-            add_generation_prompt=True # Ensures the assistant prompt is added correctly
-        )
-    else:
-        raise ValueError("Invalid mode specified for prompt generation.")
-
-    # Optional: Print the generated prompt for debugging
-    # print(f"\n--- Generated Prompt (Mode: {mode}) --- \n{prompt}\n--------------------------------\n")
-    return prompt
-
-# --- V2 Chat Endpoint --- (New)
-@app.post("/api/v1/chat-v2", response_model=ChatResponseV2)
-def chat_v2(req: ChatRequestV2):
-    # Check if model is loaded
-    if not app.state.model or not app.state.tokenizer:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Model is not loaded. Please load a model first.",
-        )
-
-    try:
-        # Retrieve components from app.state
-        current_tokenizer = app.state.tokenizer
-        current_model = app.state.model
-        current_device = app.state.device
-        current_system_prompt = app.state.system_prompt
-        current_temperature = app.state.temperature
-        current_top_p = app.state.top_p
-        # Determine max_new_tokens with narrative buffer for chat mode
-        current_max_new_tokens = app.state.max_new_tokens
-        if getattr(req, 'mode', None) == 'chat' and (current_max_new_tokens is None or current_max_new_tokens < MIN_NARRATIVE_TOKENS):
-            current_max_new_tokens = MIN_NARRATIVE_TOKENS
-
-        # Convert Pydantic messages to simple dicts if needed for the helper
-        messages_list = [msg.dict() for msg in req.messages] if req.messages else None
-
-        # Generate the prompt using the helper function
-        prompt = generate_prompt(
-            mode=req.mode,
-            system_prompt=current_system_prompt,
-            tokenizer=current_tokenizer,
-            message=req.message,
-            messages=messages_list
-        )
-
-        inputs = current_tokenizer(prompt, return_tensors="pt").to(current_device)
-        input_ids = inputs["input_ids"]
-        attention_mask = inputs.get("attention_mask")
-        input_length = input_ids.shape[1]
-
-        with torch.no_grad():
-            outputs = current_model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                max_new_tokens=current_max_new_tokens,
-                do_sample=True,
-                temperature=current_temperature,
-                top_k=50, # Keeping default top_k, adjust if needed
-                top_p=current_top_p,
-                pad_token_id=current_tokenizer.pad_token_id
-            )
-
-        generated_ids = outputs[0][input_length:]
-        response_text = current_tokenizer.decode(generated_ids, skip_special_tokens=True)
-
-        # Clean the response
-        cleaned_response_text = clean_response(response_text)
-        # Truncate at stop tokens for more natural output
-        truncated_response_text = truncate_at_stop_token(cleaned_response_text)
-        response_data = {"response": truncated_response_text}
-        if req.return_prompt:
-            response_data["raw_prompt"] = prompt
-        return response_data
-
-    except ValueError as ve: # Catch specific errors from prompt generation or validation
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
-    except Exception as e:
-        print(f"Error during chat-v2 generation: {e}", file=sys.stderr)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error during generation: {e}"
-        )
-
-# --- System Prompt Best Practices ---
-# To encourage more graceful conclusions, consider updating your system prompt to include instructions like:
-#   "Always end your responses with a complete sentence. Do not stop mid-thought."
-# or
-#   "If you finish your answer, do not continue with 'User:' or 'Assistant:' tags."
-# This can help steer the model to avoid abrupt or mechanical endings.
-
-# Remove the direct uvicorn run block if this file is primarily for import
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run(app, host="127.0.0.1", port=8000) # Changed host back to 127.0.0.1 for local focus
