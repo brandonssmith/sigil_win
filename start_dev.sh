@@ -8,16 +8,20 @@ if [ ! -f "backend/api/main.py" ] || [ ! -d "frontend" ]; then
 fi
 
 # --- Configuration ---
-# --- IMPORTANT: Ensure this points to the Python interpreter INSIDE your project's virtual environment ---
-PYTHON_CMD="/Users/jakeeaker/prometheus/venv/bin/python" # Default assumption: venv is in the project root.
-                             # Change this if your venv is named differently or located elsewhere.
+# --- IMPORTANT: Point to the Python interpreter INSIDE the project's virtual environment (./venv) ---
+PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"  # Absolute path to the directory containing this script
+PYTHON_CMD="$PROJECT_ROOT/venv/bin/python"  # Default: use ./venv from project root
 
-# Check if the specified Python command exists and is executable
+# If the venv interpreter is not found/executable, fall back to the first python3 on PATH
 if [ ! -x "$PYTHON_CMD" ]; then
-  echo "Error: Python command '$PYTHON_CMD' not found or not executable."
-  echo "Please ensure you have created a virtual environment (e.g., 'python -m venv venv')"
-  echo "and that the PYTHON_CMD variable in this script points to the correct python executable within it."
-  exit 1
+  echo "Warning: Virtual environment python '$PYTHON_CMD' not found or not executable."
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_CMD="$(command -v python3)"
+    echo "Falling back to system python: $PYTHON_CMD"
+  else
+    echo "Error: No usable Python interpreter found. Please create a virtual environment with 'python3 -m venv venv' in the project root or ensure python3 is on your PATH."
+    exit 1
+  fi
 fi
 
 FRONTEND_DIR="frontend"
