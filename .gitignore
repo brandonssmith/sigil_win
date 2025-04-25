@@ -2,6 +2,9 @@
 .env
 /*.env
 
+# macOS
+.DS_Store
+
 # Virtual environment
 /venv
 
