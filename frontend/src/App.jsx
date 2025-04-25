@@ -232,6 +232,23 @@ function App() {
         <div className="chat-container">
           <header className="chat-header">
             <h1>Sigil</h1>
+            {/* Move the settings toggle button here */}
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              style={{
+                background: 'none',
+                border: 'none',
+                marginLeft: '4px', // Reduce space from the title
+                cursor: 'pointer',
+                color: 'inherit', // Use the header's text color
+                fontSize: '20px', // Make the gear slightly larger
+                padding: 0, // Remove default padding
+                verticalAlign: 'middle' // Align with title text
+              }}
+              title="Toggle Settings" // Accessibility
+            >
+              ⚙️
+            </button>
             {/* Optionally display model status here based on appModelLoadStatus */}
             {modelLoaded && <span className="model-status-indicator">Model Ready</span>}
             {appModelLoadStatus === 'idle' && <span className="model-status-indicator">Waiting for Model</span>}
@@ -295,20 +312,6 @@ function App() {
         </div>
       </div> 
       {/* End of app-layout div */}
-
-      {/* Render the control button outside the main layout */}
-      <button 
-        onClick={() => setShowSettings(!showSettings)}
-        style={{
-          position: 'fixed', 
-          top: '10px', 
-          right: '10px',
-          zIndex: 1100, // Ensure button is above panel background but maybe below panel itself if dragged over
-          padding: '5px 10px'
-        }}
-      >
-        {showSettings ? 'Hide Panel' : 'Open Panel'}
-      </button>
 
       {/* Render the PanelHost outside the main layout */}
       <PanelHost 
