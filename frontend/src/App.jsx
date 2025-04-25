@@ -1,9 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import ThemeLoader from './components/ThemeLoader';
+import ModelLoadPanel from './components/ModelLoadPanel';
+import SettingsPanel from './components/SettingsPanel';
+import ChatModeSelector from './components/ChatModeSelector';
+import { formatChatHistoryForBackend } from './utils/chatUtils'; // Import the utility function
+import { API_BASE_URL } from './constants'; // Import shared constants
 
-// Base API URL (makes it easier to change)
-const API_BASE_URL = 'http://localhost:8000';
+// Base API URL - Moved to constants.js
+// const API_BASE_URL = 'http://localhost:8000';
 
 // Default settings (could also fetch from backend on initial load)
 const DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant.";
@@ -15,139 +20,6 @@ const DEFAULT_MAX_TOKENS = 1000;
 // Message structure (implied):
 // { sender: 'user' | 'backend' | 'system', text: string, id: string }
 
-// --- Model Load Panel Component ---
-function ModelLoadPanel({ 
-  modelPath, setModelPath, 
-  onLoadModel, modelLoadStatus, 
-  modelLoadError 
-}) {
-  const isLoading = modelLoadStatus === 'loading';
-  const isLoaded = modelLoadStatus === 'loaded';
-
-  return (
-    <div className="model-load-panel settings-group"> {/* Reusing settings-group style */}
-      <label htmlFor="model-path">Model Path:</label>
-      <input
-        type="text"
-        id="model-path"
-        value={modelPath}
-        onChange={(e) => setModelPath(e.target.value)}
-        placeholder="e.g., ./models/tinyllama or /path/to/model"
-        disabled={isLoading || isLoaded} // Disable input after load
-      />
-      <button onClick={onLoadModel} disabled={isLoading || isLoaded || !modelPath.trim()}>
-        {isLoading ? 'Loading Model...' : isLoaded ? 'Model Loaded' : 'Load Model'}
-      </button>
-      {modelLoadStatus === 'error' && <p className="error-message">Load failed: {modelLoadError}</p>}
-      {isLoaded && <p className="success-message">Model loaded successfully!</p>}
-    </div>
-  );
-}
-
-// Settings Panel Component
-function SettingsPanel({ 
-    systemPrompt, setSystemPrompt,
-    temperature, setTemperature,
-    topP, setTopP,
-    maxTokens, setMaxTokens,
-    onReload, reloadStatus,
-    modelLoaded // New prop to disable reload if model not loaded
- }) {
-  const isLoading = reloadStatus === 'loading';
-
-  return (
-    <div className="settings-panel">
-      <h2>Settings</h2>
-      <div className="settings-group">
-        <label htmlFor="system-prompt">System Prompt:</label>
-        <textarea
-          id="system-prompt"
-          value={systemPrompt}
-          onChange={(e) => setSystemPrompt(e.target.value)}
-          rows={5}
-          disabled={!modelLoaded} // Disable if model not loaded
-        />
-      </div>
-      <div className="settings-group">
-        <label htmlFor="temperature">Temperature:</label>
-        <input
-          type="number"
-          id="temperature"
-          value={temperature}
-          onChange={(e) => setTemperature(parseFloat(e.target.value) || 0)}
-          min="0"
-          max="2.0" // Match backend validation
-          step="0.1"
-          disabled={!modelLoaded} // Disable if model not loaded
-        />
-      </div>
-       <div className="settings-group">
-        <label htmlFor="top-p">Top P:</label>
-        <input
-          type="number"
-          id="top-p"
-          value={topP}
-          onChange={(e) => setTopP(parseFloat(e.target.value) || 0)}
-          min="0"
-          max="1.0"
-          step="0.05"
-          disabled={!modelLoaded} // Disable if model not loaded
-        />
-      </div>
-       <div className="settings-group">
-        <label htmlFor="max-tokens">Max New Tokens:</label>
-        <input
-          type="number"
-          id="max-tokens"
-          value={maxTokens}
-          onChange={(e) => setMaxTokens(parseInt(e.target.value, 10) || 1)}
-          min="1"
-          step="50"
-          disabled={!modelLoaded} // Disable if model not loaded
-        />
-      </div>
-      <button onClick={onReload} disabled={isLoading || !modelLoaded}> 
-        {isLoading ? 'Applying...' : 'Apply Settings'}
-      </button>
-      {reloadStatus === 'success' && <p className="success-message">Settings applied!</p>}
-      {reloadStatus === 'error' && <p className="error-message">Failed to apply settings.</p>}
-    </div>
-  );
-}
-
-// --- Chat Mode Selection Component --- (New)
-function ChatModeSelector({ chatMode, setChatMode, modelLoaded }) {
-  return (
-    <div className="settings-group chat-mode-selector">
-      <label>Chat Mode:</label>
-      <div className="radio-group">
-        <label>
-          <input
-            type="radio"
-            name="chatMode"
-            value="instruction"
-            checked={chatMode === 'instruction'}
-            onChange={() => setChatMode('instruction')}
-            disabled={!modelLoaded}
-          />
-          Instruction
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="chatMode"
-            value="chat"
-            checked={chatMode === 'chat'}
-            onChange={() => setChatMode('chat')}
-            disabled={!modelLoaded}
-          />
-          Chat
-        </label>
-      </div>
-    </div>
-  );
-}
-
 function App() {
   const [userInput, setUserInput] = useState('');
   const [chatHistory, setChatHistory] = useState([]); // Array of message objects
@@ -156,20 +28,24 @@ function App() {
   const messagesEndRef = useRef(null); // Ref for scrolling div
   const loadingMessageIdRef = useRef(null); // Ref to store loading message ID
 
-  // Settings State
-  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
-  const [temperature, setTemperature] = useState(DEFAULT_TEMPERATURE);
-  const [topP, setTopP] = useState(DEFAULT_TOP_P);
-  const [maxTokens, setMaxTokens] = useState(DEFAULT_MAX_TOKENS);
-  const [reloadStatus, setReloadStatus] = useState(null); // null | 'loading' | 'success' | 'error'
+  // Settings State - Removed, managed within SettingsPanel
+  // const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
+  // const [temperature, setTemperature] = useState(DEFAULT_TEMPERATURE);
+  // const [topP, setTopP] = useState(DEFAULT_TOP_P);
+  // const [maxTokens, setMaxTokens] = useState(DEFAULT_MAX_TOKENS);
+  // const [reloadStatus, setReloadStatus] = useState(null); // null | 'loading' | 'success' | 'error'
 
-  // New Model Loading State
-  const [modelPathInput, setModelPathInput] = useState(''); // Input field value
-  const [modelLoadStatus, setModelLoadStatus] = useState('idle'); // 'idle' | 'loading' | 'loaded' | 'error'
-  const [modelLoadError, setModelLoadError] = useState(null); // Error message for model load
+  // New Model Loading State - Removed, managed within ModelLoadPanel
+  // const [modelPathInput, setModelPathInput] = useState(''); // Input field value
+  // const [modelLoadStatus, setModelLoadStatus] = useState('idle'); // 'idle' | 'loading' | 'loaded' | 'error'
+  // const [modelLoadError, setModelLoadError] = useState(null); // Error message for model load
 
-  // Chat Mode State (New)
-  const [chatMode, setChatMode] = useState('instruction'); // 'instruction' or 'chat'
+  // Chat Mode State (New) - Removed, managed within ChatModeSelector
+  // const [chatMode, setChatMode] = useState('instruction'); // 'instruction' or 'chat'
+
+  // NEW State managed by App, updated via callbacks from children
+  const [appModelLoadStatus, setAppModelLoadStatus] = useState('idle'); // 'idle', 'loading', 'loaded', 'error'
+  const [appChatMode, setAppChatMode] = useState('instruction'); // 'instruction', 'chat'
 
   // --- THEME STATE ---
   const [themeName, setThemeName] = useState('AlienBlood'); // Default theme
@@ -194,101 +70,34 @@ function App() {
     scrollToBottom();
   }, [chatHistory]);
 
-  // Handler for loading the model
-  const handleLoadModel = async () => {
-    setModelLoadStatus('loading');
-    setModelLoadError(null);
-    const path = modelPathInput.trim();
-    if (!path) {
-      setModelLoadError('Model path cannot be empty.');
-      setModelLoadStatus('error');
-      return;
-    }
+  // Handler for loading the model - Removed, handled by ModelLoadPanel
+  // const handleLoadModel = async () => { ... };
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/model/load`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ path: path }), // Send the path
-      });
+  // Handler for applying model settings - Removed, handled by SettingsPanel
+  // const handleApplySettings = async () => { ... };
 
-      const data = await response.json(); // Always try to parse JSON
-
-      if (!response.ok) {
-        // Use detail from JSON if available, otherwise statusText
-        throw new Error(data.detail || `HTTP error! status: ${response.status}`);
-      }
-
-      console.log("Load model response:", data);
-      setModelLoadStatus('loaded');
-       // Optional: Clear success message after delay or keep it
-      // setTimeout(() => setModelLoadStatus(null), 3000); // Example
-
-    } catch (err) {
-       console.error('Failed to load model:', err);
-       setModelLoadError(err.message || 'An unknown error occurred');
-       setModelLoadStatus('error');
-       // Optional: Clear error message after delay
-       // setTimeout(() => setModelLoadStatus('idle'), 5000);
+  // NEW Callback handlers for children
+  const handleModelLoadStatusChange = (status) => {
+    setAppModelLoadStatus(status);
+    if (status === 'error') {
+        // Optionally clear chat or show a persistent error if load fails
+        setError('Model loading failed. Please check the path and try again.');
+    } else {
+        setError(null); // Clear previous errors on successful load or loading start
     }
   };
 
-  // Handler for applying model settings (previously reload)
-  const handleApplySettings = async () => {
-    setReloadStatus('loading');
-    setError(null); // Clear main error display
-    try {
-      // Use the new endpoint path
-      const response = await fetch(`${API_BASE_URL}/api/v1/settings/update`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-            // Ensure names match Pydantic model in backend
-            system_prompt: systemPrompt,
-            temperature: temperature,
-            top_p: topP,
-            max_new_tokens: maxTokens
-        }),
-      });
-
-      const data = await response.json(); // Always try to parse JSON
-
-      if (!response.ok) {
-        throw new Error(data.detail || `HTTP error! status: ${response.status}`);
-      }
-
-      console.log("Apply settings response:", data);
-      setReloadStatus('success');
-       // Hide success message after a delay
-      setTimeout(() => setReloadStatus(null), 2000);
-
-    } catch (err) {
-       console.error('Failed to apply model settings:', err);
-       setError(`Apply settings failed: ${err.message}`); // Show error
-       setReloadStatus('error');
-       // Hide error message after a delay
-       setTimeout(() => setReloadStatus(null), 3000);
-    }
+  const handleChatModeChange = (mode) => {
+    setAppChatMode(mode);
+    // Optionally clear chat history when mode changes?
+    // setChatHistory([]); 
   };
 
-  // Helper to format chat history for the backend
-  const formatChatHistoryForBackend = (history) => {
-    return history
-      .filter(msg => msg.sender === 'user' || msg.sender === 'backend') // Only user/backend messages
-      .map(msg => ({ // Convert to {role: ..., content: ...}
-        role: msg.sender === 'user' ? 'user' : 'assistant',
-        content: msg.text
-      }));
-  };
-
-  const handleSubmit = async (event) => { // Removed event type
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const trimmedInput = userInput.trim();
-    if (!trimmedInput || modelLoadStatus !== 'loaded') return; // Don't submit if model not loaded
+    // Use appModelLoadStatus to check if model is loaded
+    if (!trimmedInput || appModelLoadStatus !== 'loaded') return; 
 
     const userMessage = {
       sender: 'user',
@@ -299,7 +108,7 @@ function App() {
     setChatHistory(prev => [...prev, userMessage]);
 
     // Prepare history *before* adding loading message
-    const historyForBackend = formatChatHistoryForBackend([...chatHistory, userMessage]);
+    const historyForBackend = formatChatHistoryForBackend([...chatHistory, userMessage]); // Use imported function
 
     const loadingMsgId = `loading-${Date.now()}`;
     loadingMessageIdRef.current = loadingMsgId;
@@ -316,12 +125,13 @@ function App() {
     setError(null);
 
     let requestBody = {};
-    if (chatMode === 'instruction') {
+    // Use appChatMode to determine request body structure
+    if (appChatMode === 'instruction') { 
       requestBody = {
         mode: 'instruction',
         message: trimmedInput
       };
-    } else { // chatMode === 'chat'
+    } else { // appChatMode === 'chat'
       requestBody = {
         mode: 'chat',
         messages: historyForBackend // Send the formatted history
@@ -360,7 +170,7 @@ function App() {
       // Add backend response
       setChatHistory(prev => [...prev, backendMessage]);
 
-    } catch (e) { // Removed type catch error
+    } catch (e) { 
       console.error('Fetch error:', e);
       const errorMessage = `Failed to fetch: ${e.message}`;
       setError(errorMessage); // Set the main error display
@@ -391,7 +201,8 @@ function App() {
     setError(null); // Also clear any existing errors
   };
 
-  const modelLoaded = modelLoadStatus === 'loaded';
+  // Derived state for convenience
+  const modelLoaded = appModelLoadStatus === 'loaded';
 
   return (
     <div className="app-layout"> 
@@ -400,30 +211,18 @@ function App() {
       {/* Left Panel: Settings and Model Load */}
       <div className="left-panel">
         <ModelLoadPanel 
-          modelPath={modelPathInput}
-          setModelPath={setModelPathInput}
-          onLoadModel={handleLoadModel}
-          modelLoadStatus={modelLoadStatus}
-          modelLoadError={modelLoadError}
+          onModelLoadStatusChange={handleModelLoadStatusChange} // Pass callback
+          // Removed props: modelPath, setModelPath, onLoadModel, modelLoadStatus, modelLoadError
         />
         <SettingsPanel
-          systemPrompt={systemPrompt}
-          setSystemPrompt={setSystemPrompt}
-          temperature={temperature}
-          setTemperature={setTemperature}
-          topP={topP}
-          setTopP={setTopP}
-          maxTokens={maxTokens}
-          setMaxTokens={setMaxTokens}
-          onReload={handleApplySettings}
-          reloadStatus={reloadStatus}
-          modelLoaded={modelLoaded}
+          modelLoaded={modelLoaded} // Pass derived loaded state
+          // Removed props: settings state/setters, onReload, reloadStatus
         />
         {/* Chat Mode Selector (New) */}
         <ChatModeSelector
-          chatMode={chatMode}
-          setChatMode={setChatMode}
-          modelLoaded={modelLoaded}
+          modelLoaded={modelLoaded} // Pass derived loaded state
+          onChatModeChange={handleChatModeChange} // Pass callback
+          // Removed props: chatMode, setChatMode
         />
         {/* Theme switcher UI */}
         <div className="settings-group">
@@ -439,22 +238,24 @@ function App() {
       <div className="chat-container">
         <header className="chat-header">
           <h1>Sigil</h1>
-          {/* Optionally display model status here */} 
+          {/* Optionally display model status here based on appModelLoadStatus */}
           {modelLoaded && <span className="model-status-indicator">Model Ready</span>}
-          {!modelLoaded && modelLoadStatus !== 'loading' && <span className="model-status-indicator error">Model Not Loaded</span>}
-          {modelLoadStatus === 'loading' && <span className="model-status-indicator loading">Loading Model...</span>}
+          {appModelLoadStatus === 'idle' && <span className="model-status-indicator">Waiting for Model</span>}
+          {appModelLoadStatus === 'error' && <span className="model-status-indicator error">Model Load Failed</span>}
+          {appModelLoadStatus === 'loading' && <span className="model-status-indicator loading">Loading Model...</span>}
         </header>
 
         <div className="messages-area">
           {/* Display message asking user to load model if not loaded */}
-          {modelLoadStatus === 'idle' && (
+          {appModelLoadStatus === 'idle' && (
             <div className="message system-message">
               <p>Please enter the model path and click 'Load Model' in the left panel to begin.</p>
             </div>
           )}
-          {modelLoadStatus === 'error' && (
+          {appModelLoadStatus === 'error' && (
              <div className="message system-message error-message"> 
-               <p>Failed to load model. Check the path and console for details. Error: {modelLoadError}</p>
+               {/* Display general error state if set by load failure */} 
+               <p>{error || 'Failed to load model. Check panel above for details.'}</p>
              </div>
           )}
 
@@ -470,8 +271,8 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
 
-         {/* Display general fetch error message if it exists */}
-         {error && <p className="error-message chat-error">Chat Error: {error}</p>}
+         {/* Display general fetch error message if it exists (e.g., from chat fetch) */}
+         {error && appModelLoadStatus !== 'error' && <p className="error-message chat-error">Chat Error: {error}</p>}
 
         {/* Clear Chat Button (New) - Placed near input bar for relevance */}
         {chatHistory.length > 0 && (
