@@ -10,14 +10,34 @@
 
 # logs
 *.log
-/*.log
 
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-backend/backend_api.log
 
 # Models - ignore subdirectories
 models/*/
+
+# Potential future additions:
+
+# IDE directories
+# .idea/
+# .vscode/
+
+# Python testing
+# .pytest_cache/
+# coverage/
+# .coverage
+# htmlcov/
+# .tox/
+
+# Build artifacts
+# build/
+# dist/
+
+# Other OS-specific files
+# Thumbs.db
+# ehthumbs.db
 
