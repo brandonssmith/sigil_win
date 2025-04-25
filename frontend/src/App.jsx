@@ -51,6 +51,8 @@ function App() {
   const [themeName, setThemeName] = useState('AlienBlood'); // Default theme
   const [themeList, setThemeList] = useState([]);
 
+  const [currentLoadedModelName, setCurrentLoadedModelName] = useState(null); // NEW state for loaded model name/path
+
   useEffect(() => {
     fetch(`${API_BASE_URL}/themes`)
       .then(res => res.json())
@@ -76,14 +78,22 @@ function App() {
   // Handler for applying model settings - Removed, handled by SettingsPanel
   // const handleApplySettings = async () => { ... };
 
-  // NEW Callback handlers for children
-  const handleModelLoadStatusChange = (status) => {
+  // Callback to update App's state based on ModelLoadPanel status
+  const handleModelLoadStatusChange = (status, modelName = null) => {
+    // Clear previous errors when starting to load or if load is successful
+    if (status === 'loading' || status === 'loaded') {
+      setError(null);
+    }
+    // Update the main status
     setAppModelLoadStatus(status);
-    if (status === 'error') {
-        // Optionally clear chat or show a persistent error if load fails
-        setError('Model loading failed. Please check the path and try again.');
-    } else {
-        setError(null); // Clear previous errors on successful load or loading start
+
+    // If loaded successfully, store the model name
+    if (status === 'loaded' && modelName) {
+      setCurrentLoadedModelName(modelName);
+      console.log(`App: Model '${modelName}' loaded successfully.`);
+    } else if (status !== 'loaded') {
+      // Clear the name if not loaded (e.g., error, idle, loading)
+      setCurrentLoadedModelName(null);
     }
   };
 
@@ -210,19 +220,20 @@ function App() {
       <ThemeLoader themeName={themeName} />
       {/* Left Panel: Settings and Model Load */}
       <div className="left-panel">
-        <ModelLoadPanel 
-          onModelLoadStatusChange={handleModelLoadStatusChange} // Pass callback
-          // Removed props: modelPath, setModelPath, onLoadModel, modelLoadStatus, modelLoadError
+        <ModelLoadPanel
+          setLoadStatus={handleModelLoadStatusChange}
+          setLoading={setIsLoading}
+          isLoading={isLoading}
+          isModelLoaded={modelLoaded}
+          currentModelPath={currentLoadedModelName}
         />
         <SettingsPanel
-          modelLoaded={modelLoaded} // Pass derived loaded state
-          // Removed props: settings state/setters, onReload, reloadStatus
+          modelLoaded={modelLoaded}
         />
         {/* Chat Mode Selector (New) */}
         <ChatModeSelector
-          modelLoaded={modelLoaded} // Pass derived loaded state
-          onChatModeChange={handleChatModeChange} // Pass callback
-          // Removed props: chatMode, setChatMode
+          modelLoaded={modelLoaded}
+          onChatModeChange={handleChatModeChange}
         />
         {/* Theme switcher UI */}
         <div className="settings-group">

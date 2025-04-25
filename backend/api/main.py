@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
@@ -9,7 +9,7 @@ import sys
 import re # <-- Add import for regex
 from typing import Optional, List, Dict, Any # <-- Add List, Dict, Any
 # Use relative imports for modules within the same package level
-from .core.model_loader import load_model_internal
+from .core.model_loader import load_model_internal, load_model_by_name
 from .routes.chat import router as chat_router
 from .routes.settings import router as settings_router
 # Assuming schemas are also in backend/api/schemas
@@ -148,6 +148,45 @@ def load_model_endpoint(req: LoadModelRequest):
         # Generic catch-all
         print(f"Unhandled error during model load: {e}", file=sys.stderr)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred: {e}")
+
+# --- New Endpoint to load model by name ---
+@app.post("/api/v1/model/load/{model_name}", status_code=status.HTTP_200_OK)
+async def load_model_by_name_route(model_name: str, request: Request):
+    # Basic check if a model is already loaded (optional, decide if replacing is allowed)
+    # if request.app.state.model is not None:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_409_CONFLICT,
+    #         detail=f"A model '{request.app.state.model_path}' is already loaded. Restart backend to change.",
+    #     )
+    try:
+        print(f"Received request to load model: {model_name}")
+        tokenizer, model, device = load_model_by_name(model_name)
+
+        # Update app state
+        request.app.state.tokenizer = tokenizer
+        request.app.state.model = model
+        request.app.state.device = device
+        # Use model_name or resolved path for model_path state? Using name for now.
+        request.app.state.model_path = model_name
+        # Clear previous settings potentially? Or keep them?
+        # request.app.state.system_prompt = "Default prompt for new model" # Example
+
+        print(f"✅ Successfully loaded model '{model_name}' on device '{device}'")
+        return {"status": "ok", "message": f"Model '{model_name}' loaded successfully.", "device": device}
+
+    except ValueError as ve:
+        # Specific error for unknown model name or invalid path from registry
+        print(f"❌ Value error loading model '{model_name}': {ve}", file=sys.stderr)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
+    except RuntimeError as re:
+        # Specific error for loading failure from load_model_internal
+        print(f"❌ Runtime error loading model '{model_name}': {re}", file=sys.stderr)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to load model '{model_name}': {re}")
+    except Exception as e:
+        # Generic catch-all
+        print(f"❌ Unhandled error loading model '{model_name}': {e}", file=sys.stderr)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred: {e}")
+# --- End New Endpoint ---
 
 # Endpoint to check model status
 @app.get("/api/v1/model/status", response_model=ModelStatusResponse)

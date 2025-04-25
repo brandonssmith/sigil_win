@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { API_BASE_URL } from '../constants'; // Import shared constant
 
 // Base API URL - Moved to constants.js
@@ -6,74 +7,151 @@ import { API_BASE_URL } from '../constants'; // Import shared constant
 
 // --- Model Load Panel Component ---
 function ModelLoadPanel({
-  onModelLoadStatusChange // New callback prop
+  setLoadStatus,
+  setLoading,
+  isLoading,
+  isModelLoaded,
+  currentModelPath
 }) {
-  const [modelPathInput, setModelPathInput] = useState(''); // Input field value
-  const [modelLoadStatus, setModelLoadStatus] = useState('idle'); // 'idle' | 'loading' | 'loaded' | 'error'
-  const [modelLoadError, setModelLoadError] = useState(null); // Error message for model load
+  // State to hold the list of models fetched from the backend
+  const [availableModels, setAvailableModels] = useState([]);
+  const [fetchError, setFetchError] = useState(null); // State for fetch errors
 
-  const isLoading = modelLoadStatus === 'loading';
-  const isLoaded = modelLoadStatus === 'loaded';
+  // --- Fetch Available Models --- 
+  useEffect(() => {
+    const fetchModels = async () => {
+      setFetchError(null); // Clear previous errors
+      // We can use the setLoading prop from App.jsx to indicate loading here too
+      setLoading(true); 
+      try {
+        const response = await fetch(`${API_BASE_URL}/models`); 
+        if (!response.ok) {
+          throw new Error(`Failed to fetch model list (status: ${response.status})`);
+        }
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setAvailableModels(data);
+          console.log("Fetched models:", data);
+        } else {
+          console.error("Unexpected format for model list:", data);
+          throw new Error("Received unexpected data format for model list.");
+        }
+      } catch (err) {
+        console.error("Error fetching model list:", err);
+        setFetchError(err.message); // Store fetch error message
+        setAvailableModels([]); // Set to empty array on error
+      } finally {
+        setLoading(false); // Ensure loading is set to false
+      }
+    };
+    fetchModels();
+  }, [setLoading]); // Dependency array includes setLoading from props
 
-  // Handler for loading the model (Moved from App.jsx)
-  const handleLoadModel = async () => {
-    setModelLoadStatus('loading');
-    setModelLoadError(null);
-    onModelLoadStatusChange('loading'); // Notify parent
-    const path = modelPathInput.trim();
-    if (!path) {
-      setModelLoadError('Model path cannot be empty.');
-      setModelLoadStatus('error');
-      onModelLoadStatusChange('error'); // Notify parent
+  // Function to fetch model status on component mount
+  const checkModelStatus = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/api/v1/model/status`);
+      if (!response.ok) throw new Error('Failed to fetch model status');
+      const data = await response.json();
+      if (data.loaded) {
+        setLoadStatus(`Loaded: ${data.path} (${data.device})`);
+      } else {
+        setLoadStatus('No model loaded.');
+      }
+    } catch (err) {
+      console.error("Error checking model status:", err);
+      setLoadStatus('Error checking model status.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Check status on mount
+  useEffect(() => {
+    checkModelStatus();
+  }, []);
+
+  // --- Updated handleLoadModel --- 
+  const handleLoadModel = async (modelName) => {
+    if (!modelName) {
+      setLoadStatus('error', 'Invalid model selected.'); // Use updated callback format
       return;
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/model/load`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ path: path }), // Send the path
+      setLoading(true);
+      // Use updated callback format for loading status
+      setLoadStatus('loading', `Loading ${modelName}...`); 
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/model/load/${modelName}`, {
+        method: "POST",
       });
 
-      const data = await response.json(); // Always try to parse JSON
-
       if (!response.ok) {
-        // Use detail from JSON if available, otherwise statusText
-        throw new Error(data.detail || `HTTP error! status: ${response.status}`);
+        let errorDetail = "Model load failed.";
+        try {
+          const errorData = await response.json();
+          errorDetail = errorData.detail || `Model load failed (status: ${response.status})`;
+        } catch (parseError) {
+          console.error("Could not parse error response:", parseError);
+        }
+        throw new Error(errorDetail);
       }
 
-      console.log("Load model response:", data);
-      setModelLoadStatus('loaded');
-      onModelLoadStatusChange('loaded'); // Notify parent
-
-    } catch (err) {
-       console.error('Failed to load model:', err);
-       setModelLoadError(err.message || 'An unknown error occurred');
-       setModelLoadStatus('error');
-       onModelLoadStatusChange('error'); // Notify parent
+      const result = await response.json();
+      // Pass the status string and the model name separately to the handler in App.jsx
+      setLoadStatus('loaded', modelName);
+    } catch (err) {       
+      console.error("Error loading model:", err);
+      // Pass the 'error' status string and potentially the error message
+      setLoadStatus('error', `Failed to load model: ${err.message}`); 
+    } finally {
+      // setLoading(false); // App.jsx handles main loading state, maybe remove here? Or keep for button disable?
+      // Let's keep it for now to ensure button state is managed locally during the load attempt
+       setLoading(false); 
     }
   };
 
   return (
-    <div className="model-load-panel settings-group"> {/* Reusing settings-group style */}
-      <label htmlFor="model-path">Model Path:</label>
-      <input
-        type="text"
-        id="model-path"
-        value={modelPathInput}
-        onChange={(e) => setModelPathInput(e.target.value)}
-        placeholder="e.g., ./models/tinyllama or /path/to/model"
-        disabled={isLoading || isLoaded} // Disable input after load
-      />
-      <button onClick={handleLoadModel} disabled={isLoading || isLoaded || !modelPathInput.trim()}>
-        {isLoading ? 'Loading Model...' : isLoaded ? 'Model Loaded' : 'Load Model'}
-      </button>
-      {modelLoadStatus === 'error' && <p className="error-message">Load failed: {modelLoadError}</p>}
-      {isLoaded && <p className="success-message">Model loaded successfully!</p>}
+    <div className="model-load-panel">
+      <h3>Load Model</h3>
+      {fetchError && (
+        <p className="error-message">Error fetching models: {fetchError}</p>
+      )}
+      <div className="model-list">
+        {/* Render buttons dynamically based on fetched models */}
+        {availableModels.length > 0 ? (
+          availableModels.map(model => (
+            <button 
+              key={model} 
+              onClick={() => handleLoadModel(model)} 
+              // Disable button if this model is already loaded OR if ANY model is currently loading
+              disabled={(isModelLoaded && currentModelPath === model) || isLoading} 
+              className="model-load-button"
+            >
+              Load {model}
+            </button>
+          ))
+        ) : (
+          !fetchError && <p>Loading model list...</p> // Show loading text if no error yet
+        )}
+        {/* Show message if list is empty after fetch (and no error) */}
+        {availableModels.length === 0 && !fetchError && !isLoading && (
+            <p>No models found in backend/models directory.</p>
+        )}
+      </div>
+      {/* Input field removed */}
     </div>
   );
 }
+
+ModelLoadPanel.propTypes = {
+  setLoadStatus: PropTypes.func.isRequired,
+  setLoading: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+  isModelLoaded: PropTypes.bool.isRequired,
+  currentModelPath: PropTypes.string, 
+};
 
 export default ModelLoadPanel; 

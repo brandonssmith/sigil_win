@@ -7,15 +7,6 @@ import {
   DEFAULT_MAX_TOKENS
 } from '../constants'; // Import shared constants
 
-// Base API URL - Moved to constants.js
-// const API_BASE_URL = 'http://localhost:8000';
-
-// Default settings - Moved to constants.js
-// const DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant.";
-// const DEFAULT_TEMPERATURE = 0.7;
-// const DEFAULT_TOP_P = 0.95;
-// const DEFAULT_MAX_TOKENS = 1000;
-
 // Settings Panel Component
 function SettingsPanel({
     modelLoaded // Only need to know if the model is loaded to enable/disable
