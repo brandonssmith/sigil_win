@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
-import ThemeLoader from './components/ThemeLoader';
-import ModelLoadPanel from './components/ModelLoadPanel';
-import SettingsPanel from './components/SettingsPanel';
-import ChatModeSelector from './components/ChatModeSelector';
-import { formatChatHistoryForBackend } from './utils/chatUtils'; // Import the utility function
-import { API_BASE_URL } from './constants'; // Import shared constants
+import ThemeLoader from './components/ThemeLoader.jsx';
+import ModelLoadPanel from './components/ModelLoadPanel.jsx';
+import ChatModeSelector from './components/ChatModeSelector.jsx';
+import { formatChatHistoryForBackend } from './utils/chatUtils.js'; // Import the utility function
+import { API_BASE_URL } from './constants.js'; // Import shared constants
+import PanelHost from './components/panel-router/PanelHost.jsx';
 
 // Base API URL - Moved to constants.js
 // const API_BASE_URL = 'http://localhost:8000';
@@ -52,6 +52,8 @@ function App() {
   const [themeList, setThemeList] = useState([]);
 
   const [currentLoadedModelName, setCurrentLoadedModelName] = useState(null); // NEW state for loaded model name/path
+  const [showSettings, setShowSettings] = useState(true);
+  const [showModelLoad, setShowModelLoad] = useState(true);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/themes`)
@@ -218,18 +220,28 @@ function App() {
     <div className="app-layout"> 
       {/* Dynamically load the selected theme */}
       <ThemeLoader themeName={themeName} />
+      {/* Render the PanelHost for floating panels */}
+      <PanelHost 
+        showSettings={showSettings} 
+        modelLoaded={modelLoaded} 
+        // Props for ModelLoadPanel
+        showModelLoad={showModelLoad}
+        setLoadStatus={handleModelLoadStatusChange}
+        setLoading={setIsLoading}
+        isLoading={isLoading}
+        // isModelLoaded is already passed as modelLoaded
+        currentModelPath={currentLoadedModelName}
+      />
       {/* Left Panel: Settings and Model Load */}
       <div className="left-panel">
-        <ModelLoadPanel
-          setLoadStatus={handleModelLoadStatusChange}
-          setLoading={setIsLoading}
-          isLoading={isLoading}
-          isModelLoaded={modelLoaded}
-          currentModelPath={currentLoadedModelName}
-        />
-        <SettingsPanel
-          modelLoaded={modelLoaded}
-        />
+        {/* Add the Open Settings button */}
+        <button onClick={() => setShowSettings(!showSettings)}>
+          {showSettings ? 'Hide Settings' : 'Open Settings'}
+        </button>
+        {/* Add the Open Model Load button */}
+        <button onClick={() => setShowModelLoad(!showModelLoad)}>
+          {showModelLoad ? 'Hide Model Loader' : 'Open Model Loader'}
+        </button>
         {/* Chat Mode Selector (New) */}
         <ChatModeSelector
           modelLoaded={modelLoaded}
@@ -265,7 +277,7 @@ function App() {
           )}
           {appModelLoadStatus === 'error' && (
              <div className="message system-message error-message"> 
-               {/* Display general error state if set by load failure */} 
+               {/* Display general error state if set by load failure */}
                <p>{error || 'Failed to load model. Check panel above for details.'}</p>
              </div>
           )}
