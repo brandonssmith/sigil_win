@@ -34,9 +34,9 @@ body {
 
 /* New App Layout */
 .app-layout {
-  display: flex;
-  height: 100%; /* Fill height of #root */
-  width: 100%; /* Fill width of #root */
+  display: block;
+  height: 100%;
+  width: 100%;
 }
 
 /* Settings Panel */
@@ -163,6 +163,7 @@ body {
   display: flex;
   flex-direction: column;
   flex-grow: 1; /* Take remaining space */
+  width: 100%; /* Explicitly set width to fill parent */
   height: 100%; /* Fill height */
   background-color: var(--surface, #1e1e1e); /* Give container a slightly different bg */
 }

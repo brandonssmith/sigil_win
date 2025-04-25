@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
-import ThemeLoader from './components/ThemeLoader';
-import ModelLoadPanel from './components/ModelLoadPanel';
-import SettingsPanel from './components/SettingsPanel';
-import ChatModeSelector from './components/ChatModeSelector';
-import { formatChatHistoryForBackend } from './utils/chatUtils'; // Import the utility function
-import { API_BASE_URL } from './constants'; // Import shared constants
+import ThemeLoader from './components/ThemeLoader.jsx';
+import ModelLoadPanel from './components/ModelLoadPanel.jsx';
+import ChatModeSelector from './components/ChatModeSelector.jsx';
+import { formatChatHistoryForBackend } from './utils/chatUtils.js'; // Import the utility function
+import { API_BASE_URL } from './constants.js'; // Import shared constants
+import PanelHost from './components/panel-router/PanelHost.jsx';
 
 // Base API URL - Moved to constants.js
 // const API_BASE_URL = 'http://localhost:8000';
@@ -51,7 +51,8 @@ function App() {
   const [themeName, setThemeName] = useState('AlienBlood'); // Default theme
   const [themeList, setThemeList] = useState([]);
 
-  const [currentLoadedModelName, setCurrentLoadedModelName] = useState(null); // NEW state for loaded model name/path
+  const [currentLoadedModelName, setCurrentLoadedModelName] = useState(null);
+  const [showSettings, setShowSettings] = useState(true);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/themes`)
@@ -215,102 +216,114 @@ function App() {
   const modelLoaded = appModelLoadStatus === 'loaded';
 
   return (
-    <div className="app-layout"> 
-      {/* Dynamically load the selected theme */}
-      <ThemeLoader themeName={themeName} />
-      {/* Left Panel: Settings and Model Load */}
-      <div className="left-panel">
-        <ModelLoadPanel
-          setLoadStatus={handleModelLoadStatusChange}
-          setLoading={setIsLoading}
-          isLoading={isLoading}
-          isModelLoaded={modelLoaded}
-          currentModelPath={currentLoadedModelName}
-        />
-        <SettingsPanel
-          modelLoaded={modelLoaded}
-        />
-        {/* Chat Mode Selector (New) */}
-        <ChatModeSelector
-          modelLoaded={modelLoaded}
-          onChatModeChange={handleChatModeChange}
-        />
-        {/* Theme switcher UI */}
-        <div className="settings-group">
-          <label htmlFor="theme-select">Theme:</label>
-          <select id="theme-select" value={themeName} onChange={e => setThemeName(e.target.value)}>
-            {themeList.map(theme => (
-              <option key={theme} value={theme}>{theme}</option>
+    // Use a Fragment <> ... </> to return multiple top-level elements
+    <>
+      <div className="app-layout"> 
+        {/* Dynamically load the selected theme */}
+        <ThemeLoader themeName={themeName} />
+        
+        {/* Remove the empty Left Panel div */}
+        {/* 
+        <div className="left-panel">
+        </div>
+         */}
+        
+        {/* Right Panel: Chat Area */}
+        <div className="chat-container">
+          <header className="chat-header">
+            <h1>Sigil</h1>
+            {/* Optionally display model status here based on appModelLoadStatus */}
+            {modelLoaded && <span className="model-status-indicator">Model Ready</span>}
+            {appModelLoadStatus === 'idle' && <span className="model-status-indicator">Waiting for Model</span>}
+            {appModelLoadStatus === 'error' && <span className="model-status-indicator error">Model Load Failed</span>}
+            {appModelLoadStatus === 'loading' && <span className="model-status-indicator loading">Loading Model...</span>}
+          </header>
+
+          <div className="messages-area">
+            {/* Display message asking user to load model if not loaded */}
+            {appModelLoadStatus === 'idle' && (
+              <div className="message system-message">
+                <p>Please enter the model path and click 'Load Model' in the left panel to begin.</p>
+              </div>
+            )}
+            {appModelLoadStatus === 'error' && (
+               <div className="message system-message error-message"> 
+                 {/* Display general error state if set by load failure */}
+                 <p>{error || 'Failed to load model. Check panel above for details.'}</p>
+               </div>
+            )}
+
+            {chatHistory.map((msg) => (
+              <div key={msg.id} className={`message ${msg.sender}-message ${msg.id.startsWith('loading-') ? 'loading-message' : ''}`}>
+                {msg.id.startsWith('loading-') ? (
+                  <div className="dots-container"><span>.</span><span>.</span><span>.</span></div>
+                ) : (
+                  <p>{msg.text}</p>
+                )}
+              </div>
             ))}
-          </select>
-        </div>
-      </div>
-      {/* Right Panel: Chat Area */}
-      <div className="chat-container">
-        <header className="chat-header">
-          <h1>Sigil</h1>
-          {/* Optionally display model status here based on appModelLoadStatus */}
-          {modelLoaded && <span className="model-status-indicator">Model Ready</span>}
-          {appModelLoadStatus === 'idle' && <span className="model-status-indicator">Waiting for Model</span>}
-          {appModelLoadStatus === 'error' && <span className="model-status-indicator error">Model Load Failed</span>}
-          {appModelLoadStatus === 'loading' && <span className="model-status-indicator loading">Loading Model...</span>}
-        </header>
+            <div ref={messagesEndRef} />
+          </div>
 
-        <div className="messages-area">
-          {/* Display message asking user to load model if not loaded */}
-          {appModelLoadStatus === 'idle' && (
-            <div className="message system-message">
-              <p>Please enter the model path and click 'Load Model' in the left panel to begin.</p>
-            </div>
-          )}
-          {appModelLoadStatus === 'error' && (
-             <div className="message system-message error-message"> 
-               {/* Display general error state if set by load failure */} 
-               <p>{error || 'Failed to load model. Check panel above for details.'}</p>
-             </div>
+           {/* Display general fetch error message if it exists (e.g., from chat fetch) */}
+           {error && appModelLoadStatus !== 'error' && <p className="error-message chat-error">Chat Error: {error}</p>}
+
+          {/* Clear Chat Button (New) - Placed near input bar for relevance */}
+          {chatHistory.length > 0 && (
+            <button
+              onClick={handleClearChat}
+              className="clear-chat-button"
+              disabled={isLoading}
+            >
+              Clear Chat
+            </button>
           )}
 
-          {chatHistory.map((msg) => (
-            <div key={msg.id} className={`message ${msg.sender}-message ${msg.id.startsWith('loading-') ? 'loading-message' : ''}`}>
-              {msg.id.startsWith('loading-') ? (
-                <div className="dots-container"><span>.</span><span>.</span><span>.</span></div>
-              ) : (
-                <p>{msg.text}</p>
-              )}
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
+          <form onSubmit={handleSubmit} className="input-bar">
+            <input
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              placeholder={modelLoaded ? "Type your message..." : "Load model first..."}
+              disabled={isLoading || !modelLoaded} // Disable if chat is loading OR model not loaded
+              aria-label="Chat message input"
+            />
+            <button type="submit" disabled={isLoading || !modelLoaded}> 
+              Send
+            </button>
+          </form>
         </div>
+      </div> 
+      {/* End of app-layout div */}
 
-         {/* Display general fetch error message if it exists (e.g., from chat fetch) */}
-         {error && appModelLoadStatus !== 'error' && <p className="error-message chat-error">Chat Error: {error}</p>}
+      {/* Render the control button outside the main layout */}
+      <button 
+        onClick={() => setShowSettings(!showSettings)}
+        style={{
+          position: 'fixed', 
+          top: '10px', 
+          right: '10px',
+          zIndex: 1100, // Ensure button is above panel background but maybe below panel itself if dragged over
+          padding: '5px 10px'
+        }}
+      >
+        {showSettings ? 'Hide Panel' : 'Open Panel'}
+      </button>
 
-        {/* Clear Chat Button (New) - Placed near input bar for relevance */}
-        {chatHistory.length > 0 && (
-          <button
-            onClick={handleClearChat}
-            className="clear-chat-button"
-            disabled={isLoading}
-          >
-            Clear Chat
-          </button>
-        )}
-
-        <form onSubmit={handleSubmit} className="input-bar">
-          <input
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder={modelLoaded ? "Type your message..." : "Load model first..."}
-            disabled={isLoading || !modelLoaded} // Disable if chat is loading OR model not loaded
-            aria-label="Chat message input"
-          />
-          <button type="submit" disabled={isLoading || !modelLoaded}> 
-            Send
-          </button>
-        </form>
-      </div>
-    </div>
+      {/* Render the PanelHost outside the main layout */}
+      <PanelHost 
+        showSettings={showSettings} 
+        modelLoaded={modelLoaded} 
+        setLoadStatus={handleModelLoadStatusChange}
+        setLoading={setIsLoading}
+        isLoading={isLoading}
+        currentModelPath={currentLoadedModelName}
+        onChatModeChange={handleChatModeChange}
+        themeName={themeName}
+        setThemeName={setThemeName}
+        themeList={themeList}
+      />
+    </> // End Fragment
   );
 }
 
