@@ -84,6 +84,15 @@ echo "Backend API server started (PID: $BACKEND_PID). Logs in $BACKEND_LOG_FILE"
 echo "Starting frontend dev server..."
 cd "$FRONTEND_DIR" || exit 1 # Exit if cd fails
 
+# Ensure dependencies are installed
+# I may want to handle this more gracefully in the future
+echo "Checking/installing frontend dependencies (npm install)..."
+npm install
+if [ $? -ne 0 ]; then
+  echo "Error: npm install failed. Please check for errors."
+  exit 1 # Stop the script if install fails
+fi
+
 # Start npm run dev in the background
 npm run dev &
 FRONTEND_PID=$! # Get the PID of the last background process
