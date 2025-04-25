@@ -18,7 +18,7 @@ const CombinedPanel = (props) => {
       themeList
   } = props;
   
-  const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', or 'interface'
+  const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', 'interface', or 'help'
 
   // Basic styling for tabs (can be improved later)
   const tabButtonStyle = (tabName) => ({
@@ -63,6 +63,12 @@ const CombinedPanel = (props) => {
         >
           Interface
         </button>
+        <button
+          style={tabButtonStyle('help')}
+          onClick={() => setActiveTab('help')}
+        >
+          Help
+        </button>
       </div>
 
       {/* Tab Content Area */}
@@ -97,6 +103,21 @@ const CombinedPanel = (props) => {
                 ))}
               </select>
             </div>
+          </div>
+        )}
+        {activeTab === 'help' && (
+          <div>
+            <h4>Keyboard Shortcuts</h4>
+            <ul>
+              <li>
+                <strong>Toggle Settings Panel:</strong> 
+                <code>Cmd + ,</code> or <code>Ctrl + ,</code>
+              </li>
+              <li>
+                <strong>Clear Chat:</strong> 
+                <code>Ctrl + Shift + C</code>
+              </li>
+            </ul>
           </div>
         )}
       </div>

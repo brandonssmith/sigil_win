@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
 import ThemeLoader from './components/ThemeLoader.jsx';
 import ModelLoadPanel from './components/ModelLoadPanel.jsx';
@@ -65,6 +65,30 @@ function App() {
       ]));
   }, []);
 
+  // --- Keyboard Shortcuts --- useEffect
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Toggle Settings: Cmd/Ctrl + ,
+      if ((event.metaKey || event.ctrlKey) && event.key === ',') {
+        event.preventDefault(); // Prevent browser's default behavior (if any)
+        setShowSettings(prevShowSettings => !prevShowSettings);
+      }
+
+      // Clear Chat: Ctrl + Shift + C
+      if (event.ctrlKey && event.shiftKey && event.key === 'C') {
+        event.preventDefault();
+        handleClearChat(); // Assuming handleClearChat is stable or wrapped in useCallback if needed
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup listener on component unmount
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []); // Empty dependency array means this runs once on mount and cleanup on unmount
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -103,6 +127,13 @@ function App() {
     // Optionally clear chat history when mode changes?
     // setChatHistory([]); 
   };
+
+  // Wrap handleClearChat in useCallback if it's used in dependency arrays elsewhere or for consistency
+  // (Although in this specific case, it's not strictly necessary for the shortcut effect)
+  const handleClearChat = useCallback(() => {
+    setChatHistory([]);
+    setError(null); // Also clear any existing errors
+  }, []); // Dependencies: setChatHistory, setError (usually stable, but included for correctness)
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -204,12 +235,6 @@ function App() {
       }
       setTimeout(scrollToBottom, 0);
     }
-  };
-
-  // Function to clear chat history (New)
-  const handleClearChat = () => {
-    setChatHistory([]);
-    setError(null); // Also clear any existing errors
   };
 
   // Derived state for convenience
