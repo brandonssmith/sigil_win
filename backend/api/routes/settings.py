@@ -36,4 +36,16 @@ def update_generation_settings(settings: ModelSettings, request: Request):
         # Use 400 Bad Request if no valid settings were provided
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No valid settings provided to update.")
 
-    return {"message": "Generation settings updated successfully.", "updated_settings": updated_settings} 
+    return {"message": "Generation settings updated successfully.", "updated_settings": updated_settings}
+
+# New endpoint to get current settings
+@router.get("/settings/current", response_model=ModelSettings)
+def get_current_settings(request: Request):
+    """Retrieve the current generation settings stored in application state."""
+    app_state = request.app.state
+    return ModelSettings(
+        system_prompt=getattr(app_state, 'system_prompt', None),
+        temperature=getattr(app_state, 'temperature', None),
+        top_p=getattr(app_state, 'top_p', None),
+        max_new_tokens=getattr(app_state, 'max_new_tokens', None),
+    ) 

@@ -18,8 +18,41 @@ function SettingsPanel({
   const [maxTokens, setMaxTokens] = useState(DEFAULT_MAX_TOKENS);
   const [reloadStatus, setReloadStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [applyError, setApplyError] = useState(null); // Specific error for settings apply
+  // Add state to track initial fetch
+  const [initialFetchStatus, setInitialFetchStatus] = useState('idle'); // idle | loading | success | error
 
   const isLoading = reloadStatus === 'loading';
+
+  // Fetch current settings on mount or when model becomes loaded
+  useEffect(() => {
+    if (modelLoaded && initialFetchStatus === 'idle') {
+        const fetchSettings = async () => {
+            setInitialFetchStatus('loading');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/settings/current`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const currentSettings = await response.json();
+                // Update local state only if values are provided
+                if (currentSettings.system_prompt !== null) setSystemPrompt(currentSettings.system_prompt);
+                if (currentSettings.temperature !== null) setTemperature(currentSettings.temperature);
+                if (currentSettings.top_p !== null) setTopP(currentSettings.top_p);
+                if (currentSettings.max_new_tokens !== null) setMaxTokens(currentSettings.max_new_tokens);
+                setInitialFetchStatus('success');
+            } catch (error) {
+                console.error("Failed to fetch current settings:", error);
+                setInitialFetchStatus('error');
+                // Optionally show an error message to the user
+            }
+        };
+        fetchSettings();
+    }
+    // If model becomes unloaded, perhaps reset status to refetch when reloaded?
+    // else if (!modelLoaded) {
+    //    setInitialFetchStatus('idle'); 
+    // }
+  }, [modelLoaded, initialFetchStatus]); // Depend on modelLoaded and fetch status
 
   // Handler for applying model settings (Moved from App.jsx)
   const handleApplySettings = async () => {
@@ -73,6 +106,9 @@ function SettingsPanel({
     return () => clearTimeout(timer);
   }, [reloadStatus]);
 
+  // Disable form elements if fetching initial settings or applying changes
+  const isDisabled = !modelLoaded || isLoading || initialFetchStatus === 'loading';
+
   return (
     <div className="settings-panel">
       <h2>Settings</h2>
@@ -83,7 +119,7 @@ function SettingsPanel({
           value={systemPrompt}
           onChange={(e) => setSystemPrompt(e.target.value)}
           rows={5}
-          disabled={!modelLoaded} // Disable if model not loaded
+          disabled={isDisabled} // Use combined disabled state
         />
       </div>
       <div className="settings-group">
@@ -96,7 +132,7 @@ function SettingsPanel({
           min="0"
           max="2.0" // Match backend validation
           step="0.1"
-          disabled={!modelLoaded} // Disable if model not loaded
+          disabled={isDisabled} // Use combined disabled state
         />
       </div>
        <div className="settings-group">
@@ -109,7 +145,7 @@ function SettingsPanel({
           min="0"
           max="1.0"
           step="0.05"
-          disabled={!modelLoaded} // Disable if model not loaded
+          disabled={isDisabled} // Use combined disabled state
         />
       </div>
        <div className="settings-group">
@@ -121,10 +157,10 @@ function SettingsPanel({
           onChange={(e) => setMaxTokens(parseInt(e.target.value, 10) || 1)}
           min="1"
           step="50"
-          disabled={!modelLoaded} // Disable if model not loaded
+          disabled={isDisabled} // Use combined disabled state
         />
       </div>
-      <button onClick={handleApplySettings} disabled={isLoading || !modelLoaded}>
+      <button onClick={handleApplySettings} disabled={isDisabled}>
         {isLoading ? 'Applying...' : 'Apply Settings'}
       </button>
       {reloadStatus === 'success' && <p className="success-message">Settings applied!</p>}
