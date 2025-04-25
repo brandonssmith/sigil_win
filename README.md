@@ -1,27 +1,113 @@
-# Sigil - Local LLM Runner with Web UI
+# Sigil – Local LLM Runner with Web UI
 
-This project provides a foundation for running Hugging Face transformer models locally using Python (FastAPI backend) and interacting with them through a React/Vite web interface. It handles model loading via API calls, serves the model, and includes a development script to manage the backend and frontend processes.
+Sigil is a local-first application for running Hugging Face transformer models directly on your machine. Built with a FastAPI backend and a React/Vite web interface, Sigil provides a streamlined environment for loading, interacting with, and customizing transformer models through a modern UI and flexible API.
 
-The goal is to offer a starting point that you can quickly get running and adapt for experiments, integrating local models with a web-based UI.
+Designed for developers and researchers, Sigil offers a modular and transparent alternative to hosted inference platforms. Whether you're experimenting with small models, adjusting generation settings, or building a custom interface, Sigil gives you the tools to work with local models efficiently, no external dependencies required.
+
+Use Sigil as a starting point for your own local AI workflows, or extend it to suit the needs of your own projects.
+
+## 📑 Table of Contents
+
+- [Sigil – Local LLM Runner with Web UI](#sigil--local-llm-runner-with-web-ui)
+  - [📑 Table of Contents](#-table-of-contents)
+  - [Features](#features)
+    - [Model Support](#model-support)
+    - [Backend Architecture](#backend-architecture)
+    - [Prompt Handling](#prompt-handling)
+    - [Runtime Configuration](#runtime-configuration)
+    - [GPU Awareness](#gpu-awareness)
+    - [Frontend Interface](#frontend-interface)
+    - [Development Environment](#development-environment)
+  - [Interface Walkthrough](#interface-walkthrough)
+    - [Model Loading](#model-loading)
+    - [Chat Interface](#chat-interface)
+    - [Developer Tools and Feedback](#developer-tools-and-feedback)
+  - [Prerequisites](#prerequisites)
+  - [Setup](#setup)
+  - [Running the Development Environment](#running-the-development-environment)
+  - [Project Structure](#project-structure)
+  - [Customization](#customization)
+  - [🪪 License](#-license)
 
 ## Features
 
-*   Loads compatible Hugging Face transformer models from a local directory via an API call.
-*   Serves the model via a FastAPI backend API (`/api/v1/...` endpoints).
-*   Provides a basic React/Vite web interface for chat.
-*   Includes basic GPU (CUDA) detection and attempts to use GPU if available.
-*   Backend API endpoint (`/api/v1/vram`) to report VRAM usage (if CUDA is available).
-*   Development startup script (`start_dev.sh`) manages starting/stopping the backend and frontend servers.
+Sigil is built for developers who want full control over local inference workflows. Key features include:
 
-## Demo
+### Model Support
 
-**Launching and Loading Model:**
+- Load Hugging Face-compatible transformer models directly from your local file system
+- Supports `.safetensors`, `.bin`, and associated tokenizer/config files
+- Modular model loader (`load_model_internal`) designed for extensibility
+
+### Backend Architecture
+
+- FastAPI-based REST API with endpoints for chat, model loading, VRAM, and runtime settings
+- Model configuration and inference settings stored in application state for easy access and live updates
+- Full backend logging to `backend_api.log` for transparency and debugging
+
+### Prompt Handling
+
+- Dual-mode support: `"instruction"` and `"chat"` style prompting
+- Automatically formats input using Hugging Face's `apply_chat_template()` when appropriate
+- Optional system prompt overrides per request
+
+### Runtime Configuration
+
+- Update generation parameters on the fly using `/settings/update`:
+  - `temperature`
+  - `top_p`
+  - `max_new_tokens`
+  - `system_prompt` (optional)
+- Designed for prompt engineers and iterative experimentation
+
+### GPU Awareness
+
+- Detects CUDA-compatible devices and uses them automatically when available
+- Exposes VRAM usage via `/vram` API endpoint
+
+### Frontend Interface
+
+- Built with React and Vite for a fast, responsive user experience
+- Live chat interface for real-time interaction with models
+- Accessible at `http://localhost:5173` during development
+
+### Development Environment
+
+- `start_dev.sh` handles coordinated startup of backend and frontend
+- Supports local-first workflows with no external dependencies
+
+## Interface Walkthrough
+
+Sigil’s frontend is designed for clarity, responsiveness, and developer-first workflows. Once the application is running, here’s what the interface provides:
+
+### Model Loading
+
+After startup, the frontend will prompt you to enter a local path to your model. Upon submission:
+
+- The backend loads the model via the `/model/load` endpoint
+- Real-time status updates appear in `backend/backend_api.log`
+- On success, the chat interface becomes available
 
 ![Application Launch and Model Loading](assets/demo.gif)
 
-**Chat Interface and Inference:**
+### Chat Interface
+
+After loading a model, the frontend presents a clean interface to interact with it:
+
+- Type prompts and receive model responses
+- Backend routes input through either instruction or chat prompt templates
+- Frontend displays complete output once inference is completed
 
 ![Chat Interface Inference Example](assets/inference.gif)
+
+### Developer Tools and Feedback
+
+- All requests are routed through the FastAPI backend
+- Adjust generation settings (e.g. `temperature`, `top_p`, `max_new_tokens`) via the backend API
+- VRAM status can be accessed via the `/vram` endpoint if GPU is enabled
+- Logs provide visibility into model status and runtime behavior
+
+This interface is ideal for local experimentation, debugging, and integrating lightweight LLMs into your workflow without external dependencies.
 
 ## Prerequisites
 
@@ -112,5 +198,11 @@ The goal is to offer a starting point that you can quickly get running and adapt
 *   **Frontend UI:** Modify the React components and logic in `frontend/src/`.
 *   **Model Loading Logic:** Found within `load_model_internal` function and the `/api/v1/model/load` endpoint in `backend/api/main.py`.
 
-Support Thrasher Intelligence: patreon.com/Thrasher_Intelligence
-Check out the TUI version at: https://github.com/Thrasher-Intelligence/prometheus
+## 🪪 License
+
+MIT License — use it, remix it, extend it.
+
+---
+
+Support Thrasher Intelligence: [patreon.com/Thrasher_Intelligence](https://patreon.com/Thrasher_Intelligence)  
+Explore the TUI version: [Prometheus on GitHub](https://github.com/Thrasher-Intelligence/prometheus)
