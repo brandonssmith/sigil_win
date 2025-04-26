@@ -34,128 +34,12 @@ body {
 
 /* New App Layout */
 .app-layout {
-  display: block;
+  display: flex;
   height: 100%;
   width: 100%;
 }
 
-/* Settings Panel */
-.settings-panel {
-  width: 280px; /* Fixed width for the panel */
-  flex-shrink: 0; /* Prevent panel from shrinking */
-  background-color: var(--surface, #252525); /* Use a palette color for panel bg */
-  padding: 1.5rem;
-  border-right: 1px solid var(--border, #333); /* Use a palette color for border */
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto; /* Allow scrolling if content overflows */
-  scrollbar-width: thin;
-  scrollbar-color: var(--border, #444) var(--surface, #252525);
-}
-
-.settings-panel::-webkit-scrollbar {
- width: 6px;
-}
-
-.settings-panel::-webkit-scrollbar-track {
- background: var(--surface, #252525);
-}
-
-.settings-panel::-webkit-scrollbar-thumb {
- background-color: var(--border, #444);
- border-radius: 3px;
-}
-
-.settings-panel h2 {
-  color: var(--palette-9, #bb86fc); /* Accent color */
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  font-size: 1.3rem;
-  font-weight: 600;
-}
-
-.settings-group {
-  margin-bottom: 1.25rem;
-}
-
-.settings-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: var(--palette-15, #ccc); /* Lighter grey for labels */
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.settings-panel input[type="number"],
-.settings-panel textarea {
-  width: 100%;
-  padding: 0.6rem 0.8rem;
-  background-color: var(--surface, #333);
-  border: 1px solid var(--border, #555);
-  color: var(--foreground, #e0e0e0);
-  font-family: inherit;
-  font-size: 0.95rem;
-  border-radius: 4px;
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.settings-panel textarea {
-  resize: vertical; /* Allow vertical resize only */
-  min-height: 60px;
-}
-
-.settings-panel input[type="number"]:focus,
-.settings-panel textarea:focus {
-  border-color: var(--palette-9, #bb86fc); /* Accent color for focus */
-  box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.3);
-}
-
-.settings-panel button {
-  width: 100%;
-  padding: 0.7rem 1rem;
-  margin-top: 0.5rem; /* Space above button */
-  background-color: var(--primary, #03dac6); /* Teal/cyan accent */
-  color: var(--background, #121212);
-  border: none;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease, opacity 0.2s ease;
-}
-
-.settings-panel button:hover:not(:disabled) {
-  background-color: var(--primary, #00b3a4);
-}
-
-.settings-panel button:disabled {
-  background-color: var(--surface, #444);
-  color: #888;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.reload-success,
-.reload-error {
-  margin-top: 1rem;
-  padding: 0.5rem;
-  text-align: center;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.reload-success {
-  background-color: rgba(3, 218, 198, 0.15); /* Teal background tint */
-  color: var(--primary, #03dac6); /* Teal text */
-}
-
-.reload-error {
-  background-color: rgba(207, 102, 121, 0.1); /* Red background tint */
-  color: var(--palette-11, #cf6679); /* Red text */
-}
+/* Settings Panel styles removed - see frontend/src/components/panels/SettingsPanel.css */
 
 /* Chat container - Ensure full width and height within #root */
 /* Needs to adapt to be next to settings panel */
@@ -182,7 +66,7 @@ body {
 
 .chat-header h1 {
   font-size: 1.4rem; /* Slightly smaller */
-  color: var(--palette-9, #bb86fc); /* Use a softer purple/magenta accent */
+  color: var(--primary); /* Use theme PRIMARY variable */
   font-weight: 600;
 }
 

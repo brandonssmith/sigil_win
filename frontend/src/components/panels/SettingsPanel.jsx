@@ -6,22 +6,28 @@ import {
   DEFAULT_TOP_P,
   DEFAULT_MAX_TOKENS
 } from '../../constants'; // Import shared constants
+import PropTypes from 'prop-types';
+import './SettingsPanel.css'; // Import component styles
 
 // Settings Panel Component
 function SettingsPanel({
-    modelLoaded // Only need to know if the model is loaded to enable/disable
+    modelLoaded, // Only need to know if the model is loaded to enable/disable
+    config, // Added config prop
+    onConfigChange, // Added onConfigChange prop
+    onReloadModel, // Added onReloadModel prop
+    reloadStatus // Added reloadStatus prop
  }) {
   // State moved from App.jsx
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
   const [temperature, setTemperature] = useState(DEFAULT_TEMPERATURE);
   const [topP, setTopP] = useState(DEFAULT_TOP_P);
   const [maxTokens, setMaxTokens] = useState(DEFAULT_MAX_TOKENS);
-  const [reloadStatus, setReloadStatus] = useState(null); // null | 'loading' | 'success' | 'error'
+  const [applyStatus, setApplyStatus] = useState(null); // null | 'loading' | 'success' | 'error' - RENAMED
   const [applyError, setApplyError] = useState(null); // Specific error for settings apply
   // Add state to track initial fetch
   const [initialFetchStatus, setInitialFetchStatus] = useState('idle'); // idle | loading | success | error
 
-  const isLoading = reloadStatus === 'loading';
+  const isLoading = applyStatus === 'loading'; // Use renamed state
 
   // Fetch current settings on mount or when model becomes loaded
   useEffect(() => {
@@ -56,7 +62,7 @@ function SettingsPanel({
 
   // Handler for applying model settings (Moved from App.jsx)
   const handleApplySettings = async () => {
-    setReloadStatus('loading');
+    setApplyStatus('loading'); // Use renamed setter
     setApplyError(null);
     try {
       // Use the new endpoint path
@@ -80,17 +86,17 @@ function SettingsPanel({
       }
 
       console.log("Apply settings response:", data);
-      setReloadStatus('success');
+      setApplyStatus('success'); // Use renamed setter
        // Hide success message after a delay
-      const timer = setTimeout(() => setReloadStatus(null), 2000);
+      const timer = setTimeout(() => setApplyStatus(null), 2000); // Use renamed setter
       return () => clearTimeout(timer);
 
     } catch (err) {
        console.error('Failed to apply model settings:', err);
        setApplyError(`Apply settings failed: ${err.message}`); // Set specific error
-       setReloadStatus('error');
+       setApplyStatus('error'); // Use renamed setter
        // Hide error message after a delay
-      const timer = setTimeout(() => setReloadStatus(null), 3000);
+      const timer = setTimeout(() => setApplyStatus(null), 3000); // Use renamed setter
       return () => clearTimeout(timer);
     }
   };
@@ -98,13 +104,13 @@ function SettingsPanel({
   // Effect to clear success/error messages
   useEffect(() => {
     let timer;
-    if (reloadStatus === 'success') {
-      timer = setTimeout(() => setReloadStatus(null), 2000);
-    } else if (reloadStatus === 'error') {
-      timer = setTimeout(() => setReloadStatus(null), 3000);
+    if (applyStatus === 'success') { // Use renamed state
+      timer = setTimeout(() => setApplyStatus(null), 2000); // Use renamed setter
+    } else if (applyStatus === 'error') { // Use renamed state
+      timer = setTimeout(() => setApplyStatus(null), 3000); // Use renamed setter
     }
     return () => clearTimeout(timer);
-  }, [reloadStatus]);
+  }, [applyStatus]); // Use renamed state
 
   // Disable form elements if fetching initial settings or applying changes
   const isDisabled = !modelLoaded || isLoading || initialFetchStatus === 'loading';
@@ -163,11 +169,19 @@ function SettingsPanel({
       <button onClick={handleApplySettings} disabled={isDisabled}>
         {isLoading ? 'Applying...' : 'Apply Settings'}
       </button>
-      {reloadStatus === 'success' && <p className="success-message">Settings applied!</p>}
+      {applyStatus === 'success' && <p className="success-message">Settings applied!</p>}
       {/* Display the specific applyError here */}
-      {reloadStatus === 'error' && <p className="error-message">{applyError || 'Failed to apply settings.'}</p>}
+      {applyStatus === 'error' && <p className="error-message">{applyError || 'Failed to apply settings.'}</p>}
     </div>
   );
 }
+
+SettingsPanel.propTypes = {
+  modelLoaded: PropTypes.bool.isRequired,
+  config: PropTypes.object.isRequired,
+  onConfigChange: PropTypes.func.isRequired,
+  onReloadModel: PropTypes.func.isRequired,
+  reloadStatus: PropTypes.string // This prop remains unchanged, refers to overall model reload
+};
 
 export default SettingsPanel; 

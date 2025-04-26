@@ -1,0 +1,67 @@
+/* frontend/src/theme.css */
+/* Define base theme variables */
+:root {
+  /* Core Colors */
+  --background: #121212;
+  --foreground: #e0e0e0;
+  --surface: #1e1e1e; /* Base surface color */
+  --surface-light: #252525; /* Slightly lighter surface (e.g., header, input bar bg) */
+  --surface-input: #333333; /* Input field background */
+  --surface-user-msg: #33334d; /* User message background */
+  --surface-backend-msg: #2a2a2a; /* Backend message background */
+  --surface-disabled: #444444; /* Disabled element background */
+  --border: #333333; /* Base border color */
+  --border-medium: #444444; /* Medium border (e.g., scrollbar) */
+  --border-input: #555555; /* Input border */
+
+  /* Primary/Accent Colors */
+  --primary: #03dac6; /* Teal accent */
+  --primary-hover: #00b3a4; /* Darker teal for hover */
+  --primary-contrast: #121212; /* Text color on primary background */
+  --accent: #bb86fc; /* Purple accent (used for header, focus) */
+  --accent-focus-shadow: rgba(187, 134, 252, 0.3); /* Focus shadow for accent */
+
+  /* Semantic Colors */
+  --error: #cf6679; /* Red for errors */
+  --error-background: rgba(207, 102, 121, 0.1); /* Background tint for errors */
+  --success: #03dac6; /* Teal for success (same as primary here) */
+  --success-background: rgba(3, 218, 198, 0.15); /* Background tint for success */
+
+  /* Text & UI Element Colors */
+  --text-secondary: #ccc; /* Lighter grey (e.g., setting labels) */
+  --text-placeholder: #aaa; /* Placeholder/loading text */
+  --text-disabled: #888888; /* Text on disabled elements */
+  --scrollbar-thumb: var(--border-medium);
+  --scrollbar-track: var(--surface);
+
+  /* Typography */
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
+  /* Sizing & Spacing */
+  --border-radius-small: 4px;
+  --border-radius-medium: 6px;
+  --border-radius-large: 8px;
+  --spacing-small: 0.5rem;
+  --spacing-medium: 1rem;
+  --spacing-large: 1.5rem;
+
+  /* Shadows & Focus */
+  --shadow-small: 0 1px 3px rgba(0,0,0,0.15);
+  --shadow-medium: 0 2px 5px rgba(0, 0, 0, 0.2);
+  --focus-ring-width: 2px;
+  --focus-ring-color: var(--accent-focus-shadow);
+  --focus-ring-accent: var(--accent); /* Border color on focus */
+
+  /* Selection */
+  --selection-background: #1f1f1f;
+  --selection-foreground: #d6dbe5;
+
+  /* Example Variables (from App.css comments) */
+  /* These might need adjustment or removal if not used elsewhere */
+  /* --primary-example: #2a84d2; */
+  /* --primary-contrast-example: #fff; */
+  /* --border-radius-example: 8px; */
+  /* --spacing-example: 16px; */
+  /* --shadow-example: 0 2px 8px rgba(0,0,0,0.25); */
+  /* --focus-ring-example: #0f7ddb; */
+} 
