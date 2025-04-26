@@ -55,13 +55,16 @@ function ModelLoadPanel({
       if (!response.ok) throw new Error('Failed to fetch model status');
       const data = await response.json();
       if (data.loaded) {
-        setLoadStatus(`Loaded: ${data.path} (${data.device})`);
+        // Pass 'loaded' status and the model path (name)
+        setLoadStatus('loaded', data.path);
       } else {
-        setLoadStatus('No model loaded.');
+        // Pass 'idle' status when no model is loaded
+        setLoadStatus('idle');
       }
     } catch (err) {
       console.error("Error checking model status:", err);
-      setLoadStatus('Error checking model status.');
+      // Pass 'error' status and an error message
+      setLoadStatus('error', 'Error checking model status.');
     } finally {
       setLoading(false);
     }
