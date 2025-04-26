@@ -104,6 +104,8 @@ body {
   /* Removed border, using background difference */
   /* Base shadow applied here, specific glows added below */
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  overflow: hidden; /* Prevent content spill during animation */
+  transition: height 0.3s ease-out, padding 0.3s ease-out, margin 0.3s ease-out; /* Animate size changes */
 }
 
 .user-message {
