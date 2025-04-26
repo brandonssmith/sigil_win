@@ -18,7 +18,8 @@
   --primary: #03dac6; /* Teal accent */
   --primary-hover: #00b3a4; /* Darker teal for hover */
   --primary-contrast: #121212; /* Text color on primary background */
-  --accent: #bb86fc; /* Purple accent (used for header, focus) */
+  --accent: #bb86fc; /* Purple accent (used for focus rings, etc.) */
+  --palette-9: #bb86fc; /* Specific purple for headers (per user request) */
   --accent-focus-shadow: rgba(187, 134, 252, 0.3); /* Focus shadow for accent */
 
   /* Semantic Colors */

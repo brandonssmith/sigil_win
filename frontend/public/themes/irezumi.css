@@ -1,0 +1,25 @@
+/* Irezumi Theme - CSS Variables */
+:root {
+  --palette-0: #212121;
+  --palette-1: #e63946;
+  --palette-2: #52b788;
+  --palette-3: #ffb703;
+  --palette-4: #777777;
+  --palette-5: #ff66aa;
+  --palette-6: #00b4d8;
+  --palette-7: #f1faee;
+  --palette-8: #343a40;
+  --palette-9: #ff5757;
+  --palette-10: #8ce99a;
+  --palette-11: #ffd166;
+  --palette-12: #6daedb;
+  --palette-13: #ff99cc;
+  --palette-14: #3fc1c9;
+  --palette-15: #ffffff;
+  --background: #121212;
+  --foreground: #e63946;
+  --cursor-color: #e63946;
+  --cursor-text: #121212;
+  --selection-background: #1d3557;
+  --selection-foreground: #ffcb77;
+}

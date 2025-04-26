@@ -66,7 +66,7 @@ body {
 
 .chat-header h1 {
   font-size: 1.4rem; /* Slightly smaller */
-  color: var(--primary); /* Use theme PRIMARY variable */
+  color: var(--palette-9); /* Use --palette-9 as requested */
   font-weight: 600;
 }
 
@@ -96,27 +96,30 @@ body {
 
 /* Individual messages - Softer look, increased radius */
 .message {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem; /* Increased from 1rem for more spacing */
   padding: 0.75rem 1.25rem;
   border-radius: 8px; /* Softer corners */
   max-width: 75%; /* Adjust max width */
   word-wrap: break-word;
   /* Removed border, using background difference */
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15); /* Subtle shadow */
+  /* Base shadow applied here, specific glows added below */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .user-message {
-  background-color: var(--surface, #33334d); /* Darker, slightly blueish bg for user */
+  background-color: var(--surface, #4a4a70); /* Darker, slightly blueish bg for user - Lightened */
   color: var(--foreground, #e0e0e0); /* Standard light text */
   margin-left: auto;
-  /* border: 1px solid #00ffff; */ /* Removed border */
+  /* Add uniform glow using primary theme color */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 0 15px var(--primary, rgba(3, 218, 198, 0.4));
 }
 
 .backend-message {
   background-color: var(--surface, #2a2a2a); /* Slightly lighter than container bg */
   color: var(--foreground, #e0e0e0); /* Standard light text */
   margin-right: auto;
- /* border: 1px solid #00ff00; */ /* Removed border */
+  /* Add uniform glow using accent theme color */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 0 15px var(--palette-9, rgba(187, 134, 252, 0.4));
 }
 
 /* Loading indicator message style */
