@@ -54,9 +54,12 @@ body {
 
 /* Header - Softer border */
 .chat-header {
+  display: flex; /* Enable Flexbox */
+  align-items: center; /* Vertically align items */
+  gap: 10px; /* Add some space between flex items */
   background-color: var(--surface, #252525); /* Slightly lighter dark */
   padding: 0.75rem 1.5rem; /* Adjust padding */
-  text-align: center;
+  /* text-align: center; <-- Removed, flex handles alignment */
   border-bottom: 1px solid var(--border, #333); /* Subtle border */
   position: sticky;
   top: 0;
@@ -65,9 +68,37 @@ body {
 }
 
 .chat-header h1 {
+  margin-right: 10px; /* Add space after title */
   font-size: 1.4rem; /* Slightly smaller */
   color: var(--palette-9); /* Use --palette-9 as requested */
   font-weight: 600;
+}
+
+/* Group model status indicators together */
+.model-status-group {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space within the status group */
+}
+
+/* Individual status indicator */
+.model-status-indicator {
+    font-size: 0.85em;
+    opacity: 0.8;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.model-status-indicator.error {
+    background-color: rgba(207, 102, 121, 0.2);
+    color: var(--palette-11, #cf6679);
+}
+
+.model-status-indicator.loading {
+    /* Add a subtle animation? */
+    /* background-color: rgba(187, 134, 252, 0.2); */
+    /* color: var(--palette-9, #bb86fc); */
 }
 
 /* Messages area - Softer scrollbar */

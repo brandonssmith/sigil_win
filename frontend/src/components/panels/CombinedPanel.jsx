@@ -15,7 +15,8 @@ const CombinedPanel = (props) => {
       onChatModeChange,
       themeName,
       setThemeName,
-      themeList
+      themeList,
+      onHfUsernameUpdate,
   } = props;
   
   const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', 'interface', or 'help'
@@ -87,6 +88,7 @@ const CombinedPanel = (props) => {
             isLoading={isLoading}
             isModelLoaded={isModelLoaded} // Use the destructured prop
             currentModelPath={currentModelPath}
+            onHfUsernameUpdate={onHfUsernameUpdate}
           />
         )}
         {activeTab === 'interface' && (

@@ -11,7 +11,8 @@ function ModelLoadPanel({
   setLoading,
   isLoading,
   isModelLoaded,
-  currentModelPath
+  currentModelPath,
+  onHfUsernameUpdate,
 }) {
   // State to hold the list of models fetched from the backend
   const [availableModels, setAvailableModels] = useState([]);
@@ -38,6 +39,7 @@ function ModelLoadPanel({
   // --- Fetch Hugging Face Token Status (modified to be callable) ---
   const fetchHfStatus = useCallback(async () => {
     setHfTokenStatus({ status: 'checking', username: null, message: null }); // Reset status on fetch
+    onHfUsernameUpdate(null); // Clear username in parent on fetch start
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/models/token/status`);
       const data = await response.json();
@@ -45,11 +47,18 @@ function ModelLoadPanel({
         throw new Error(data.message || data.detail || `HTTP error ${response.status}`);
       }
       setHfTokenStatus({ status: data.status, username: data.username, message: data.message });
+      // Pass username up if valid
+      if (data.status === 'valid') {
+        onHfUsernameUpdate(data.username);
+      } else {
+        onHfUsernameUpdate(null);
+      }
     } catch (err) {
       console.error("Error fetching HF token status:", err);
       setHfTokenStatus({ status: 'error', username: null, message: err.message || 'Failed to fetch token status.' });
+      onHfUsernameUpdate(null); // Clear username in parent on error
     }
-  }, []); // Empty dependency array, doesn't depend on component state
+  }, [onHfUsernameUpdate]); // Add onHfUsernameUpdate to dependencies
 
   useEffect(() => {
     fetchHfStatus();
@@ -361,7 +370,8 @@ ModelLoadPanel.propTypes = {
   setLoading: PropTypes.func.isRequired,
   isLoading: PropTypes.bool.isRequired,
   isModelLoaded: PropTypes.bool.isRequired,
-  currentModelPath: PropTypes.string, 
+  currentModelPath: PropTypes.string,
+  onHfUsernameUpdate: PropTypes.func.isRequired,
 };
 
 export default ModelLoadPanel; 

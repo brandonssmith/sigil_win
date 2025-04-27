@@ -14,7 +14,8 @@ const PanelHost = ({
   onChatModeChange,
   themeName,
   setThemeName,
-  themeList
+  themeList,
+  onHfUsernameUpdate,
 }) => {
   const [openPanels, setOpenPanels] = useState(defaultOpenPanels);
   const actionInfo = useRef({
@@ -138,7 +139,8 @@ const PanelHost = ({
             onChatModeChange,
             themeName,
             setThemeName,
-            themeList
+            themeList,
+            onHfUsernameUpdate,
           };
         } else if (id === 'logs') {
           panelProps = {};

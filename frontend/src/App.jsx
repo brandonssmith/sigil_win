@@ -53,6 +53,7 @@ function App() {
 
   const [currentLoadedModelName, setCurrentLoadedModelName] = useState(null);
   const [showSettings, setShowSettings] = useState(true);
+  const [hfUsername, setHfUsername] = useState(null); // <-- NEW: State for username
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/themes`)
@@ -121,6 +122,11 @@ function App() {
       setCurrentLoadedModelName(null);
     }
   };
+
+  // --- NEW: Callback to receive username from ModelLoadPanel --- 
+  const handleHfUsernameUpdate = useCallback((username) => {
+      setHfUsername(username);
+  }, []);
 
   const handleChatModeChange = (mode) => {
     setAppChatMode(mode);
@@ -274,18 +280,26 @@ function App() {
             >
               ⚙️
             </button>
-            {/* Optionally display model status here based on appModelLoadStatus */}
-            {modelLoaded && <span className="model-status-indicator">Model Ready</span>}
-            {appModelLoadStatus === 'idle' && <span className="model-status-indicator">Waiting for Model</span>}
-            {appModelLoadStatus === 'error' && <span className="model-status-indicator error">Model Load Failed</span>}
-            {appModelLoadStatus === 'loading' && <span className="model-status-indicator loading">Loading Model...</span>}
+            {/* --- NEW: Welcome Message --- */}
+            {hfUsername && (
+              <span style={{ marginLeft: 'auto', fontSize: '0.9em', opacity: 0.9 /* color: 'var(--color-username)' */ }}>
+                Welcome, {hfUsername}!
+              </span>
+            )}
+            {/* Model Status Group */}
+            <div className="model-status-group">
+              {modelLoaded && <span className="model-status-indicator">Model Ready</span>}
+              {appModelLoadStatus === 'idle' && <span className="model-status-indicator">Waiting for Model</span>}
+              {appModelLoadStatus === 'error' && <span className="model-status-indicator error">Model Load Failed</span>}
+              {appModelLoadStatus === 'loading' && <span className="model-status-indicator loading">Loading Model...</span>}
+            </div>
           </header>
 
           <div className="messages-area">
             {/* Display message asking user to load model if not loaded */}
             {appModelLoadStatus === 'idle' && (
               <div className="message system-message">
-                <p>Please enter the model path and click 'Load Model' in the left panel to begin.</p>
+                <p>Click the ⚙️ icon to open settings, go to the 'Load Model' tab, and choose a model to start chatting.</p>
               </div>
             )}
             {appModelLoadStatus === 'error' && (
@@ -350,6 +364,7 @@ function App() {
         themeName={themeName}
         setThemeName={setThemeName}
         themeList={themeList}
+        onHfUsernameUpdate={handleHfUsernameUpdate} // <-- Pass callback down
       />
     </> // End Fragment
   );
