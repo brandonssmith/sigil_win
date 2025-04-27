@@ -12,6 +12,7 @@ from typing import Optional, List, Dict, Any # <-- Add List, Dict, Any
 from .core.model_loader import load_model_internal, load_model_by_name
 from .routes.chat import router as chat_router
 from .routes.settings import router as settings_router
+from .routes.models import router as models_router # <-- Import the new models router
 # Assuming schemas are also in backend/api/schemas
 from .schemas.common import (
     LoadModelRequest, LoadModelResponse, ModelStatusResponse,
@@ -252,5 +253,6 @@ MIN_NARRATIVE_TOKENS = 350  # Keep constant here if needed elsewhere, or move to
 
 app.include_router(chat_router, prefix="/api/v1", tags=["Chat"]) # <-- INCLUDE ROUTER
 app.include_router(settings_router, prefix="/api/v1", tags=["Settings"])
+app.include_router(models_router, prefix="/api/v1", tags=["Models"]) # <-- Include the new models router
 
 

@@ -17,6 +17,27 @@ function ModelLoadPanel({
   const [availableModels, setAvailableModels] = useState([]);
   const [fetchError, setFetchError] = useState(null); // State for fetch errors
 
+  // NEW State for Hugging Face Token Status
+  const [hfTokenStatus, setHfTokenStatus] = useState({ status: 'checking', username: null, message: null });
+
+  // --- Fetch Hugging Face Token Status --- (NEW)
+  useEffect(() => {
+    const fetchHfStatus = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/models/token/status`);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || data.detail || `HTTP error ${response.status}`);
+        }
+        setHfTokenStatus({ status: data.status, username: data.username, message: data.message });
+      } catch (err) {
+        console.error("Error fetching HF token status:", err);
+        setHfTokenStatus({ status: 'error', username: null, message: err.message || 'Failed to fetch token status.' });
+      }
+    };
+    fetchHfStatus();
+  }, []); // Fetch only on component mount
+
   // --- Fetch Available Models --- 
   useEffect(() => {
     const fetchModels = async () => {
@@ -119,6 +140,30 @@ function ModelLoadPanel({
   return (
     <div className="model-load-panel">
       <h3>Load Model</h3>
+
+      {/* --- Display HF Token Status --- (NEW) */}
+      <div className="hf-token-status" style={{ fontSize: '0.9em', marginBottom: '10px', opacity: 0.8 }}>
+        {hfTokenStatus.status === 'checking' && (
+          <span><small>Checking Hugging Face token...</small></span>
+        )}
+        {hfTokenStatus.status === 'valid' && hfTokenStatus.username && (
+          <span style={{ color: 'var(--accent-color-success)' }}>✓ Logged in as: {hfTokenStatus.username}</span>
+        )}
+        {hfTokenStatus.status === 'invalid' && (
+          <span style={{ color: 'var(--accent-color-warning)' }} title={hfTokenStatus.message || 'Token validation failed.'}>
+             ⚠️ Invalid/Expired Token
+          </span>
+        )}
+        {hfTokenStatus.status === 'not_found' && (
+          <span title="Token not found in ~/.env">❔ Token Not Found</span>
+        )}
+         {hfTokenStatus.status === 'error' && (
+          <span style={{ color: 'var(--accent-color-error)' }} title={hfTokenStatus.message || 'Error checking token.'}>
+             ❌ Error Checking Token
+          </span>
+        )}
+      </div>
+
       {fetchError && (
         <p className="error-message">Error fetching models: {fetchError}</p>
       )}
