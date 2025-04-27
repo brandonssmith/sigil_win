@@ -30,23 +30,30 @@ function ModelLoadPanel({
   const [downloadingModelId, setDownloadingModelId] = useState(null);
   const [downloadMessage, setDownloadMessage] = useState({ type: '', text: '' }); // { type: 'success'|'error', text: '...' }
 
-  // --- Fetch Hugging Face Token Status --- (NEW)
-  useEffect(() => {
-    const fetchHfStatus = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/models/token/status`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || data.detail || `HTTP error ${response.status}`);
-        }
-        setHfTokenStatus({ status: data.status, username: data.username, message: data.message });
-      } catch (err) {
-        console.error("Error fetching HF token status:", err);
-        setHfTokenStatus({ status: 'error', username: null, message: err.message || 'Failed to fetch token status.' });
+  // --- NEW: State for saving token ---
+  const [newTokenInput, setNewTokenInput] = useState('');
+  const [saveTokenLoading, setSaveTokenLoading] = useState(false);
+  const [saveTokenMessage, setSaveTokenMessage] = useState({ type: '', text: '' });
+
+  // --- Fetch Hugging Face Token Status (modified to be callable) ---
+  const fetchHfStatus = useCallback(async () => {
+    setHfTokenStatus({ status: 'checking', username: null, message: null }); // Reset status on fetch
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/models/token/status`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || data.detail || `HTTP error ${response.status}`);
       }
-    };
+      setHfTokenStatus({ status: data.status, username: data.username, message: data.message });
+    } catch (err) {
+      console.error("Error fetching HF token status:", err);
+      setHfTokenStatus({ status: 'error', username: null, message: err.message || 'Failed to fetch token status.' });
+    }
+  }, []); // Empty dependency array, doesn't depend on component state
+
+  useEffect(() => {
     fetchHfStatus();
-  }, []); // Fetch only on component mount
+  }, [fetchHfStatus]); // Call on mount
 
   // --- Fetch Available Models (extract to reusable function) ---
   const fetchModels = useCallback(async () => {
@@ -201,6 +208,40 @@ function ModelLoadPanel({
     }
   };
 
+  // --- NEW: Handler to save token ---
+  const handleSaveToken = async (e) => {
+    e.preventDefault();
+    const tokenToSave = newTokenInput.trim();
+    if (!tokenToSave) {
+      setSaveTokenMessage({ type: 'error', text: 'Token input cannot be empty.' });
+      return;
+    }
+    setSaveTokenLoading(true);
+    setSaveTokenMessage({ type: '', text: '' });
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/v1/models/token/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: tokenToSave })
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.detail || `Failed to save token (status ${resp.status})`);
+      }
+      setSaveTokenMessage({ type: 'success', text: data.message || 'Token saved!' });
+      setNewTokenInput(''); // Clear input on success
+      // Re-fetch token status to update UI
+      await fetchHfStatus();
+    } catch (err) {
+      console.error("Error saving token:", err);
+      setSaveTokenMessage({ type: 'error', text: `Error: ${err.message}` });
+    } finally {
+      setSaveTokenLoading(false);
+      // Optionally clear message after delay
+      setTimeout(() => setSaveTokenMessage({ type: '', text: '' }), 5000);
+    }
+  };
+
   return (
     <div className="model-load-panel">
       <h3>Load Model</h3>
@@ -219,9 +260,34 @@ function ModelLoadPanel({
           </span>
         )}
         {hfTokenStatus.status === 'not_found' && (
-          <span title="Token not found in ~/.env">❔ Token Not Found</span>
+          <form onSubmit={handleSaveToken} style={{ marginTop: '5px', marginBottom: '15px' }}>
+             <label htmlFor="hfTokenInput" style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>
+               Enter Hugging Face Token (for private models):
+             </label>
+             <p style={{fontSize: '0.8em', opacity: 0.7, margin: '0 0 5px 0'}}>
+               Needed for private/gated models. Get yours from <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer">HF Settings</a>.
+             </p>
+             <input
+               id="hfTokenInput"
+               type="password" // Use password type for masking
+               value={newTokenInput}
+               onChange={(e) => setNewTokenInput(e.target.value)}
+               placeholder="hf_..."
+               disabled={saveTokenLoading}
+               style={{ width: '70%', marginRight: '4px' }}
+             />
+            <button type="submit" disabled={saveTokenLoading || !newTokenInput.trim()}>
+              {saveTokenLoading ? 'Saving...' : 'Save Token'}
+            </button>
+            {/* Display save status message */}
+            {saveTokenMessage.text && (
+              <p style={{ color: saveTokenMessage.type === 'error' ? 'var(--accent-color-error)' : 'var(--accent-color-success)', fontSize: '0.8em', marginTop: '4px' }}>
+                {saveTokenMessage.text}
+              </p>
+            )}
+          </form>
         )}
-         {hfTokenStatus.status === 'error' && (
+        {hfTokenStatus.status === 'error' && (
           <span style={{ color: 'var(--accent-color-error)' }} title={hfTokenStatus.message || 'Error checking token.'}>
              ❌ Error Checking Token
           </span>

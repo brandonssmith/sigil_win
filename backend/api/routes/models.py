@@ -8,10 +8,12 @@ from backend.utils.huggingface_utils import (
     download_model,
     get_hf_token,
     validate_token_and_get_username,
+    save_hf_token,
     ModelSearchError,
     ModelDownloadError,
     HuggingFaceError,
     TokenValidationError,
+    TokenSaveError
 )
 
 # ---------------------------------------------------------------------------
@@ -43,6 +45,13 @@ class HFTokenStatusResponse(BaseModel):
     status: str  # 'valid', 'invalid', 'not_found'
     username: Optional[str] = None
     message: Optional[str] = None
+
+class SaveTokenRequest(BaseModel):
+    token: str
+
+class SaveTokenResponse(BaseModel):
+    status: str # 'success' or 'error'
+    message: str
 
 # ---------------------------------------------------------------------------
 # Endpoints
@@ -78,6 +87,24 @@ async def search_huggingface_models(
         raise HTTPException(status_code=500, detail=f"Model search failed: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}")
+
+
+@router.post("/token/save", response_model=SaveTokenResponse)
+async def save_huggingface_token(request: SaveTokenRequest):
+    """
+    Saves the provided Hugging Face token to the ~/.env file.
+    """
+    try:
+        save_hf_token(request.token)
+        return SaveTokenResponse(status="success", message="Token saved successfully to ~/.env and loaded.")
+    except TokenSaveError as e:
+        # Log the error e
+        print(f"API: Failed to save token: {e}") # Replace with logging
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        # Log unexpected errors
+        print(f"API: Unexpected error saving token: {e}") # Replace with logging
+        raise HTTPException(status_code=500, detail=f"An unexpected server error occurred while saving the token: {e}")
 
 
 @router.post("/download", response_model=ModelDownloadResponse)

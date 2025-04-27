@@ -7,6 +7,7 @@ from huggingface_hub.utils import HfHubHTTPError, LocalEntryNotFoundError
 from huggingface_hub.hf_api import ModelInfo
 import requests
 from typing import List, Optional, Dict # Added Dict for type hinting
+import shutil
 
 # Define the target download directory relative to the script's execution context (adjust as needed)
 # Consider making this configurable or passed in
@@ -28,6 +29,10 @@ class ModelSearchError(HuggingFaceError):
     """Exception raised for errors during model search."""
     pass
 
+class TokenSaveError(HuggingFaceError):
+    """Exception raised for errors during token saving."""
+    pass
+
 
 def get_hf_token() -> Optional[str]:
     """Loads the Hugging Face token from the ~/.env file."""
@@ -38,6 +43,58 @@ def get_hf_token() -> Optional[str]:
         # Log this or handle appropriately if the file MUST exist
         print(f"Info: Environment file not found at {env_path}") # Keep print for now, replace with logging
     return os.getenv("HUGGINGFACE_TOKEN")
+
+def save_hf_token(token: str) -> None:
+    """
+    Saves or updates the HUGGINGFACE_TOKEN in the ~/.env file.
+    Raises TokenSaveError on failure.
+    """
+    if not isinstance(token, str) or not token.strip():
+        raise TokenSaveError("Token cannot be empty.")
+    token = token.strip()
+
+    env_path = Path.home() / ".env"
+    lines = []
+    token_found = False
+    token_line = f"HUGGINGFACE_TOKEN={token}"
+
+    try:
+        # Read existing lines if file exists
+        if env_path.exists():
+            with open(env_path, 'r') as f:
+                lines = f.readlines()
+
+            # Check if token already exists and update it
+            for i, line in enumerate(lines):
+                if line.strip().startswith("HUGGINGFACE_TOKEN="):
+                    if lines[i].strip() == token_line:
+                        print(f"Token already present and identical in {env_path}") # Replace with logging
+                        return # No change needed
+                    lines[i] = token_line + "\n"
+                    token_found = True
+                    print(f"Updating token in {env_path}") # Replace with logging
+                    break
+
+        # If token line wasn't found, append it
+        if not token_found:
+            # Add a newline before appending if the file exists and doesn't end with one
+            if lines and not lines[-1].endswith('\n'):
+                lines.append('\n')
+            lines.append(token_line + "\n")
+            print(f"Appending token to {env_path}") # Replace with logging
+
+        # Write the modified lines back to the file
+        with open(env_path, 'w') as f:
+            f.writelines(lines)
+
+        # Reload environment variables in the current process immediately
+        load_dotenv(dotenv_path=env_path, override=True)
+        print(f"Token saved to {env_path} and reloaded.") # Replace with logging
+
+    except OSError as e:
+        raise TokenSaveError(f"Error writing to {env_path}: {e}") from e
+    except Exception as e:
+        raise TokenSaveError(f"An unexpected error occurred while saving the token: {e}") from e
 
 def validate_token_and_get_username(token: str) -> Optional[str]:
     """
@@ -198,7 +255,6 @@ def _cleanup_incomplete_download(model_path: Path):
     """Attempts to remove a directory if a download failed."""
     if model_path.exists() and model_path.is_dir():
         try:
-            import shutil
             shutil.rmtree(model_path)
             print(f"Cleaned up potentially incomplete directory: {model_path}") # Replace with logging
         except Exception as cleanup_e:
