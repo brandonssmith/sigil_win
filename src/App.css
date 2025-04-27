@@ -1,0 +1,67 @@
+/* Add styles from previous example */
+
+.app-container { max-width: 900px; margin: 20px auto; padding: 15px; }
+.status-bar { background-color: #f0f0f0; padding: 10px; margin-bottom: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; /* Allow wrap */ }
+.token-status span { padding: 5px; border-radius: 3px; margin-right: 10px; /* Spacing */ }
+
+/* Style for the user info container in status bar */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between avatar and text */
+}
+
+/* Style for the avatar image itself */
+.user-avatar {
+    width: 24px; /* Adjust size as needed */
+    height: 24px;
+    border-radius: 50%; /* Make it circular */
+    object-fit: cover; /* Ensure image covers the area */
+    border: 1px solid #ccc; /* Optional border */
+}
+
+.general-message { padding: 5px 10px; border-radius: 3px; font-weight: bold; margin-top: 5px; /* Spacing for wrap */ flex-basis: 100%; /* Take full width if wrapped */ text-align: center; }
+
+/* Message types (shared with StatusBar) */
+.success { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
+.error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb;}
+.warning { color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba;}
+.info { color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb;}
+
+.search-form { margin-bottom: 20px; display: flex; gap: 10px; }
+.search-form input { flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+.search-form button { padding: 8px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+.search-form button:hover { background-color: #0056b3; }
+.search-form button:disabled { background-color: #cccccc; cursor: not-allowed; }
+
+.search-error { margin-top: -10px; margin-bottom: 15px; }
+
+.model-list-container { margin-top: 20px; }
+.model-list { list-style: none; padding: 0; }
+.model-list-item { border: 1px solid #ccc; margin-bottom: 10px; padding: 10px; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+.model-list-item:hover { background-color: #f8f8f8; }
+.model-list-item.selected { background-color: #e9ecef; border-color: #adb5bd; }
+.model-id { font-weight: bold; margin-bottom: 5px; word-break: break-all; /* Prevent long IDs overflowing */ }
+.model-info span { margin-right: 15px; font-size: 0.9em; color: #555; }
+.model-tags { margin-top: 5px; }
+.tag { display: inline-block; background-color: #e0e0e0; padding: 2px 6px; border-radius: 10px; font-size: 0.8em; margin-right: 5px; margin-bottom: 3px; }
+
+.selected-model-details { border: 1px solid #dee2e6; padding: 15px; margin-top: 15px; background-color: #f8f9fa; border-radius: 4px; }
+.selected-model-details h3 { margin-top: 0; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; margin-bottom: 10px; }
+.selected-model-details button { margin-right: 10px; margin-top: 10px; padding: 6px 12px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; }
+.selected-model-details button:disabled { background-color: #cccccc; cursor: not-allowed; color: #666; }
+
+.selected-model-details button:nth-of-type(1) { background-color: #28a745; color: white; } /* Download/Retry */
+.selected-model-details button:nth-of-type(1):hover:not(:disabled) { background-color: #218838; }
+
+.gated-warning { border: 1px solid #ffeeba; background-color: #fff9e1; padding: 10px; margin-top: 10px; border-radius: 4px; color: #856404;}
+.gated-warning p { margin: 0 0 10px 0; }
+.gated-warning button:nth-of-type(1) { background-color: #ffc107; color: #333; border-color: #ffc107; } /* Open License */
+.gated-warning button:nth-of-type(1):hover:not(:disabled) { background-color: #e0a800; }
+.gated-warning button:nth-of-type(2) { background-color: #007bff; color: white; } /* Retry Download */
+.gated-warning button:nth-of-type(2):hover:not(:disabled) { background-color: #0056b3; }
+
+.download-feedback { margin-top: 10px; font-weight: bold; padding: 8px; border-radius: 4px; }
+.download-feedback.downloading { color: #004085; background-color: #cce5ff; border: 1px solid #b8daff; }
+.download-feedback.success { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
+.download-feedback.error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; } 

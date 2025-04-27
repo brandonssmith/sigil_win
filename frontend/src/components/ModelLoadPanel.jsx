@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { API_BASE_URL } from '../constants'; // Import shared constant
 
@@ -17,35 +17,72 @@ function ModelLoadPanel({
   const [availableModels, setAvailableModels] = useState([]);
   const [fetchError, setFetchError] = useState(null); // State for fetch errors
 
-  // --- Fetch Available Models --- 
-  useEffect(() => {
-    const fetchModels = async () => {
-      setFetchError(null); // Clear previous errors
-      // We can use the setLoading prop from App.jsx to indicate loading here too
-      setLoading(true); 
-      try {
-        const response = await fetch(`${API_BASE_URL}/models`); 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch model list (status: ${response.status})`);
-        }
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setAvailableModels(data);
-          console.log("Fetched models:", data);
-        } else {
-          console.error("Unexpected format for model list:", data);
-          throw new Error("Received unexpected data format for model list.");
-        }
-      } catch (err) {
-        console.error("Error fetching model list:", err);
-        setFetchError(err.message); // Store fetch error message
-        setAvailableModels([]); // Set to empty array on error
-      } finally {
-        setLoading(false); // Ensure loading is set to false
+  // NEW State for Hugging Face Token Status
+  const [hfTokenStatus, setHfTokenStatus] = useState({ status: 'checking', username: null, message: null });
+
+  // --- NEW: Search state for Hugging Face Hub ---
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState(null);
+
+  // --- NEW: State for specific download status ---
+  const [downloadingModelId, setDownloadingModelId] = useState(null);
+  const [downloadMessage, setDownloadMessage] = useState({ type: '', text: '' }); // { type: 'success'|'error', text: '...' }
+
+  // --- NEW: State for saving token ---
+  const [newTokenInput, setNewTokenInput] = useState('');
+  const [saveTokenLoading, setSaveTokenLoading] = useState(false);
+  const [saveTokenMessage, setSaveTokenMessage] = useState({ type: '', text: '' });
+
+  // --- Fetch Hugging Face Token Status (modified to be callable) ---
+  const fetchHfStatus = useCallback(async () => {
+    setHfTokenStatus({ status: 'checking', username: null, message: null }); // Reset status on fetch
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/models/token/status`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || data.detail || `HTTP error ${response.status}`);
       }
-    };
+      setHfTokenStatus({ status: data.status, username: data.username, message: data.message });
+    } catch (err) {
+      console.error("Error fetching HF token status:", err);
+      setHfTokenStatus({ status: 'error', username: null, message: err.message || 'Failed to fetch token status.' });
+    }
+  }, []); // Empty dependency array, doesn't depend on component state
+
+  useEffect(() => {
+    fetchHfStatus();
+  }, [fetchHfStatus]); // Call on mount
+
+  // --- Fetch Available Models (extract to reusable function) ---
+  const fetchModels = useCallback(async () => {
+    setFetchError(null);
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/models`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch model list (status: ${response.status})`);
+      }
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setAvailableModels(data);
+      } else {
+        throw new Error('Received unexpected data format for model list.');
+      }
+    } catch (err) {
+      console.error('Error fetching model list:', err);
+      setFetchError(err.message);
+      setAvailableModels([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading]);
+
+  // Fetch models on mount and whenever fetchModels reference changes
+  useEffect(() => {
     fetchModels();
-  }, [setLoading]); // Dependency array includes setLoading from props
+  }, [fetchModels]);
 
   // Function to fetch model status on component mount
   const checkModelStatus = async () => {
@@ -116,35 +153,205 @@ function ModelLoadPanel({
     }
   };
 
+  // Handler: perform model search
+  const handleSearchModels = async (e) => {
+    e.preventDefault();
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
+    setSearchLoading(true);
+    setSearchError(null);
+    setSearchResults([]);
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/v1/models/search?query=${encodeURIComponent(trimmed)}`);
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.detail || `Search failed (status ${resp.status})`);
+      }
+      setSearchResults(data);
+    } catch (err) {
+      console.error('Model search error:', err);
+      setSearchError(err.message);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Handler: download model from search result
+  const handleDownloadModel = async (modelId) => {
+    if (!modelId || downloadingModelId) return; // Prevent multiple simultaneous downloads
+
+    setDownloadingModelId(modelId); // Set which model is downloading
+    setDownloadMessage({ type: '', text: '' }); // Clear previous message
+
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/v1/models/download`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model_name: modelId })
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.detail || `Download failed (status ${resp.status})`);
+      }
+      // Refresh local model list after successful download
+      await fetchModels();
+      // Set success message instead of alert
+      setDownloadMessage({ type: 'success', text: data.message || `Successfully downloaded ${modelId}` });
+    } catch (err) {
+      console.error('Download error:', err);
+      // Set error message instead of alert
+      setDownloadMessage({ type: 'error', text: `Download error: ${err.message}` });
+    } finally {
+      setDownloadingModelId(null); // Clear downloading state
+      // Optional: clear the message after a delay
+      setTimeout(() => setDownloadMessage({ type: '', text: '' }), 5000); // Clear after 5s
+    }
+  };
+
+  // --- NEW: Handler to save token ---
+  const handleSaveToken = async (e) => {
+    e.preventDefault();
+    const tokenToSave = newTokenInput.trim();
+    if (!tokenToSave) {
+      setSaveTokenMessage({ type: 'error', text: 'Token input cannot be empty.' });
+      return;
+    }
+    setSaveTokenLoading(true);
+    setSaveTokenMessage({ type: '', text: '' });
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/v1/models/token/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: tokenToSave })
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.detail || `Failed to save token (status ${resp.status})`);
+      }
+      setSaveTokenMessage({ type: 'success', text: data.message || 'Token saved!' });
+      setNewTokenInput(''); // Clear input on success
+      // Re-fetch token status to update UI
+      await fetchHfStatus();
+    } catch (err) {
+      console.error("Error saving token:", err);
+      setSaveTokenMessage({ type: 'error', text: `Error: ${err.message}` });
+    } finally {
+      setSaveTokenLoading(false);
+      // Optionally clear message after delay
+      setTimeout(() => setSaveTokenMessage({ type: '', text: '' }), 5000);
+    }
+  };
+
   return (
     <div className="model-load-panel">
       <h3>Load Model</h3>
+
+      {/* --- Display HF Token Status --- (NEW) */}
+      <div className="hf-token-status" style={{ fontSize: '0.9em', marginBottom: '10px', opacity: 0.8 }}>
+        {hfTokenStatus.status === 'checking' && (
+          <span><small>Checking Hugging Face token...</small></span>
+        )}
+        {hfTokenStatus.status === 'valid' && hfTokenStatus.username && (
+          <span style={{ color: 'var(--accent-color-success)' }}>✓ Logged in as: {hfTokenStatus.username}</span>
+        )}
+        {hfTokenStatus.status === 'invalid' && (
+          <span style={{ color: 'var(--accent-color-warning)' }} title={hfTokenStatus.message || 'Token validation failed.'}>
+             ⚠️ Invalid/Expired Token
+          </span>
+        )}
+        {hfTokenStatus.status === 'not_found' && (
+          <form onSubmit={handleSaveToken} style={{ marginTop: '5px', marginBottom: '15px' }}>
+             <label htmlFor="hfTokenInput" style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>
+               Enter Hugging Face Token (for private models):
+             </label>
+             <p style={{fontSize: '0.8em', opacity: 0.7, margin: '0 0 5px 0'}}>
+               Needed for private/gated models. Get yours from <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer">HF Settings</a>.
+             </p>
+             <input
+               id="hfTokenInput"
+               type="password" // Use password type for masking
+               value={newTokenInput}
+               onChange={(e) => setNewTokenInput(e.target.value)}
+               placeholder="hf_..."
+               disabled={saveTokenLoading}
+               style={{ width: '70%', marginRight: '4px' }}
+             />
+            <button type="submit" disabled={saveTokenLoading || !newTokenInput.trim()}>
+              {saveTokenLoading ? 'Saving...' : 'Save Token'}
+            </button>
+            {/* Display save status message */}
+            {saveTokenMessage.text && (
+              <p style={{ color: saveTokenMessage.type === 'error' ? 'var(--accent-color-error)' : 'var(--accent-color-success)', fontSize: '0.8em', marginTop: '4px' }}>
+                {saveTokenMessage.text}
+              </p>
+            )}
+          </form>
+        )}
+        {hfTokenStatus.status === 'error' && (
+          <span style={{ color: 'var(--accent-color-error)' }} title={hfTokenStatus.message || 'Error checking token.'}>
+             ❌ Error Checking Token
+          </span>
+        )}
+      </div>
+
+      {/* --- Hugging Face Hub Search Section --- */}
+      <form onSubmit={handleSearchModels} style={{ marginBottom: '10px' }}>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search Hugging Face Hub..."
+          disabled={searchLoading}
+          style={{ width: '70%', marginRight: '4px' }}
+        />
+        <button type="submit" disabled={searchLoading || !searchQuery.trim()}>Search</button>
+      </form>
+      {/* --- Display Download Status Message --- (NEW) */}
+      {downloadMessage.text && (
+        <p style={{ color: downloadMessage.type === 'error' ? 'var(--accent-color-error)' : 'var(--accent-color-success)', fontSize: '0.9em', marginTop: '-5px', marginBottom: '10px' }}>
+          {downloadMessage.text}
+        </p>
+      )}
+
+      {searchLoading && <p>Searching...</p>}
+      {searchError && <p className="error-message">Search error: {searchError}</p>}
+      {searchResults.length > 0 && (
+        <div className="search-results" style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '12px' }}>
+          {searchResults.map((res) => (
+            <div key={res.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.85em' }}>{res.id}</span>
+              <button
+                onClick={() => handleDownloadModel(res.id)}
+                // Disable if this specific model is downloading, OR if any other download is in progress, OR if search is happening
+                disabled={downloadingModelId === res.id || (downloadingModelId !== null && downloadingModelId !== res.id) || searchLoading}
+              >
+                {downloadingModelId === res.id ? 'Downloading...' : 'Download'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Existing local model list UI */}
       {fetchError && (
         <p className="error-message">Error fetching models: {fetchError}</p>
       )}
       <div className="model-list">
-        {/* Render buttons dynamically based on fetched models */}
         {availableModels.length > 0 ? (
-          availableModels.map(model => (
-            <button 
-              key={model} 
-              onClick={() => handleLoadModel(model)} 
-              // Disable button if this model is already loaded OR if ANY model is currently loading
-              disabled={(isModelLoaded && currentModelPath === model) || isLoading} 
+          availableModels.map((model) => (
+            <button
+              key={model}
+              onClick={() => handleLoadModel(model)}
+              disabled={(isModelLoaded && currentModelPath === model) || isLoading}
               className="model-load-button"
             >
               Load {model}
             </button>
           ))
         ) : (
-          !fetchError && <p>Loading model list...</p> // Show loading text if no error yet
-        )}
-        {/* Show message if list is empty after fetch (and no error) */}
-        {availableModels.length === 0 && !fetchError && !isLoading && (
-            <p>No models found in backend/models directory.</p>
+          !fetchError && <p>{isLoading ? 'Loading model list...' : 'No models found.'}</p>
         )}
       </div>
-      {/* Input field removed */}
     </div>
   );
 }
