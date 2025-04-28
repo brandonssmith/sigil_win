@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&display=swap');
+
 /* Base styles */
 html,
 body,
@@ -69,9 +72,10 @@ body {
 
 .chat-header h1 {
   margin-right: 10px; /* Add space after title */
-  font-size: 1.4rem; /* Slightly smaller */
+  font-family: 'JetBrains Mono', monospace; /* <-- Apply JetBrains Mono font */
+  font-size: 1.4rem; /* Revert size adjustment, JetBrains Mono is wider */
   color: var(--palette-9); /* Use --palette-9 as requested */
-  font-weight: 600;
+  font-weight: 700; /* Ensure bold weight */
 }
 
 /* Group model status indicators together */
