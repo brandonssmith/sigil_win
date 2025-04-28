@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { API_BASE_URL } from '../constants'; // Import shared constant
+import './ModelLoadPanel.css'; // <-- Import the new CSS file
 
 // Base API URL - Moved to constants.js
 // const API_BASE_URL = 'http://localhost:8000';

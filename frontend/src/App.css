@@ -35,47 +35,74 @@ body {
   text-align: left;
 }
 
-/* New App Layout */
+/* New App Layout - Using Flexbox */
 .app-layout {
   display: flex;
-  height: 100%;
+  height: 100vh; /* Ensure it takes full viewport height */
   width: 100%;
+  overflow: hidden; /* Prevent layout issues from potential overflows */
 }
 
-/* Settings Panel styles removed - see frontend/src/components/panels/SettingsPanel.css */
+/* Sidebar styles are in Sidebar.css */
 
-/* Chat container - Ensure full width and height within #root */
-/* Needs to adapt to be next to settings panel */
+/* Chat container */
 .chat-container {
   display: flex;
   flex-direction: column;
-  flex-grow: 1; /* Take remaining space */
-  width: 100%; /* Explicitly set width to fill parent */
+  flex-grow: 1; /* Takes up remaining space */
   height: 100%; /* Fill height */
-  background-color: var(--surface, #1e1e1e); /* Give container a slightly different bg */
+  background-color: var(--surface, #1e1e1e);
+  overflow: hidden; /* Prevent internal scrolling issues at this level */
+  /* Ensure chat container shrinks/grows */
+  min-width: 0; /* Allow shrinking below content size if needed */
 }
 
-/* Header - Softer border */
+/* Header */
 .chat-header {
-  display: flex; /* Enable Flexbox */
-  align-items: center; /* Vertically align items */
-  gap: 10px; /* Add some space between flex items */
-  background-color: var(--surface, #252525); /* Slightly lighter dark */
-  padding: 0.75rem 1.5rem; /* Adjust padding */
-  /* text-align: center; <-- Removed, flex handles alignment */
-  border-bottom: 1px solid var(--border, #333); /* Subtle border */
-  position: sticky;
-  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--surface, #252525);
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border, #333);
+  /* Removed position sticky, as sidebar handles its own scrolling */
+  /* top: 0; */ 
   z-index: 10;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Add subtle shadow */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+/* Style the new sidebar toggle button */
+.sidebar-toggle-button {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 24px; /* Adjust size as needed */
+  cursor: pointer;
+  padding: 0 5px; /* Adjust padding */
+  line-height: 1; /* Prevent extra vertical space */
+  margin-right: 5px; /* Space before title */
+}
+
+.sidebar-toggle-button:hover {
+  opacity: 0.8;
 }
 
 .chat-header h1 {
-  margin-right: 10px; /* Add space after title */
-  font-family: 'JetBrains Mono', monospace; /* <-- Apply JetBrains Mono font */
-  font-size: 1.4rem; /* Revert size adjustment, JetBrains Mono is wider */
-  color: var(--palette-9); /* Use --palette-9 as requested */
-  font-weight: 700; /* Ensure bold weight */
+  /* margin-right: 10px; */ /* Removed, gap handles spacing */
+  margin-left: 0; /* Remove potential conflicting margin */
+  margin-top: 0;
+  margin-bottom: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.4rem;
+  color: var(--palette-9);
+  font-weight: 700;
+  white-space: nowrap; /* Prevent title wrapping */
+}
+
+/* Welcome message and device indicator might need margin adjusted */
+.chat-header span[style*="marginLeft: auto"] {
+  margin-left: auto; /* Ensure it stays pushed right */
 }
 
 /* Group model status indicators together */
@@ -235,14 +262,15 @@ body {
 /* Input bar - Softer border, more padding */
 .input-bar {
   display: flex;
-  align-items: center; /* Align items vertically */
+  align-items: center;
   padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border, #333); /* Subtle border */
-  background-color: var(--surface, #252525); /* Match header */
-  position: sticky;
-  bottom: 0;
+  border-top: 1px solid var(--border, #333);
+  background-color: var(--surface, #252525);
+  /* Removed position sticky, handled by flex layout */
+  /* bottom: 0; */
   z-index: 10;
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2); /* Add subtle shadow */
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0; /* Prevent input bar from shrinking */
 }
 
 .input-bar input[type="text"] {

@@ -1,0 +1,47 @@
+/* Sidebar container */
+.sidebar {
+  width: 350px; /* Default width when open */
+  height: 100vh; /* Full viewport height */
+  background-color: var(--panel-bg-color, #2a2a2a); /* Use theme variable or default */
+  border-right: 1px solid var(--panel-border-color, #444); /* Use theme variable or default */
+  overflow-x: hidden; /* Hide horizontal scroll */
+  transition: width 0.3s ease-in-out, transform 0.3s ease-in-out; /* Smooth transition for collapse/expand */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative; /* Needed for absolute positioning inside if required by CombinedPanel */
+}
+
+/* Styles when the sidebar is closed */
+.sidebar.closed {
+  width: 0;
+  border-right: none;
+  /* Alternatively, use transform for a sliding effect */
+  /* transform: translateX(-100%); */
+  /* width: 350px; */
+}
+
+/* Styles when the sidebar is open */
+.sidebar.open {
+  width: 350px; /* Or your desired width */
+  /* transform: translateX(0); */
+}
+
+/* Container for the actual content (CombinedPanel) */
+.sidebar-content {
+  flex-grow: 1; /* Allows the content to fill the sidebar */
+  overflow-y: auto; /* Allow vertical scrolling if content exceeds height */
+  padding: 15px;
+  box-sizing: border-box;
+  color: var(--text-color, #eee);
+  /* Ensure content is hidden quickly when closing */
+  opacity: 1;
+  transition: opacity 0.1s linear;
+}
+
+.sidebar.closed .sidebar-content {
+  opacity: 0;
+  padding: 0; /* Remove padding when closed to prevent overflow issues */
+}
+
+/* You might need to adjust styles within CombinedPanel if they rely on fixed positioning */ 

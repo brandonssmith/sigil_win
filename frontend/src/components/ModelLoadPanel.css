@@ -1,0 +1,44 @@
+.model-load-panel {
+  /* Add some padding if needed */
+  /* padding: 10px; */
+}
+
+/* Style the container for the local model load buttons */
+.model-list {
+  display: flex;
+  flex-wrap: wrap; /* Allow buttons to wrap to the next line */
+  gap: 10px; /* Add space between buttons (horizontally and vertically) */
+  margin-top: 15px; /* Add some space above the button list */
+}
+
+/* Style individual model load buttons (optional, adjust as needed) */
+.model-load-button {
+  /* Example styling - adapt as needed */
+  padding: 6px 12px;
+  background-color: var(--button-bg, #444);
+  color: var(--button-text, #eee);
+  border: 1px solid var(--button-border, #666);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.model-load-button:hover:not(:disabled) {
+  background-color: var(--button-hover-bg, #555);
+}
+
+.model-load-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Add some margin below forms/sections for better spacing */
+.model-load-panel form {
+  margin-bottom: 15px;
+}
+
+.hf-token-status,
+.device-status-display,
+.search-results {
+  margin-bottom: 15px;
+} 

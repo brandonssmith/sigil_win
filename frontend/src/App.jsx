@@ -5,8 +5,8 @@ import ModelLoadPanel from './components/ModelLoadPanel.jsx';
 import ChatModeSelector from './components/ChatModeSelector.jsx';
 import { formatChatHistoryForBackend } from './utils/chatUtils.js'; // Import the utility function
 import { API_BASE_URL } from './constants.js'; // Import shared constants
-import PanelHost from './components/panel-router/PanelHost.jsx';
 import DeviceIndicator from './components/DeviceIndicator.jsx'; // <-- Import the new component
+import Sidebar from './components/Sidebar.jsx'; // <-- Import the new Sidebar
 
 // Base API URL - Moved to constants.js
 // const API_BASE_URL = 'http://localhost:8000';
@@ -56,57 +56,15 @@ function App() {
   const [showSettings, setShowSettings] = useState(true);
   const [hfUsername, setHfUsername] = useState(null); // <-- NEW: State for username
   const [currentDevice, setCurrentDevice] = useState(null); // <-- NEW: State for device (cuda/cpu)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // <-- ADDED: Sidebar state
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/themes`)
-      .then(res => res.json())
-      .then(setThemeList)
-      .catch(() => setThemeList([
-        'AlienBlood', 'Brogrammer', 'HaX0R_BLUE', 'HaX0R_GR33N', 'HaX0R_R3D',
-        'Kanagawa Dragon', 'Kanagawa Wave', 'Shaman',
-        'catppuccin-frappe', 'catppuccin-macchiato', 'catppuccin-mocha',
-      ]));
-  }, []);
+  // --- Define Callbacks First ---
+  // Moved handleClearChat definition UP
+  const handleClearChat = useCallback(() => {
+    setChatHistory([]);
+    setError(null); // Also clear any existing errors
+  }, []); // Dependencies: setChatHistory, setError (stable)
 
-  // --- Keyboard Shortcuts --- useEffect
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      // Toggle Settings: Cmd/Ctrl + ,
-      if ((event.metaKey || event.ctrlKey) && event.key === ',') {
-        event.preventDefault(); // Prevent browser's default behavior (if any)
-        setShowSettings(prevShowSettings => !prevShowSettings);
-      }
-
-      // Clear Chat: Ctrl + Shift + C
-      if (event.ctrlKey && event.shiftKey && event.key === 'C') {
-        event.preventDefault();
-        handleClearChat(); // Assuming handleClearChat is stable or wrapped in useCallback if needed
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    // Cleanup listener on component unmount
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []); // Empty dependency array means this runs once on mount and cleanup on unmount
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [chatHistory]);
-
-  // Handler for loading the model - Removed, handled by ModelLoadPanel
-  // const handleLoadModel = async () => { ... };
-
-  // Handler for applying model settings - Removed, handled by SettingsPanel
-  // const handleApplySettings = async () => { ... };
-
-  // Callback to update App's state based on ModelLoadPanel status
   const handleModelLoadStatusChange = (status, modelName = null) => {
     // Clear previous errors when starting to load or if load is successful
     if (status === 'loading' || status === 'loaded') {
@@ -125,12 +83,10 @@ function App() {
     }
   };
 
-  // --- NEW: Callback to receive username from ModelLoadPanel --- 
   const handleHfUsernameUpdate = useCallback((username) => {
       setHfUsername(username);
   }, []);
 
-  // --- NEW: Callback to receive device status from ModelLoadPanel --- 
   const handleDeviceUpdate = useCallback((device) => {
     setCurrentDevice(device);
   }, []);
@@ -141,12 +97,54 @@ function App() {
     // setChatHistory([]); 
   };
 
-  // Wrap handleClearChat in useCallback if it's used in dependency arrays elsewhere or for consistency
-  // (Although in this specific case, it's not strictly necessary for the shortcut effect)
-  const handleClearChat = useCallback(() => {
-    setChatHistory([]);
-    setError(null); // Also clear any existing errors
-  }, []); // Dependencies: setChatHistory, setError (usually stable, but included for correctness)
+  // --- useEffect Hooks ---
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/themes`)
+      .then(res => res.json())
+      .then(setThemeList)
+      .catch(() => setThemeList([
+        'AlienBlood', 'Brogrammer', 'HaX0R_BLUE', 'HaX0R_GR33N', 'HaX0R_R3D',
+        'Kanagawa Dragon', 'Kanagawa Wave', 'Shaman',
+        'catppuccin-frappe', 'catppuccin-macchiato', 'catppuccin-mocha',
+      ]));
+  }, []);
+
+  // --- Keyboard Shortcuts --- useEffect
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Toggle Sidebar: Cmd/Ctrl + ,
+      if ((event.metaKey || event.ctrlKey) && event.key === ',') {
+        event.preventDefault();
+        setIsSidebarOpen(prevIsOpen => !prevIsOpen);
+      }
+
+      // Clear Chat: Ctrl + Shift + C
+      if (event.ctrlKey && event.shiftKey && event.key === 'C') {
+        event.preventDefault();
+        handleClearChat(); // Now defined above
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleClearChat]); // Dependency is now valid
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatHistory]);
+
+  // Handler for loading the model - Removed, handled by ModelLoadPanel
+  // const handleLoadModel = async () => { ... };
+
+  // Handler for applying model settings - Removed, handled by SettingsPanel
+  // const handleApplySettings = async () => { ... };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -256,21 +254,43 @@ function App() {
   return (
     // Use a Fragment <> ... </> to return multiple top-level elements
     <>
-      <div className="app-layout"> 
+      <div className={`app-layout ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         {/* Dynamically load the selected theme */}
         <ThemeLoader themeName={themeName} />
         
-        {/* Remove the empty Left Panel div */}
-        {/* 
-        <div className="left-panel">
-        </div>
-         */}
+        {/* Render the Sidebar */}
+        <Sidebar
+            isOpen={isSidebarOpen}
+            modelLoaded={modelLoaded}
+            setLoadStatus={handleModelLoadStatusChange}
+            setLoading={setIsLoading}
+            isLoading={isLoading}
+            currentModelPath={currentLoadedModelName}
+            onChatModeChange={handleChatModeChange}
+            themeName={themeName}
+            setThemeName={setThemeName}
+            themeList={themeList}
+            onHfUsernameUpdate={handleHfUsernameUpdate}
+            onDeviceUpdate={handleDeviceUpdate}
+            currentDevice={currentDevice}
+         />
         
         {/* Right Panel: Chat Area */}
         <div className="chat-container">
           <header className="chat-header">
-            <h1>Sigil</h1>
+            {/* Sidebar Toggle Button */}
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="sidebar-toggle-button" // Add a class for styling
+              title="Toggle Sidebar (Cmd/Ctrl + ,)" // Accessibility
+            >
+              ☰ {/* Hamburger Icon */}
+            </button>
+
+            {/* Original Header Content */}
+            <h1 style={{ marginLeft: '10px' }}>Sigil</h1> {/* Added margin for spacing */}
             {/* Move the settings toggle button here */}
+            {/* 
             <button
               onClick={() => setShowSettings(!showSettings)}
               style={{
@@ -287,6 +307,7 @@ function App() {
             >
               ⚙️
             </button>
+             */}
             {/* --- NEW: Welcome Message --- */}
             {hfUsername && (
               <span style={{ marginLeft: 'auto', fontSize: '0.9em', opacity: 0.9 /* color: 'var(--color-username)' */ }}>
@@ -307,15 +328,20 @@ function App() {
 
           <div className="messages-area">
             {/* Display message asking user to load model if not loaded */}
-            {appModelLoadStatus === 'idle' && (
+            {appModelLoadStatus === 'idle' && !isSidebarOpen && ( // Show only if sidebar is closed
               <div className="message system-message">
-                <p>Click the ⚙️ icon to open settings, go to the 'Load Model' tab, and choose a model to start chatting.</p>
+                <p>Click the ☰ icon or press Cmd/Ctrl+, to open the sidebar and load a model.</p>
+              </div>
+            )}
+             {appModelLoadStatus === 'idle' && isSidebarOpen && ( // Show when sidebar is open
+              <div className="message system-message">
+                <p>Use the 'Load Model' panel in the sidebar to choose a model.</p>
               </div>
             )}
             {appModelLoadStatus === 'error' && (
                <div className="message system-message error-message"> 
                  {/* Display general error state if set by load failure */}
-                 <p>{error || 'Failed to load model. Check panel above for details.'}</p>
+                 <p>{error || 'Failed to load model. Check the sidebar for details.'}</p>
                </div>
             )}
 
@@ -361,23 +387,6 @@ function App() {
         </div>
       </div> 
       {/* End of app-layout div */}
-
-      {/* Render the PanelHost outside the main layout */}
-      <PanelHost 
-        showSettings={showSettings} 
-        modelLoaded={modelLoaded} 
-        setLoadStatus={handleModelLoadStatusChange}
-        setLoading={setIsLoading}
-        isLoading={isLoading}
-        currentModelPath={currentLoadedModelName}
-        onChatModeChange={handleChatModeChange}
-        themeName={themeName}
-        setThemeName={setThemeName}
-        themeList={themeList}
-        onHfUsernameUpdate={handleHfUsernameUpdate} // <-- Pass callback down
-        onDeviceUpdate={handleDeviceUpdate} // <-- Pass new callback down
-        currentDevice={currentDevice} // <-- Pass current device state down
-      />
     </> // End Fragment
   );
 }
