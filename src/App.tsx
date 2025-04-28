@@ -68,10 +68,22 @@ function App() {
       setGatedCheckResult(null);
       setDownloadStatus({ status: 'idle', message: null, modelId: null });
       setGeneralMessage(null);
+      setMessageType('info');
       setIsLoadingGatedCheck(true);
       try {
           const result = await api.checkGated(model.id);
           setGatedCheckResult(result);
+          if (!result.isGated) {
+              const maxLength = 30;
+              const truncatedId = model.id.length > maxLength 
+                  ? `${model.id.substring(0, maxLength)}...` 
+                  : model.id;
+              setGeneralMessage(`✅ Ready: ${truncatedId}`);
+              setMessageType('success');
+          } else if (result.isGated) {
+              setGeneralMessage(`🔒 Model ${model.id} requires permissions.`);
+              setMessageType('warning');
+          }
       } catch (error) {
           setGeneralMessage(`Failed to check gated status for ${model.id}: ${error.message}`);
           setMessageType('error');

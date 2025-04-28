@@ -33,6 +33,14 @@ def load_model_internal(path: str):
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
             print("   ⚠️ Added pad_token = eos_token")
+        
+        # --- Add default chat template if missing ---
+        if tokenizer.chat_template is None:
+            # Define a common Jinja chat template (similar to Llama/Mistral)
+            DEFAULT_CHAT_TEMPLATE = "{% for message in messages %}{% if message['role'] == 'user' %}{{ bos_token + '[INST] ' + message['content'] + ' [/INST]' }}{% elif message['role'] == 'assistant' %}{{ ' ' + message['content'] + eos_token }}{% elif message['role'] == 'system' %}{{ bos_token + '[INST] <<SYS>>\\n' + message['content'] + '\\n<</SYS>>\\n\\n' }}{% endif %}{% endfor %}"
+            tokenizer.chat_template = DEFAULT_CHAT_TEMPLATE
+            print(f"   ⚠️ Applied default Jinja chat template.")
+        # --- End chat template addition ---
 
         # Load using the resolved absolute path
         model = AutoModelForCausalLM.from_pretrained(absolute_path, local_files_only=True, trust_remote_code=False)
@@ -44,8 +52,15 @@ def load_model_internal(path: str):
             model.to(device)
             print(f"   ✅ Model successfully loaded from '{absolute_path}' and placed on '{device.upper()}'")
         except Exception as move_err:
-            print(f"   ⚠️ Model loaded from '{absolute_path}' but failed to move to '{device.upper()}': {move_err}. Using CPU.")
-            device = 'cpu' # Fallback to CPU
+            print(f"   ⚠️ Model loaded from '{absolute_path}' but failed to move to '{device.upper()}': {move_err}. Attempting to use CPU.")
+            device = 'cpu' # Set target device to CPU
+            try:
+                model.to(device) # Explicitly move model back to CPU
+                print(f"   ✅ Model successfully moved to '{device.upper()}'.")
+            except Exception as cpu_move_err:
+                print(f"   ❌ Failed to move model to CPU after GPU failure: {cpu_move_err}. Model state might be inconsistent.", file=sys.stderr)
+                # Depending on desired behavior, could raise an error here or proceed cautiously
+                # For now, we proceed, but the model might still cause issues.
 
         return tokenizer, model, device
 
