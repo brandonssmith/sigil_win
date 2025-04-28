@@ -41,7 +41,8 @@ Sigil is built for developers who want full control over local inference workflo
 
 ### Backend Architecture
 
-- FastAPI-based REST API with endpoints for chat, model loading, VRAM, and runtime settings
+- FastAPI-based REST API with modular routers (`chat`, `settings`, `models`)
+- Endpoints for chat, model loading (by path or name), VRAM status, runtime settings, theme listing, and model listing.
 - Model configuration and inference settings stored in application state for easy access and live updates
 - Full backend logging to `backend_api.log` for transparency and debugging
 
@@ -63,13 +64,14 @@ Sigil is built for developers who want full control over local inference workflo
 ### GPU Awareness
 
 - Detects CUDA-compatible devices and uses them automatically when available
-- Exposes VRAM usage via `/vram` API endpoint
+- Exposes VRAM usage via `/api/v1/vram` API endpoint
 
 ### Frontend Interface
 
 - Built with React and Vite for a fast, responsive user experience
 - Live chat interface for real-time interaction with models
 - Accessible at `http://localhost:5173` during development
+- Dynamic theme loading supported via `/themes` endpoint.
 
 ### Development Environment
 
@@ -78,13 +80,13 @@ Sigil is built for developers who want full control over local inference workflo
 
 ## Interface Walkthrough
 
-Sigil’s frontend is designed for clarity, responsiveness, and developer-first workflows. Once the application is running, here’s what the interface provides:
+Sigil's frontend is designed for clarity, responsiveness, and developer-first workflows. Once the application is running, here's what the interface provides:
 
 ### Model Loading
 
-After startup, the frontend will prompt you to enter a local path to your model. Upon submission:
+After startup, the frontend will prompt you to select a model. Options may include loading from a local path or choosing a pre-defined model name discovered by the backend. Upon submission:
 
-- The backend loads the model via the `/model/load` endpoint
+- The backend loads the model via the `/api/v1/model/load` or `/api/v1/model/load/{model_name}` endpoint.
 - Real-time status updates appear in `backend/backend_api.log`
 - On success, the chat interface becomes available
 
@@ -103,8 +105,10 @@ After loading a model, the frontend presents a clean interface to interact with 
 ### Developer Tools and Feedback
 
 - All requests are routed through the FastAPI backend
-- Adjust generation settings (e.g. `temperature`, `top_p`, `max_new_tokens`) via the backend API
-- VRAM status can be accessed via the `/vram` endpoint if GPU is enabled
+- Adjust generation settings (e.g. `temperature`, `top_p`, `max_new_tokens`) via the `/api/v1/settings/update` endpoint
+- VRAM status can be accessed via the `/api/v1/vram` endpoint if GPU is enabled
+- Available models can be listed via `/models` endpoint.
+- Available themes can be listed via `/themes` endpoint.
 - Logs provide visibility into model status and runtime behavior
 
 This interface is ideal for local experimentation, debugging, and integrating lightweight LLMs into your workflow without external dependencies.
@@ -143,12 +147,12 @@ This interface is ideal for local experimentation, debugging, and integrating li
     npm install
     cd ..
     ```
+    *(Note: Frontend dependencies are managed by `package.json` in the root directory).*
 
-5.  **(Optional but Recommended) Download a Model:**
-    If you don't have one, download a model like TinyLlama:
-    *   Go to: <https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0>
-    *   Download the necessary files (e.g., `config.json`, `tokenizer.json`, model weights like `.safetensors`).
-    *   Create a directory (e.g., `mkdir models/TinyLlama-1.1B-Chat-v1.0`) and place all downloaded files inside it.
+5.  **(Optional but Recommended) Download or Place Models:**
+    *   Download models (like TinyLlama) as described before.
+    *   Place the downloaded model directories inside the `backend/models/` directory. This allows loading them by name (e.g., `TinyLlama-1.1B-Chat-v1.0`).
+    *   Alternatively, you can still load models from any local path using the UI.
 
 ## Running the Development Environment
 
@@ -165,8 +169,8 @@ This interface is ideal for local experimentation, debugging, and integrating li
 
 4.  **Load Model & Chat:**
     *   Open your web browser to the frontend URL (e.g., `http://localhost:5173`).
-    *   The web UI should provide an interface to specify the path to your downloaded model directory.
-    *   Once the model path is submitted, the frontend will call the backend API (`/api/v1/model/load`) to load the model. Watch the backend logs (`backend/backend_api.log`) for progress.
+    *   The web UI should provide an interface to specify the path to your model directory *or* select a model name listed from `backend/models/`.
+    *   Once the model path/name is submitted, the frontend will call the appropriate backend API endpoint (`/api/v1/model/load` or `/api/v1/model/load/{model_name}`) to load the model. Watch the backend logs (`backend/backend_api.log`) for progress.
     *   After the model is loaded successfully, you can use the chat interface.
 
 5.  **Stopping:**
@@ -176,27 +180,36 @@ This interface is ideal for local experimentation, debugging, and integrating li
 
 *   `start_dev.sh`: Main development environment startup script. Manages backend/frontend processes.
 *   `requirements.txt`: Python dependencies for the backend.
+*   `package.json`: Frontend dependencies (`npm`) and scripts (`dev`, `build`, `lint`). Located in the root.
+*   `vite.config.js`: Vite configuration file. Located in the root.
+*   `index.html`: Main HTML entry point for Vite. Located in the root.
 *   `backend/`: Contains the backend API code.
-    *   `api/`: Specific code for the FastAPI app.
-        *   `main.py`: FastAPI application definition, model loading logic, API endpoints (`/api/v1/...`).
+    *   `api/`: FastAPI application setup (`main.py`) and route definitions (`routes/`).
+    *   `core/`: Core logic like model loading (`model_loader.py`).
+    *   `models/`: Default location for storing model directories to be loaded by name.
+    *   `utils/`: Utility functions.
+    *   `schemas/`: Pydantic schemas (likely moved here, implied by imports).
     *   `backend_api.log`: Log file for the running backend server (created by `start_dev.sh`).
-*   `frontend/`: Contains the React/Vite frontend code.
-    *   `src/`: React components, application logic, API interaction.
-    *   `public/`: Static assets.
-    *   `index.html`: Main HTML entry point for Vite.
-    *   `package.json`: Frontend dependencies (`npm`) and scripts (`dev`, `build`, `lint`).
-    *   `vite.config.js`: Vite configuration file.
+*   `src/`: Contains the React/Vite frontend source code.
+    *   `App.tsx`: Main application component.
+    *   `components/`: Reusable UI components.
+    *   `services/`: API interaction logic.
+    *   `main.tsx`: Entry point for React application (likely).
+*   `frontend/`: Primarily contains static assets and potentially legacy/config files.
+    *   `public/`: Static assets, including themes (`public/themes/`).
+    *   *(Other config files like `.gitignore`, `eslint.config.js`)*
 *   `venv/`: (Created by you) Python virtual environment.
-*   `models/`: (Optional, created by you) Suggested location for downloaded model files.
+*   `assets/`: Contains images and GIFs for the README.
 
 ## Customization
 
 *   **Generation Parameters:**
     *   Defaults are set in `backend/api/main.py` (e.g., `app.state.temperature`).
-    *   The `/api/v1/settings/update` endpoint allows changing parameters like `temperature`, `top_p`, `max_new_tokens`, and `system_prompt` at runtime (the frontend might need adjustments to use this).
-*   **Backend API:** Add or modify endpoints in `backend/api/main.py`.
-*   **Frontend UI:** Modify the React components and logic in `frontend/src/`.
-*   **Model Loading Logic:** Found within `load_model_internal` function and the `/api/v1/model/load` endpoint in `backend/api/main.py`.
+    *   The `/api/v1/settings/update` endpoint allows changing parameters like `temperature`, `top_p`, `max_new_tokens`, and `system_prompt` at runtime. The frontend in `src/` needs to be adjusted to expose UI controls for this.
+*   **Backend API:** Add or modify endpoints in `backend/api/routes/` and register routers in `backend/api/main.py`. Update core logic in `backend/core/`.
+*   **Frontend UI:** Modify the React components and logic in `src/`.
+*   **Model Loading Logic:** Found within the `load_model_internal` and `load_model_by_name` functions in `backend/core/model_loader.py` and the corresponding API endpoints in `backend/api/routes/models.py` (implied location).
+*   **Themes:** Add new `.css` files to `frontend/public/themes/`. They will be automatically available via the `/themes` endpoint.
 
 ## 🪪 License
 
