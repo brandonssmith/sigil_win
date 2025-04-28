@@ -259,6 +259,6 @@ MIN_NARRATIVE_TOKENS = 350  # Keep constant here if needed elsewhere, or move to
 app.include_router(chat_router, prefix="/api/v1/chat", tags=["Chat"])
 app.include_router(settings_router, prefix="/api/v1/settings", tags=["Settings"])
 app.include_router(models_router, prefix="/api/v1/models", tags=["Models"]) # <-- Include models router
-app.include_router(system_router, prefix="/system", tags=["System"]) # <-- Include system router
+app.include_router(system_router, prefix="/api/v1/system", tags=["System"]) # <-- Include system router
 
 

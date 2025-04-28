@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SettingsPanel from './SettingsPanel.jsx';
 import ModelLoadPanel from '../ModelLoadPanel.jsx';
 import ChatModeSelector from '../ChatModeSelector.jsx';
+import PrecisionSettingsPanel from '../PrecisionSettingsPanel.jsx';
 import PropTypes from 'prop-types';
 
 // This component receives all props needed by both SettingsPanel and ModelLoadPanel
@@ -22,7 +23,15 @@ const CombinedPanel = (props) => {
       currentDevice
   } = props;
   
-  const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', 'interface', or 'help'
+  const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', 'interface', 'precision', or 'help'
+
+  // Effect to switch tab if device changes away from CUDA
+  useEffect(() => {
+    if (currentDevice !== 'cuda' && activeTab === 'precision') {
+      setActiveTab('settings'); // Switch back to default tab
+    }
+    // Dependency array includes currentDevice and activeTab to re-run when they change
+  }, [currentDevice, activeTab]);
 
   // Basic styling for tabs (can be improved later)
   const tabButtonStyle = (tabName) => ({
@@ -73,6 +82,15 @@ const CombinedPanel = (props) => {
         >
           Help
         </button>
+        {/* Conditionally render Precision tab button */}
+        {currentDevice === 'cuda' && (
+           <button
+            style={tabButtonStyle('precision')}
+            onClick={() => setActiveTab('precision')}
+          >
+            Precision
+          </button>
+        )}
       </div>
 
       {/* Tab Content Area */}
@@ -126,6 +144,12 @@ const CombinedPanel = (props) => {
               </li>
             </ul>
           </div>
+        )}
+        {/* Conditionally render PrecisionSettingsPanel */}
+        {activeTab === 'precision' && currentDevice === 'cuda' && (
+          <PrecisionSettingsPanel /> 
+          // Assuming PrecisionSettingsPanel doesn't need specific props from CombinedPanel
+          // If it does, pass them here.
         )}
       </div>
     </div>
