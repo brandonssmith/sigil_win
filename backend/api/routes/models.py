@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -15,12 +15,13 @@ from backend.utils.huggingface_utils import (
     TokenValidationError,
     TokenSaveError
 )
+# Import common schemas used
+from ..schemas.common import ModelStatusResponse
 
 # ---------------------------------------------------------------------------
 # Router Setup
 # ---------------------------------------------------------------------------
 router = APIRouter(
-    prefix="/models",
     tags=["models"],
 )
 
@@ -72,6 +73,20 @@ async def get_huggingface_token_status():
         return HFTokenStatusResponse(status="invalid", message=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error during token validation: {e}")
+
+
+@router.get("/status", response_model=ModelStatusResponse)
+def get_model_status(request: Request):
+    """Checks if a model is currently loaded and returns its status."""
+    app_state = request.app.state
+    if app_state.model and app_state.tokenizer:
+        return {
+            "loaded": True,
+            "path": app_state.model_path,
+            "device": app_state.device
+        }
+    else:
+        return {"loaded": False}
 
 
 @router.get("/search", response_model=List[ModelSearchResult])

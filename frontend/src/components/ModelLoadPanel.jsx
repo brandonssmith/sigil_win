@@ -13,6 +13,8 @@ function ModelLoadPanel({
   isModelLoaded,
   currentModelPath,
   onHfUsernameUpdate,
+  onDeviceUpdate,
+  currentDevice
 }) {
   // State to hold the list of models fetched from the backend
   const [availableModels, setAvailableModels] = useState([]);
@@ -94,32 +96,35 @@ function ModelLoadPanel({
   }, [fetchModels]);
 
   // Function to fetch model status on component mount
-  const checkModelStatus = async () => {
+  const checkModelStatus = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/v1/model/status`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/models/status`);
       if (!response.ok) throw new Error('Failed to fetch model status');
       const data = await response.json();
       if (data.loaded) {
         // Pass 'loaded' status and the model path (name)
         setLoadStatus('loaded', data.path);
+        onDeviceUpdate(data.device);
       } else {
         // Pass 'idle' status when no model is loaded
         setLoadStatus('idle');
+        onDeviceUpdate(null);
       }
     } catch (err) {
       console.error("Error checking model status:", err);
       // Pass 'error' status and an error message
       setLoadStatus('error', 'Error checking model status.');
+      onDeviceUpdate(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [setLoading, setLoadStatus, onDeviceUpdate]);
 
   // Check status on mount
   useEffect(() => {
     checkModelStatus();
-  }, []);
+  }, [checkModelStatus]);
 
   // --- Updated handleLoadModel --- 
   const handleLoadModel = async (modelName) => {
@@ -251,6 +256,17 @@ function ModelLoadPanel({
     }
   };
 
+  // --- Display Detected Device --- (NEW)
+  const getDeviceDisplay = () => {
+    if (currentDevice === 'cuda') {
+      return 'GPU (CUDA)';
+    } else if (currentDevice === 'cpu') {
+      return 'CPU';
+    } else {
+      return 'N/A'; // Or 'Checking...'
+    }
+  };
+
   return (
     <div className="model-load-panel">
       <h3>Load Model</h3>
@@ -301,6 +317,11 @@ function ModelLoadPanel({
              ❌ Error Checking Token
           </span>
         )}
+      </div>
+
+      {/* --- Display Device Status --- (NEW) */} 
+      <div className="device-status-display" style={{ fontSize: '0.9em', marginBottom: '15px', opacity: 0.8 }}>
+        <span>Device Detected: <strong>{getDeviceDisplay()}</strong></span>
       </div>
 
       {/* --- Hugging Face Hub Search Section --- */}
@@ -372,6 +393,8 @@ ModelLoadPanel.propTypes = {
   isModelLoaded: PropTypes.bool.isRequired,
   currentModelPath: PropTypes.string,
   onHfUsernameUpdate: PropTypes.func.isRequired,
+  onDeviceUpdate: PropTypes.func.isRequired,
+  currentDevice: PropTypes.oneOf(['cuda', 'cpu', null])
 };
 
 export default ModelLoadPanel; 

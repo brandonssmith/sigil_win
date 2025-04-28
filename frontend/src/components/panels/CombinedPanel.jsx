@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import SettingsPanel from './SettingsPanel.jsx';
 import ModelLoadPanel from '../ModelLoadPanel.jsx';
 import ChatModeSelector from '../ChatModeSelector.jsx';
+import PropTypes from 'prop-types';
 
 // This component receives all props needed by both SettingsPanel and ModelLoadPanel
 const CombinedPanel = (props) => {
@@ -17,6 +18,8 @@ const CombinedPanel = (props) => {
       setThemeName,
       themeList,
       onHfUsernameUpdate,
+      onDeviceUpdate,
+      currentDevice
   } = props;
   
   const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', 'interface', or 'help'
@@ -89,6 +92,8 @@ const CombinedPanel = (props) => {
             isModelLoaded={isModelLoaded} // Use the destructured prop
             currentModelPath={currentModelPath}
             onHfUsernameUpdate={onHfUsernameUpdate}
+            onDeviceUpdate={onDeviceUpdate}
+            currentDevice={currentDevice}
           />
         )}
         {activeTab === 'interface' && (
@@ -125,6 +130,21 @@ const CombinedPanel = (props) => {
       </div>
     </div>
   );
+};
+
+CombinedPanel.propTypes = {
+  modelLoaded: PropTypes.bool.isRequired,
+  setLoadStatus: PropTypes.func.isRequired,
+  setLoading: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+  currentModelPath: PropTypes.string,
+  onChatModeChange: PropTypes.func.isRequired,
+  themeName: PropTypes.string.isRequired,
+  setThemeName: PropTypes.func.isRequired,
+  themeList: PropTypes.array.isRequired,
+  onHfUsernameUpdate: PropTypes.func.isRequired,
+  onDeviceUpdate: PropTypes.func.isRequired,
+  currentDevice: PropTypes.oneOf(['cuda', 'cpu', null])
 };
 
 export default CombinedPanel; 

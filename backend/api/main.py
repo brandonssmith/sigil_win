@@ -13,6 +13,7 @@ from .core.model_loader import load_model_internal, load_model_by_name
 from .routes.chat import router as chat_router
 from .routes.settings import router as settings_router
 from .routes.models import router as models_router # <-- Import the new models router
+from .routes.system import router as system_router # <-- Import the new system router
 # Assuming schemas are also in backend/api/schemas
 from .schemas.common import (
     LoadModelRequest, LoadModelResponse, ModelStatusResponse,
@@ -24,6 +25,10 @@ app = FastAPI(
     description="API for loading models and generating text.",
     version="0.1.0",
 )
+
+@app.on_event("startup")
+async def startup_event():
+    print("System device checker ready.") # <-- Add startup message
 
 # --- Application State --- Keep track of loaded model components
 app.state.model = None
@@ -190,16 +195,16 @@ async def load_model_by_name_route(model_name: str, request: Request):
 # --- End New Endpoint ---
 
 # Endpoint to check model status
-@app.get("/api/v1/model/status", response_model=ModelStatusResponse)
-def get_model_status():
-    if app.state.model and app.state.tokenizer:
-        return {
-            "loaded": True,
-            "path": app.state.model_path,
-            "device": app.state.device
-        }
-    else:
-        return {"loaded": False}
+# @app.get("/api/v1/model/status", response_model=ModelStatusResponse)
+# def get_model_status():
+#     if app.state.model and app.state.tokenizer:
+#         return {
+#             "loaded": True,
+#             "path": app.state.model_path,
+#             "device": app.state.device
+#         }
+#     else:
+#         return {"loaded": False}
 
 # Simplified health check
 @app.get("/health")
@@ -251,8 +256,9 @@ def get_vram_info():
 # Chat endpoint - check if model is loaded
 MIN_NARRATIVE_TOKENS = 350  # Keep constant here if needed elsewhere, or move to config
 
-app.include_router(chat_router, prefix="/api/v1", tags=["Chat"]) # <-- INCLUDE ROUTER
-app.include_router(settings_router, prefix="/api/v1", tags=["Settings"])
-app.include_router(models_router, prefix="/api/v1", tags=["Models"]) # <-- Include the new models router
+app.include_router(chat_router, prefix="/api/v1/chat", tags=["Chat"])
+app.include_router(settings_router, prefix="/api/v1/settings", tags=["Settings"])
+app.include_router(models_router, prefix="/api/v1/models", tags=["Models"]) # <-- Include models router
+app.include_router(system_router, prefix="/system", tags=["System"]) # <-- Include system router
 
 

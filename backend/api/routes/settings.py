@@ -3,7 +3,7 @@ from ..schemas.common import ModelSettings, SettingsUpdateResponse
 
 router = APIRouter()
 
-@router.post("/settings/update", response_model=SettingsUpdateResponse)
+@router.post("/update", response_model=SettingsUpdateResponse)
 def update_generation_settings(settings: ModelSettings, request: Request):
     """Update generation parameters stored in application state."""
     app_state = request.app.state
@@ -39,7 +39,7 @@ def update_generation_settings(settings: ModelSettings, request: Request):
     return {"message": "Generation settings updated successfully.", "updated_settings": updated_settings}
 
 # New endpoint to get current settings
-@router.get("/settings/current", response_model=ModelSettings)
+@router.get("/current", response_model=ModelSettings)
 def get_current_settings(request: Request):
     """Retrieve the current generation settings stored in application state."""
     app_state = request.app.state

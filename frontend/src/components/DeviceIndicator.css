@@ -1,0 +1,42 @@
+/* DeviceIndicator.css */
+
+.device-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-left: 8px; /* Space it from the previous element */
+  display: inline-block; /* Allows margin-left and keeps it inline */
+  vertical-align: middle; /* Align with text */
+  transition: background-color 0.3s ease;
+}
+
+/* Default CPU state (e.g., grey) */
+.device-indicator.cpu {
+  background-color: var(--color-text-secondary); /* Use a less prominent color */
+  opacity: 0.6;
+}
+
+/* Active GPU state (uses theme variable) */
+.device-indicator.cuda {
+  background-color: var(--device-indicator-cuda-color, var(--accent-color-success)); /* Theme variable with fallback */
+}
+
+/* Pulsing animation for CUDA */
+.device-indicator.cuda.pulsing {
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+} 

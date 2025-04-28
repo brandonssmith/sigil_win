@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { panelRegistry, defaultOpenPanels } from './PanelManager';
+import PropTypes from 'prop-types';
 
 const MIN_WIDTH = 200; // Minimum panel width
 const MIN_HEIGHT = 150; // Minimum panel height
@@ -16,6 +17,8 @@ const PanelHost = ({
   setThemeName,
   themeList,
   onHfUsernameUpdate,
+  onDeviceUpdate,
+  currentDevice
 }) => {
   const [openPanels, setOpenPanels] = useState(defaultOpenPanels);
   const actionInfo = useRef({
@@ -141,6 +144,8 @@ const PanelHost = ({
             setThemeName,
             themeList,
             onHfUsernameUpdate,
+            onDeviceUpdate,
+            currentDevice
           };
         } else if (id === 'logs') {
           panelProps = {};
@@ -191,6 +196,22 @@ const PanelHost = ({
       })}
     </>
   );
+};
+
+PanelHost.propTypes = {
+  showSettings: PropTypes.bool.isRequired,
+  modelLoaded: PropTypes.bool.isRequired,
+  setLoadStatus: PropTypes.func.isRequired,
+  setLoading: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+  currentModelPath: PropTypes.string.isRequired,
+  onChatModeChange: PropTypes.func.isRequired,
+  themeName: PropTypes.string.isRequired,
+  setThemeName: PropTypes.func.isRequired,
+  themeList: PropTypes.array.isRequired,
+  onHfUsernameUpdate: PropTypes.func.isRequired,
+  onDeviceUpdate: PropTypes.func.isRequired,
+  currentDevice: PropTypes.oneOf(['cuda', 'cpu', null])
 };
 
 export default PanelHost;

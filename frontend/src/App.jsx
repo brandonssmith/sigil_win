@@ -6,6 +6,7 @@ import ChatModeSelector from './components/ChatModeSelector.jsx';
 import { formatChatHistoryForBackend } from './utils/chatUtils.js'; // Import the utility function
 import { API_BASE_URL } from './constants.js'; // Import shared constants
 import PanelHost from './components/panel-router/PanelHost.jsx';
+import DeviceIndicator from './components/DeviceIndicator.jsx'; // <-- Import the new component
 
 // Base API URL - Moved to constants.js
 // const API_BASE_URL = 'http://localhost:8000';
@@ -54,6 +55,7 @@ function App() {
   const [currentLoadedModelName, setCurrentLoadedModelName] = useState(null);
   const [showSettings, setShowSettings] = useState(true);
   const [hfUsername, setHfUsername] = useState(null); // <-- NEW: State for username
+  const [currentDevice, setCurrentDevice] = useState(null); // <-- NEW: State for device (cuda/cpu)
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/themes`)
@@ -128,6 +130,11 @@ function App() {
       setHfUsername(username);
   }, []);
 
+  // --- NEW: Callback to receive device status from ModelLoadPanel --- 
+  const handleDeviceUpdate = useCallback((device) => {
+    setCurrentDevice(device);
+  }, []);
+
   const handleChatModeChange = (mode) => {
     setAppChatMode(mode);
     // Optionally clear chat history when mode changes?
@@ -188,7 +195,7 @@ function App() {
 
     try {
       // Use the new v2 endpoint
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat-v2`, { // <-- Use chat-v2
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/chat-v2`, { // <-- Add /chat prefix
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -286,6 +293,9 @@ function App() {
                 Welcome, {hfUsername}!
               </span>
             )}
+            {/* --- NEW: Device Indicator --- */}
+            <DeviceIndicator device={currentDevice} />
+            
             {/* Model Status Group */}
             <div className="model-status-group">
               {modelLoaded && <span className="model-status-indicator">Model Ready</span>}
@@ -365,6 +375,8 @@ function App() {
         setThemeName={setThemeName}
         themeList={themeList}
         onHfUsernameUpdate={handleHfUsernameUpdate} // <-- Pass callback down
+        onDeviceUpdate={handleDeviceUpdate} // <-- Pass new callback down
+        currentDevice={currentDevice} // <-- Pass current device state down
       />
     </> // End Fragment
   );
