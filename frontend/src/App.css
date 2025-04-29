@@ -127,27 +127,30 @@ body {
 .model-status-group {
     display: flex;
     align-items: center;
-    gap: 8px; /* Space within the status group */
+    gap: 8px; /* Space between elements if multiple statuses are shown */
+    font-size: 0.85em;
 }
 
 /* Individual status indicator */
 .model-status-indicator {
-    font-size: 0.85em;
-    opacity: 0.8;
     padding: 3px 8px;
-    border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px; /* Reverted from 10px */
+    /* Use less specific defaults, assuming theme provides overrides */
+    color: var(--foreground, #e0e0e0); 
+    background-color: rgba(255, 255, 255, 0.1); /* Default subtle background */
+    opacity: 0.8;
 }
 
 .model-status-indicator.error {
-    background-color: rgba(207, 102, 121, 0.2);
-    color: var(--palette-11, #cf6679);
+    /* Rely on theme or specific overrides for error state */
+    background-color: rgba(207, 102, 121, 0.2); /* Existing subtle error bg */
+    color: var(--palette-11, #cf6679); /* Existing error color */
 }
 
 .model-status-indicator.loading {
-    /* Add a subtle animation? */
-    /* background-color: rgba(187, 134, 252, 0.2); */
-    /* color: var(--palette-9, #bb86fc); */
+    /* Rely on theme or specific overrides for loading state */
+    /* background-color: #ffc107; */ 
+    /* color: #333; */ 
 }
 
 /* Messages area - Softer scrollbar */
@@ -389,7 +392,6 @@ body {
 
 /* Model Status Indicator Styling */
 .model-status-group {
-    margin-left: auto; /* Push to the right */
     display: flex;
     align-items: center;
     gap: 8px; /* Space between elements if multiple statuses are shown */
@@ -398,28 +400,35 @@ body {
 
 .model-status-indicator {
     padding: 3px 8px;
-    border-radius: 10px;
-    color: white; /* Default text color */
-    background-color: #6c757d; /* Default gray */
+    border-radius: 4px; /* Reverted from 10px */
+    /* Use less specific defaults, assuming theme provides overrides */
+    color: var(--foreground, #e0e0e0); 
+    background-color: rgba(255, 255, 255, 0.1); /* Default subtle background */
+    opacity: 0.8;
 }
 
 .model-status-indicator.loading {
-    background-color: #ffc107; /* Yellow */
-    color: #333; /* Darker text for yellow */
+    /* Rely on theme or specific overrides for loading state */
+    /* background-color: #ffc107; */ 
+    /* color: #333; */ 
 }
 
 .model-status-indicator.error {
-    background-color: #dc3545; /* Red */
+    /* Rely on theme or specific overrides for error state */
+    background-color: rgba(207, 102, 121, 0.2); /* Existing subtle error bg */
+    color: var(--palette-11, #cf6679); /* Existing error color */
 }
 
-/* Assuming 'Model Ready' uses a success color */
-/* Example: Adding a specific class or targeting based on text might be needed */
-.model-status-indicator:not(.loading):not(.error):not(:empty) { /* Target 'Ready' and 'Waiting' states */
-   background-color: #28a745; /* Green for ready, adjust if needed */
+/* Assuming 'Model Ready' and 'Waiting' might get specific classes or rely on the default */
+/* Remove the overly broad rules with hardcoded colors */
+/*
+.model-status-indicator:not(.loading):not(.error):not(:empty) { 
+   background-color: #28a745; 
 }
-.model-status-group span:contains("Waiting") { /* More specific selector if needed */
-     background-color: #6c757d; /* Gray for waiting */
+.model-status-group span:contains("Waiting") { 
+     background-color: #6c757d; 
 }
+*/
 
 
 /* --- NEW: Device Indicator --- */
