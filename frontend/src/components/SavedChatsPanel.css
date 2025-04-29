@@ -1,0 +1,48 @@
+.saved-chats-panel {
+  padding: 10px;
+  border-right: 1px solid #ccc; /* Example border */
+  height: 100%; /* Example height */
+  overflow-y: auto; /* Allow scrolling if list is long */
+}
+
+.saved-chats-panel h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+.saved-chats-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.session-item {
+  padding: 8px 5px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.session-item:hover {
+  background-color: #f0f0f0;
+}
+
+.session-item strong {
+  display: block; /* Title on its own line */
+  margin-bottom: 3px;
+  font-size: 0.95em;
+}
+
+.session-item span {
+  font-size: 0.8em;
+  color: #666;
+  word-break: break-all; /* Prevent long IDs from overflowing */
+}
+
+.error-message {
+    color: #d9534f; /* Bootstrap danger color */
+    font-size: 0.9em;
+} 

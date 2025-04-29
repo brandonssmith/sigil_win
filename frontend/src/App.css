@@ -47,14 +47,32 @@ body {
 
 /* Chat container */
 .chat-container {
-  display: flex;
+  flex-grow: 1;
+  display: flex; /* Use flexbox for internal layout (header, messages, input) */
   flex-direction: column;
-  flex-grow: 1; /* Takes up remaining space */
-  height: 100%; /* Fill height */
+  height: 100%; /* Ensure chat container takes full height within flex layout */
   background-color: var(--surface, #1e1e1e);
   overflow: hidden; /* Prevent internal scrolling issues at this level */
-  /* Ensure chat container shrinks/grows */
   min-width: 0; /* Allow shrinking below content size if needed */
+  /* Add a transition for smoothness when sidebar opens/closes */
+  transition: margin-left 0.3s ease-in-out;
+  margin-left: 0; /* Default margin when sidebar is closed */
+}
+
+/* When sidebar is open, push the chat container */
+.app-layout.sidebar-open .chat-container {
+  /* This should match the sidebar's open width */
+  /* Assuming 350px from Sidebar.css, adjust if different */
+  /* margin-left: 350px; <-- We don't need margin push if flexbox handles it */
+  /* The flex layout should handle resizing automatically. */
+  /* Ensure flex-grow still works */
+  flex-grow: 1;
+}
+
+/* Ensure the sidebar itself doesn't shrink when open */
+.app-layout.sidebar-open .sidebar { 
+  flex-shrink: 0;
+  /* Width is handled by Sidebar.css */
 }
 
 /* Header */
@@ -367,4 +385,114 @@ body {
 ::selection {
   background: var(--selection-background, #1f1f1f);
   color: var(--selection-foreground, #d6dbe5);
+}
+
+/* Model Status Indicator Styling */
+.model-status-group {
+    margin-left: auto; /* Push to the right */
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between elements if multiple statuses are shown */
+    font-size: 0.85em;
+}
+
+.model-status-indicator {
+    padding: 3px 8px;
+    border-radius: 10px;
+    color: white; /* Default text color */
+    background-color: #6c757d; /* Default gray */
+}
+
+.model-status-indicator.loading {
+    background-color: #ffc107; /* Yellow */
+    color: #333; /* Darker text for yellow */
+}
+
+.model-status-indicator.error {
+    background-color: #dc3545; /* Red */
+}
+
+/* Assuming 'Model Ready' uses a success color */
+/* Example: Adding a specific class or targeting based on text might be needed */
+.model-status-indicator:not(.loading):not(.error):not(:empty) { /* Target 'Ready' and 'Waiting' states */
+   background-color: #28a745; /* Green for ready, adjust if needed */
+}
+.model-status-group span:contains("Waiting") { /* More specific selector if needed */
+     background-color: #6c757d; /* Gray for waiting */
+}
+
+
+/* --- NEW: Device Indicator --- */
+.device-indicator {
+  font-size: 0.8em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 10px;
+  font-weight: bold;
+}
+
+.device-indicator.cuda {
+  background-color: #76b900; /* NVIDIA Green */
+  color: white;
+}
+
+.device-indicator.cpu {
+  background-color: #0071c5; /* Intel Blue */
+  color: white;
+}
+
+.device-indicator.unknown {
+  background-color: #6c757d; /* Gray */
+  color: white;
+}
+
+
+/* --- NEW: Clear Chat Button Styling --- */
+.clear-chat-button {
+  position: absolute; /* Position relative to chat-container or messages-area */
+  bottom: 65px; /* Adjust as needed to sit above input bar */
+  right: 20px;  /* Adjust as needed */
+  padding: 5px 10px;
+  font-size: 0.8em;
+  background-color: var(--secondary-button-bg, #6c757d);
+  color: var(--button-text-color, white);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.clear-chat-button:hover:not(:disabled) {
+  opacity: 1;
+  background-color: var(--secondary-button-hover-bg, #5a6268);
+}
+
+.clear-chat-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Style for general error messages (e.g., chat fetch errors) */
+.error-message.chat-error {
+  color: #dc3545; /* Red color for errors */
+  padding: 5px 10px; /* Add some padding */
+  text-align: center; /* Center the text */
+  font-size: 0.9em;
+  margin-top: 5px; /* Space from messages/input */
+}
+
+/* Responsive adjustments if needed */
+@media (max-width: 768px) {
+  .app-layout {
+    /* On smaller screens, you might want the sidebar to overlay */
+    /* Or adjust the default sidebar width */
+  }
+  .sidebar {
+    /* Adjust width for smaller screens */
+    /* width: 300px; */
+  }
+   .sidebar.open {
+    /* width: 300px; */
+  }
 }
