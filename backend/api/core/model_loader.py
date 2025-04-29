@@ -42,13 +42,21 @@ def load_model_internal(path: str):
             print(f"   ⚠️ Applied default Jinja chat template.")
         # --- End chat template addition ---
 
-        # Load model using accelerate's automatic device mapping
-        print("   Loading model with device_map='auto'...")
+        # Determine the desired device mapping strategy
+        if torch.cuda.is_available():
+            chosen_device_map = "auto"  # Let accelerate place layers on CUDA devices
+            print("   Detected CUDA. Loading model with device_map='auto' (CUDA)...")
+        else:
+            # Force CPU placement to avoid known issues with MPS on some macOS setups
+            chosen_device_map = "cpu"
+            print("   CUDA not available. Loading model with device_map='cpu' (force CPU)...")
+
+        # Load model with the chosen device_map
         model = AutoModelForCausalLM.from_pretrained(
-            absolute_path, 
-            local_files_only=True, 
-            trust_remote_code=False, 
-            device_map="auto"  # <-- Use accelerate for automatic device placement
+            absolute_path,
+            local_files_only=True,
+            trust_remote_code=False,
+            device_map=chosen_device_map,
         )
         model.eval()
         
