@@ -35,23 +35,23 @@ const CombinedPanel = (props) => {
 
   // Basic styling for tabs (can be improved later)
   const tabButtonStyle = (tabName) => ({
-    padding: '8px 12px',
-    border: '1px solid #444',
-    borderBottom: activeTab === tabName ? 'none' : '1px solid #444',
+    padding: '6px 10px',
+    border: '1px solid #383838',
+    borderBottom: activeTab === tabName ? 'none' : '1px solid #383838',
     background: activeTab === tabName ? '#2a2a2a' : '#1e1e1e',
     color: activeTab === tabName ? '#eee' : '#aaa',
     cursor: 'pointer',
-    marginRight: '5px',
-    borderTopLeftRadius: '4px',
-    borderTopRightRadius: '4px',
+    marginRight: '4px',
+    borderTopLeftRadius: '5px',
+    borderTopRightRadius: '5px',
   });
 
   const panelContainerStyle = {
-    border: '1px solid #444',
+    border: '1px solid #383838',
     borderTop: 'none',
     padding: '15px',
-    background: '#2a2a2a', // Slightly different background for content area
-    borderRadius: '0 0 4px 4px', // Round bottom corners
+    background: '#2a2a2a',
+    borderRadius: '0 0 5px 5px',
   };
 
   return (
