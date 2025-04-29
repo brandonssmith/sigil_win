@@ -13,14 +13,15 @@ const CombinedPanel = (props) => {
       setLoading, 
       isLoading, 
       currentModelPath,
-      isModelLoaded, 
+      isModelLoaded,
       onChatModeChange,
       themeName,
       setThemeName,
       themeList,
       onHfUsernameUpdate,
       onDeviceUpdate,
-      currentDevice
+      currentDevice,
+      onClearChat
   } = props;
   
   const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', 'interface', 'precision', or 'help'
@@ -99,6 +100,7 @@ const CombinedPanel = (props) => {
           // Render SettingsPanel, passing only the props it needs
           <SettingsPanel 
             modelLoaded={modelLoaded} 
+            onClearChat={onClearChat}
           />
         )}
         {activeTab === 'modelLoad' && (
@@ -162,13 +164,15 @@ CombinedPanel.propTypes = {
   setLoading: PropTypes.func.isRequired,
   isLoading: PropTypes.bool.isRequired,
   currentModelPath: PropTypes.string,
+  isModelLoaded: PropTypes.bool.isRequired,
   onChatModeChange: PropTypes.func.isRequired,
   themeName: PropTypes.string.isRequired,
   setThemeName: PropTypes.func.isRequired,
   themeList: PropTypes.array.isRequired,
   onHfUsernameUpdate: PropTypes.func.isRequired,
   onDeviceUpdate: PropTypes.func.isRequired,
-  currentDevice: PropTypes.oneOf(['cuda', 'cpu', null])
+  currentDevice: PropTypes.oneOf(['cuda', 'cpu', null]),
+  onClearChat: PropTypes.func.isRequired
 };
 
 export default CombinedPanel; 

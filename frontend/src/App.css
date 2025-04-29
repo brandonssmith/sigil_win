@@ -292,6 +292,7 @@ body {
   z-index: 10;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
   flex-shrink: 0; /* Prevent input bar from shrinking */
+  position: relative; /* Added: Make it a positioning context */
 }
 
 .input-bar input[type="text"] {
@@ -457,19 +458,22 @@ body {
 
 
 /* --- NEW: Clear Chat Button Styling --- */
+/*
 .clear-chat-button {
-  position: absolute; /* Position relative to chat-container or messages-area */
-  bottom: 65px; /* Adjust as needed to sit above input bar */
-  right: 20px;  /* Adjust as needed */
-  padding: 5px 10px;
-  font-size: 0.8em;
+  position: absolute; 
+  top: 50%; 
+  transform: translateY(-50%); 
+  right: 8rem; 
+  padding: 5px 8px; 
+  font-size: 0.8em; 
   background-color: var(--secondary-button-bg, #6c757d);
   color: var(--button-text-color, white);
   border: none;
   border-radius: 4px;
   cursor: pointer;
   opacity: 0.7;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition: opacity 0.2s ease, background-color 0.2s ease, right 0.2s ease; 
+  z-index: 11; 
 }
 
 .clear-chat-button:hover:not(:disabled) {
@@ -481,6 +485,7 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+*/
 
 /* Style for general error messages (e.g., chat fetch errors) */
 .error-message.chat-error {

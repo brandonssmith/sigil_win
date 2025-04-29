@@ -18,7 +18,8 @@ const Sidebar = ({
   themeList,
   onHfUsernameUpdate,
   onDeviceUpdate,
-  currentDevice
+  currentDevice,
+  onClearChat
 }) => {
   // Determine the class name based on the isOpen prop for styling
   const sidebarClassName = `sidebar ${isOpen ? 'open' : 'closed'}`;
@@ -43,6 +44,7 @@ const Sidebar = ({
             onHfUsernameUpdate={onHfUsernameUpdate}
             onDeviceUpdate={onDeviceUpdate}
             currentDevice={currentDevice}
+            onClearChat={onClearChat}
           />
         )}
       </div>
@@ -65,7 +67,8 @@ Sidebar.propTypes = {
   themeList: PropTypes.array.isRequired,
   onHfUsernameUpdate: PropTypes.func.isRequired,
   onDeviceUpdate: PropTypes.func.isRequired,
-  currentDevice: PropTypes.oneOf(['cuda', 'cpu', null])
+  currentDevice: PropTypes.oneOf(['cuda', 'cpu', null]),
+  onClearChat: PropTypes.func.isRequired
 };
 
 export default Sidebar; 

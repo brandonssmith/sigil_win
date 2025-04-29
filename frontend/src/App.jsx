@@ -273,6 +273,7 @@ function App() {
             onHfUsernameUpdate={handleHfUsernameUpdate}
             onDeviceUpdate={handleDeviceUpdate}
             currentDevice={currentDevice}
+            onClearChat={handleClearChat}
          />
         
         {/* Right Panel: Chat Area */}

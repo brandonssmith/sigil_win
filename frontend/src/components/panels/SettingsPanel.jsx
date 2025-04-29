@@ -15,7 +15,8 @@ function SettingsPanel({
     config, // Added config prop
     onConfigChange, // Added onConfigChange prop
     onReloadModel, // Added onReloadModel prop
-    reloadStatus // Added reloadStatus prop
+    reloadStatus, // Added reloadStatus prop
+    onClearChat // Added onClearChat prop
  }) {
   // State moved from App.jsx
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
@@ -172,6 +173,16 @@ function SettingsPanel({
       {applyStatus === 'success' && <p className="success-message">Settings applied!</p>}
       {/* Display the specific applyError here */}
       {applyStatus === 'error' && <p className="error-message">{applyError || 'Failed to apply settings.'}</p>}
+
+      {/* Added Clear Chat Button */}
+      <button 
+        onClick={onClearChat} 
+        className="clear-chat-button-settings" 
+        disabled={isLoading} // Optionally disable while applying settings?
+      >
+        Clear Chat History
+      </button>
+
     </div>
   );
 }
@@ -181,7 +192,8 @@ SettingsPanel.propTypes = {
   config: PropTypes.object.isRequired,
   onConfigChange: PropTypes.func.isRequired,
   onReloadModel: PropTypes.func.isRequired,
-  reloadStatus: PropTypes.string // This prop remains unchanged, refers to overall model reload
+  reloadStatus: PropTypes.string, // This prop remains unchanged, refers to overall model reload
+  onClearChat: PropTypes.func.isRequired // Added prop type for the clear chat function
 };
 
 export default SettingsPanel; 
