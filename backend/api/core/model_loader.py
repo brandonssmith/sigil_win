@@ -3,6 +3,7 @@ import sys
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import json
+from .config import settings
 
 # --- Model Registry (REMOVED) ---
 # MODEL_REGISTRY = {
@@ -77,12 +78,23 @@ def load_model_internal(path: str):
             chosen_device_map = "cpu"
             print("   CUDA not available. Loading model with device_map='cpu' (force CPU)...")
 
-        # Load model with the chosen device_map
+        # ---> ADDED: Get precision setting <---
+        precision_setting = settings.model_precision
+        if precision_setting == "fp16":
+            torch_dtype = torch.float16
+            print(f"   Applying precision: {precision_setting} (torch.float16)")
+        else: # Default to fp32
+            torch_dtype = torch.float32
+            print(f"   Applying precision: fp32 (torch.float32)")
+        # ---> END ADDED <---
+
+        # Load model with the chosen device_map and precision
         model = AutoModelForCausalLM.from_pretrained(
             absolute_path,
             local_files_only=True,
             trust_remote_code=False,
             device_map=chosen_device_map,
+            torch_dtype=torch_dtype # <-- Pass the determined dtype
         )
         model.eval()
         

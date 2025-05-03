@@ -23,6 +23,10 @@ from .schemas.common import (
 from .schemas.chat import (
     Message, ChatRequestV2, ChatResponseV2 # <-- Import V2 chat schemas
 )
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+from backend.api.core.config import settings
 
 # --- Lifespan Event Handler ---
 @asynccontextmanager
@@ -34,10 +38,11 @@ async def lifespan(app: FastAPI):
     app.state.tokenizer = None
     app.state.device = None
     app.state.model_path = None
-    app.state.system_prompt = "You are a helpful assistant."
-    app.state.temperature = 0.7
-    app.state.top_p = 0.95
-    app.state.max_new_tokens = 1000
+    # Load defaults from central settings
+    app.state.system_prompt = settings.default_system_prompt
+    app.state.temperature = settings.default_temperature
+    app.state.top_p = settings.default_top_p
+    app.state.max_new_tokens = settings.default_max_new_tokens
     yield
     # Shutdown logic (if any) can go here
     print("Shutting down API.") # Optional shutdown message
@@ -49,16 +54,21 @@ app = FastAPI(
     lifespan=lifespan # <-- Use the lifespan handler
 )
 
-# --- CORS Configuration (restored) ---
-origins = [
-    "http://localhost:5173",  # Vite default dev server
-    "http://127.0.0.1:5173",  # Also allow explicit 127.0.0.1
-]
+# --- CORS Configuration ---
+# Allow origins defined in SIGIL_CORS_ALLOWED_ORIGINS or .env
+origins = settings.cors_origins_list
+
+# If the user wants to allow any origin, they can set SIGIL_CORS_ALLOWED_ORIGINS="*"
+if not origins or origins == ["*"] or "*" in origins:
+    origins = ["*"]
+    allow_credentials = False  # FastAPI forbids '*' together with credentials
+else:
+    allow_credentials = True
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,       # List of allowed origins
-    allow_credentials=True,      # Allow cookies / auth headers
+    allow_origins=origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],         # Allow all HTTP methods
     allow_headers=["*"],         # Allow all HTTP headers
 )
