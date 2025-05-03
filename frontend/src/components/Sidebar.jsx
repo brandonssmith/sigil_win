@@ -12,7 +12,6 @@ const Sidebar = ({
   isLoading,
   currentModelPath,
   isModelLoaded, // CombinedPanel might expect this alias
-  onChatModeChange,
   themeName,
   setThemeName,
   themeList,
@@ -37,7 +36,6 @@ const Sidebar = ({
             isLoading={isLoading}
             currentModelPath={currentModelPath}
             isModelLoaded={isModelLoaded !== undefined ? isModelLoaded : modelLoaded} // Handle potential alias
-            onChatModeChange={onChatModeChange}
             themeName={themeName}
             setThemeName={setThemeName}
             themeList={themeList}
@@ -61,7 +59,6 @@ Sidebar.propTypes = {
   isLoading: PropTypes.bool.isRequired,
   currentModelPath: PropTypes.string, // Can be null initially
   isModelLoaded: PropTypes.bool, // Optional alias prop
-  onChatModeChange: PropTypes.func.isRequired,
   themeName: PropTypes.string.isRequired,
   setThemeName: PropTypes.func.isRequired,
   themeList: PropTypes.array.isRequired,

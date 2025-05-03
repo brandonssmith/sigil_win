@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SettingsPanel from './SettingsPanel.jsx';
 import ModelLoadPanel from '../ModelLoadPanel.jsx';
-import ChatModeSelector from '../ChatModeSelector.jsx';
 import PrecisionSettingsPanel from '../PrecisionSettingsPanel.jsx';
 import PropTypes from 'prop-types';
 
@@ -14,7 +13,6 @@ const CombinedPanel = (props) => {
       isLoading, 
       currentModelPath,
       isModelLoaded,
-      onChatModeChange,
       themeName,
       setThemeName,
       themeList,
@@ -118,10 +116,7 @@ const CombinedPanel = (props) => {
         )}
         {activeTab === 'interface' && (
           <div>
-            <ChatModeSelector 
-              modelLoaded={modelLoaded}
-              onChatModeChange={onChatModeChange}
-            />
+            {/* ChatModeSelector removed, now controlled from header */}
             <div className="settings-group" style={{ marginTop: '20px' }}>
               <label htmlFor="theme-select">Theme:</label>
               <select id="theme-select" value={themeName} onChange={e => setThemeName(e.target.value)}>
@@ -165,7 +160,6 @@ CombinedPanel.propTypes = {
   isLoading: PropTypes.bool.isRequired,
   currentModelPath: PropTypes.string,
   isModelLoaded: PropTypes.bool.isRequired,
-  onChatModeChange: PropTypes.func.isRequired,
   themeName: PropTypes.string.isRequired,
   setThemeName: PropTypes.func.isRequired,
   themeList: PropTypes.array.isRequired,

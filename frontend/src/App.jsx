@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
 import ThemeLoader from './components/ThemeLoader.jsx';
 import ModelLoadPanel from './components/ModelLoadPanel.jsx';
-import ChatModeSelector from './components/ChatModeSelector.jsx';
+import ModeToggleSwitch from './components/ModeToggleSwitch.jsx';
 import { formatChatHistoryForBackend } from './utils/chatUtils.js'; // Import the utility function
 import { API_BASE_URL } from './constants.js'; // Import shared constants
 import DeviceIndicator from './components/DeviceIndicator.jsx'; // <-- Import the new component
@@ -41,12 +41,10 @@ function App() {
   // const [modelLoadStatus, setModelLoadStatus] = useState('idle'); // 'idle' | 'loading' | 'loaded' | 'error'
   // const [modelLoadError, setModelLoadError] = useState(null); // Error message for model load
 
-  // Chat Mode State (New) - Removed, managed within ChatModeSelector
-  // const [chatMode, setChatMode] = useState('instruction'); // 'instruction' or 'chat'
-
-  // NEW State managed by App, updated via callbacks from children
+  // --- Chat Mode State ---
+  const initialChatMode = localStorage.getItem('chatMode') || 'instruction';
+  const [appChatMode, setAppChatMode] = useState(initialChatMode); // 'instruction', 'chat'
   const [appModelLoadStatus, setAppModelLoadStatus] = useState('idle'); // 'idle', 'loading', 'loaded', 'error'
-  const [appChatMode, setAppChatMode] = useState('instruction'); // 'instruction', 'chat'
 
   // --- THEME STATE ---
   const [themeName, setThemeName] = useState('AlienBlood'); // Default theme
@@ -93,6 +91,7 @@ function App() {
 
   const handleChatModeChange = (mode) => {
     setAppChatMode(mode);
+    localStorage.setItem('chatMode', mode);
     // Optionally clear chat history when mode changes?
     // setChatHistory([]); 
   };
@@ -266,7 +265,6 @@ function App() {
             setLoading={setIsLoading}
             isLoading={isLoading}
             currentModelPath={currentLoadedModelName}
-            onChatModeChange={handleChatModeChange}
             themeName={themeName}
             setThemeName={setThemeName}
             themeList={themeList}
@@ -318,6 +316,13 @@ function App() {
             {/* --- NEW: Device Indicator --- */}
             <DeviceIndicator device={currentDevice} />
             
+            {/* --- Chat Mode Toggle --- */}
+            <ModeToggleSwitch
+              mode={appChatMode}
+              onToggle={handleChatModeChange}
+              disabled={!modelLoaded}
+            />
+
             {/* Model Status Group */}
             <div className="model-status-group">
               {modelLoaded && <span className="model-status-indicator">Model Ready</span>}
