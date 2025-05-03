@@ -8,6 +8,7 @@ import os
 import sys
 import re # <-- Add import for regex
 from typing import Optional, List, Dict, Any # <-- Add List, Dict, Any
+from contextlib import asynccontextmanager # <-- Import asynccontextmanager
 # Use relative imports for modules within the same package level
 from .core.model_loader import load_model_internal, load_model_by_name
 from .routes.chat import router as chat_router
@@ -19,42 +20,47 @@ from .schemas.common import (
     LoadModelRequest, LoadModelResponse, ModelStatusResponse,
     ModelSettings, SettingsUpdateResponse, VRAMInfoResponse
 )
+from .schemas.chat import (
+    Message, ChatRequestV2, ChatResponseV2 # <-- Import V2 chat schemas
+)
+
+# --- Lifespan Event Handler ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    print("System device checker ready.")
+    # Initialize default settings in app.state - moved from global scope
+    app.state.model = None
+    app.state.tokenizer = None
+    app.state.device = None
+    app.state.model_path = None
+    app.state.system_prompt = "You are a helpful assistant."
+    app.state.temperature = 0.7
+    app.state.top_p = 0.95
+    app.state.max_new_tokens = 1000
+    yield
+    # Shutdown logic (if any) can go here
+    print("Shutting down API.") # Optional shutdown message
 
 app = FastAPI(
     title="Sigil Backend API",
     description="API for loading models and generating text.",
     version="0.1.0",
+    lifespan=lifespan # <-- Use the lifespan handler
 )
 
-@app.on_event("startup")
-async def startup_event():
-    print("System device checker ready.") # <-- Add startup message
-
-# --- Application State --- Keep track of loaded model components
-app.state.model = None
-app.state.tokenizer = None
-app.state.device = None
-app.state.model_path = None
-
-# Initialize default settings in app.state
-app.state.system_prompt = "You are a helpful assistant."
-app.state.temperature = 0.7
-app.state.top_p = 0.95  # Default Top P
-app.state.max_new_tokens = 1000 # Default Max Tokens
-
-# Define allowed origins for CORS
+# --- CORS Configuration (restored) ---
 origins = [
-    "http://localhost:5173", # Vite default dev server
-    "http://127.0.0.1:5173", # Also allow explicit 127.0.0.1
+    "http://localhost:5173",  # Vite default dev server
+    "http://127.0.0.1:5173",  # Also allow explicit 127.0.0.1
 ]
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, # List of origins allowed
-    allow_credentials=True, # Allow cookies (optional, but often needed)
-    allow_methods=["*"],    # Allow all methods (GET, POST, etc.)
-    allow_headers=["*"],    # Allow all headers
+    allow_origins=origins,       # List of allowed origins
+    allow_credentials=True,      # Allow cookies / auth headers
+    allow_methods=["*"],         # Allow all HTTP methods
+    allow_headers=["*"],         # Allow all HTTP headers
 )
 
 # --- Theme Listing Endpoint ---
@@ -76,43 +82,6 @@ def list_models():
     # Only include directories (potential models)
     model_names = [d for d in os.listdir(models_dir) if os.path.isdir(os.path.join(models_dir, d))]
     return JSONResponse(content=model_names)
-
-# --- V2 Chat Models --- (New)
-class Message(BaseModel):
-    role: str
-    content: str
-
-class ChatRequestV2(BaseModel):
-    mode: str = Field(..., description="Generation mode: 'instruction' or 'chat'.")
-    message: Optional[str] = Field(None, description="Single user message for 'instruction' mode.")
-    messages: Optional[List[Message]] = Field(None, description="List of messages for 'chat' mode.")
-    return_prompt: Optional[bool] = Field(False, description="If true, return the raw prompt string used for generation.")
-
-    @validator('mode')
-    def validate_mode(cls, v):
-        if v not in ["instruction", "chat"]:
-            raise ValueError("Mode must be either 'instruction' or 'chat'.")
-        return v
-
-    @validator('messages', always=True)
-    def check_messages_for_chat_mode(cls, v, values):
-        if values.get('mode') == 'chat' and not v:
-            raise ValueError("Messages list cannot be empty in 'chat' mode.")
-        return v
-
-    @validator('message', always=True)
-    def check_message_for_instruction_mode(cls, v, values):
-         if values.get('mode') == 'instruction' and not v:
-            raise ValueError("Message cannot be empty in 'instruction' mode.")
-         return v
-
-class ChatResponseV2(BaseModel):
-    response: str
-    raw_prompt: Optional[str] = None # Optional field for the raw prompt
-
-# --- End V2 Chat Models ---
-
-# Models moved to schemas.common and schemas.chat
 
 # --- API Endpoints --- (Organized and updated)
 
