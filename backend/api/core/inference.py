@@ -33,6 +33,14 @@ def generate_response(
         #     torch.mps.empty_cache()
         # --- End MPS cache clearing ---
 
+        print("--- Debug: Inference Parameters ---")
+        print(f"   Prompt (first 100 chars): {prompt[:100]}...")
+        print(f"   Temperature: {temperature}")
+        print(f"   Top P: {top_p}")
+        print(f"   Max New Tokens: {max_new_tokens}")
+        print(f"   Inference Device: {inference_device}")
+        print("------------------------------------")
+
         with torch.no_grad():
             outputs = model.generate(
                 input_ids=input_ids,
@@ -44,6 +52,14 @@ def generate_response(
                 top_p=top_p,
                 pad_token_id=tokenizer.pad_token_id
             )
+
+        # --- Debug: Token Count ---
+        total_tokens = outputs[0].shape[0]
+        generated_tokens = total_tokens - input_length
+        print(f"   Tokens in prompt: {input_length}")
+        print(f"   Tokens generated: {generated_tokens} (limit {max_new_tokens})")
+        print("------------------------------------")
+        # --- End Debug ---
 
         generated_ids = outputs[0][input_length:]
         # Decode on CPU is fine

@@ -2,6 +2,7 @@ import os
 import sys
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+import json
 
 # --- Model Registry (REMOVED) ---
 # MODEL_REGISTRY = {
@@ -34,13 +35,38 @@ def load_model_internal(path: str):
             tokenizer.pad_token = tokenizer.eos_token
             print("   ⚠️ Added pad_token = eos_token")
         
-        # --- Add default chat template if missing ---
+        # -------------------------------------------------------------
+        # Determine prompt handling mode for this tokenizer / model
+        # -------------------------------------------------------------
+        prompt_mode = "template"  # default assumption
+        custom_prompt_config = None
+
         if tokenizer.chat_template is None:
-            # Define a common Jinja chat template (similar to Llama/Mistral)
-            DEFAULT_CHAT_TEMPLATE = "{% for message in messages %}{% if message['role'] == 'user' %}{{ bos_token + '[INST] ' + message['content'] + ' [/INST]' }}{% elif message['role'] == 'assistant' %}{{ ' ' + message['content'] + eos_token }}{% elif message['role'] == 'system' %}{{ bos_token + '[INST] <<SYS>>\\n' + message['content'] + '\\n<</SYS>>\\n\\n' }}{% endif %}{% endfor %}"
-            tokenizer.chat_template = DEFAULT_CHAT_TEMPLATE
-            print(f"   ⚠️ Applied default Jinja chat template.")
-        # --- End chat template addition ---
+            # Try to find a prompt_config.json next to the model
+            cfg_path = os.path.join(absolute_path, "prompt_config.json")
+            if os.path.isfile(cfg_path):
+                try:
+                    with open(cfg_path, "r", encoding="utf-8") as cfg_file:
+                        custom_prompt_config = json.load(cfg_file)
+                    prompt_mode = "custom"
+                    print(f"   ✅ Loaded custom prompt_config.json for prompts.")
+                except Exception as cfg_err:
+                    print(f"   ⚠️ Failed to load prompt_config.json: {cfg_err}. Falling back to simple prompt.")
+                    prompt_mode = "fallback"
+            else:
+                # No template and no config – final fallback
+                prompt_mode = "fallback"
+
+            if prompt_mode == "fallback":
+                # For backward-compatibility we still install a generic chat template
+                DEFAULT_CHAT_TEMPLATE = "{% for message in messages %}{% if message['role'] == 'user' %}{{ bos_token + '[INST] ' + message['content'] + ' [/INST]' }}{% elif message['role'] == 'assistant' %}{{ ' ' + message['content'] + eos_token }}{% elif message['role'] == 'system' %}{{ bos_token + '[INST] <<SYS>>\\n' + message['content'] + '\\n<</SYS>>\\n\\n' }}{% endif %}{% endfor %}"
+                tokenizer.chat_template = DEFAULT_CHAT_TEMPLATE
+                print("   ⚠️ Applied default Jinja chat template (generic).")
+
+        # Attach prompt metadata to tokenizer so routes can store in app.state
+        tokenizer.prompt_mode = prompt_mode  # e.g. template / custom / fallback
+        tokenizer.custom_prompt_config = custom_prompt_config
+        # -------------------------------------------------------------
 
         # Determine the desired device mapping strategy
         if torch.cuda.is_available():
