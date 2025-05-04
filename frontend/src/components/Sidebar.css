@@ -4,12 +4,12 @@
   height: 100vh; /* Full viewport height */
   background-color: var(--panel-bg-color, #2a2a2a); /* Use theme variable or default */
   border-right: 1px solid var(--panel-border-color, #444); /* Use theme variable or default */
-  overflow-x: hidden; /* Hide horizontal scroll */
+  overflow-x: hidden; /* Hide horizontal scroll at top level */
   transition: width 0.3s ease-in-out, transform 0.3s ease-in-out; /* Smooth transition for collapse/expand */
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  position: relative; /* Needed for absolute positioning inside if required by CombinedPanel */
+  position: relative;
 }
 
 /* Styles when the sidebar is closed */
@@ -27,7 +27,7 @@
   /* transform: translateX(0); */
 }
 
-/* Container for the actual content (CombinedPanel) */
+/* Restore original styling for the content area */
 .sidebar-content {
   flex-grow: 1; /* Allows the content to fill the sidebar */
   overflow-y: auto; /* Allow vertical scrolling if content exceeds height */
@@ -37,11 +37,13 @@
   /* Ensure content is hidden quickly when closing */
   opacity: 1;
   transition: opacity 0.1s linear;
+  min-height: 0; /* Needed for flex-grow in flex column */
 }
 
 .sidebar.closed .sidebar-content {
   opacity: 0;
   padding: 0; /* Remove padding when closed to prevent overflow issues */
+  overflow: hidden; /* Hide overflow when closed */
 }
 
-/* You might need to adjust styles within CombinedPanel if they rely on fixed positioning */ 
+/* REMOVED rules for .sidebar-main-panel and .sidebar-saved-chats-panel */ 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SettingsPanel from './SettingsPanel.jsx';
 import ModelLoadPanel from '../ModelLoadPanel.jsx';
 import PrecisionSettingsPanel from '../PrecisionSettingsPanel.jsx';
+import SavedChatsPanel from '../SavedChatsPanel.jsx';
 import PropTypes from 'prop-types';
 
 // This component receives all props needed by both SettingsPanel and ModelLoadPanel
@@ -19,7 +20,8 @@ const CombinedPanel = (props) => {
       onHfUsernameUpdate,
       onDeviceUpdate,
       currentDevice,
-      onClearChat
+      onClearChat,
+      onLoadSession
   } = props;
   
   const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', 'interface', 'precision', or 'help'
@@ -56,7 +58,7 @@ const CombinedPanel = (props) => {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Tab Buttons */}
-      <div style={{ flexShrink: 0 }}>
+      <div style={{ flexShrink: 0, display: 'flex', flexWrap: 'wrap' }}>
         <button
           style={tabButtonStyle('settings')}
           onClick={() => setActiveTab('settings')}
@@ -70,16 +72,16 @@ const CombinedPanel = (props) => {
           Load Model
         </button>
         <button
+          style={tabButtonStyle('savedChats')}
+          onClick={() => setActiveTab('savedChats')}
+        >
+          Saved Chats
+        </button>
+        <button
           style={tabButtonStyle('interface')}
           onClick={() => setActiveTab('interface')}
         >
           Interface
-        </button>
-        <button
-          style={tabButtonStyle('help')}
-          onClick={() => setActiveTab('help')}
-        >
-          Help
         </button>
         {/* Conditionally render Precision tab button */}
         {currentDevice === 'cuda' && (
@@ -90,6 +92,12 @@ const CombinedPanel = (props) => {
             Precision
           </button>
         )}
+        <button
+          style={tabButtonStyle('help')}
+          onClick={() => setActiveTab('help')}
+        >
+          Help
+        </button>
       </div>
 
       {/* Tab Content Area */}
@@ -112,6 +120,11 @@ const CombinedPanel = (props) => {
             onHfUsernameUpdate={onHfUsernameUpdate}
             onDeviceUpdate={onDeviceUpdate}
             currentDevice={currentDevice}
+          />
+        )}
+        {activeTab === 'savedChats' && (
+          <SavedChatsPanel 
+            onSelectSession={onLoadSession}
           />
         )}
         {activeTab === 'interface' && (
@@ -166,7 +179,8 @@ CombinedPanel.propTypes = {
   onHfUsernameUpdate: PropTypes.func.isRequired,
   onDeviceUpdate: PropTypes.func.isRequired,
   currentDevice: PropTypes.oneOf(['cuda', 'cpu', null]),
-  onClearChat: PropTypes.func.isRequired
+  onClearChat: PropTypes.func.isRequired,
+  onLoadSession: PropTypes.func.isRequired
 };
 
 export default CombinedPanel; 

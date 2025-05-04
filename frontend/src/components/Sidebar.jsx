@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import CombinedPanel from './panels/CombinedPanel.jsx'; // Adjust path as necessary
-import SavedChatsPanel from './SavedChatsPanel'; // Import SavedChatsPanel
+// import SavedChatsPanel from './SavedChatsPanel'; // No longer needed here
 import './Sidebar.css'; // We'll create this file for styling
 
 const Sidebar = ({
@@ -27,8 +27,8 @@ const Sidebar = ({
 
   return (
     <div className={sidebarClassName}>
+      {/* Restore the single content container */}
       <div className="sidebar-content">
-        {/* Only render the content if the sidebar is open */}
         {isOpen && (
           <CombinedPanel
             // Pass all the necessary props down to CombinedPanel
@@ -45,31 +45,11 @@ const Sidebar = ({
             onDeviceUpdate={onDeviceUpdate}
             currentDevice={currentDevice}
             onClearChat={onClearChat}
+            onLoadSession={onLoadSession} // Pass onLoadSession down
           />
         )}
-
-        {/* ADDED: Saved Chats Panel - Should likely be inside the CombinedPanel or conditionally rendered based on isOpen */}
-        {isOpen && (
-          <SavedChatsPanel 
-            onSelectSession={onLoadSession} 
-          />
-        )}
-
-        {/* REMOVED these as they are likely handled by CombinedPanel */}
-        {/* 
-        <ModelLoadPanel 
-          // ... props
-        />
-        <SettingsPanel 
-          // ... props
-          onClearChat={onClearChat}
-        />
-       
-        <ThemeSelector 
-          // ... props
-        /> 
-        */}
       </div>
+      {/* REMOVED the separate divs for main/saved-chats */}
     </div>
   );
 };
