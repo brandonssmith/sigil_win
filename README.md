@@ -220,12 +220,7 @@ This interface is ideal for local experimentation, debugging, and integrating li
     *   `utils/`: Utility functions.
     *   `schemas/`: Pydantic schemas (likely moved here, implied by imports).
     *   `backend_api.log`: Log file for the running backend server (created by `start_dev.sh`).
-*   `src/`: Contains the React/Vite frontend source code.
-    *   `App.tsx`: Main application component.
-    *   `components/`: Reusable UI components.
-    *   `services/`: API interaction logic.
-    *   `main.tsx`: Entry point for React application (likely).
-*   `frontend/`: Primarily contains static assets and potentially legacy/config files.
+*   `frontend/`: Contains the React/Vite frontend source code.
     *   `public/`: Static assets, including themes (`public/themes/`).
     *   *(Other config files like `.gitignore`, `eslint.config.js`)*
 *   `venv/`: (Created by you) Python virtual environment.
@@ -235,9 +230,9 @@ This interface is ideal for local experimentation, debugging, and integrating li
 
 *   **Generation Parameters:**
     *   Defaults are set in `backend/api/main.py` (e.g., `app.state.temperature`).
-    *   The `/api/v1/settings/update` endpoint allows changing parameters like `temperature`, `top_p`, `max_new_tokens`, and `system_prompt` at runtime. The frontend in `src/` needs to be adjusted to expose UI controls for this.
+    *   The `/api/v1/settings/update` endpoint allows changing parameters like `temperature`, `top_p`, `max_new_tokens`, and `system_prompt` at runtime. The frontend in `frontend/src/` needs to be adjusted to expose UI controls for this.
 *   **Backend API:** Add or modify endpoints in `backend/api/routes/` and register routers in `backend/api/main.py`. Update core logic in `backend/core/`.
-*   **Frontend UI:** Modify the React components and logic in `src/`.
+*   **Frontend UI:** Modify the React components and logic in `frontend/src/`.
 *   **Model Loading Logic:** Found within the `load_model_internal` and `load_model_by_name` functions in `backend/core/model_loader.py` and the corresponding API endpoints in `backend/api/routes/models.py` (implied location).
 *   **Themes:** Add new `.css` files to `frontend/public/themes/`. They will be automatically available via the `/themes` endpoint.
 
