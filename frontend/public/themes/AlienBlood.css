@@ -13,62 +13,62 @@
   --background-dark: #1a202c; /* Dark blue/grey */
   --surface-dark: #2d3748; /* Slightly lighter */
   --panel-bg-dark: #212a38; /* Derived */
-  --background-light: #edf2f7; /* Light grey */
-  --surface-light: #f7fafc; /* Very light */
-  --panel-bg-light: #e6eaf0; /* Derived */
+  --background-light: #f7fafc; /* Very Light Grey/Blue (Lab White) */
+  --surface-light: #e8f0f5; /* Lighter Cool Grey */
+  --panel-bg-light: #dde4eb; /* Medium Cool Grey */
 
   /* Inputs */
   --input-bg-dark: var(--panel-bg-dark);
-  --input-bg-light: #e0e0e0; /* Standard light */
+  --input-bg-light: #ffffff; /* White */
   --disabled-bg-dark: #4a5568; /* Derived */
-  --disabled-bg-light: #bdbdbd; /* Standard light */
+  --disabled-bg-light: #cad0d7; /* Muted Grey */
   --disabled-fg-dark: #a0aec0; /* Derived */
-  --disabled-fg-light: #757575; /* Standard light */
+  --disabled-fg-light: #8a919a; /* Muted Grey Text */
 
   /* Panel Tabs */
   --panel-tab-bg-dark: var(--surface-dark);
-  --panel-tab-bg-light: #e8e8e8; /* Standard light */
+  --panel-tab-bg-light: #dde4eb; /* Match panel bg light */
   --panel-tab-active-bg-dark: var(--panel-bg-dark);
-  --panel-tab-active-bg-light: #f5f5f5; /* Standard light */
+  --panel-tab-active-bg-light: #e8f0f5; /* Match surface light */
   --panel-tab-text-dark: #a0aec0; /* Using disabled fg */
-  --panel-tab-text-light: #555; /* Standard light */
+  --panel-tab-text-light: #718096; /* Medium Grey Text */
   --panel-tab-active-text-dark: var(--ui-text-primary);
-  --panel-tab-active-text-light: #1f1f1f; /* Standard dark text */
+  --panel-tab-active-text-light: #4a5568; /* Darker Grey Text */
   --panel-container-bg-dark: var(--panel-bg-dark);
-  --panel-container-bg-light: #f5f5f5; /* Standard light */
+  --panel-container-bg-light: #dde4eb; /* Match panel bg light */
 
   /* Buttons */
   --primary-dark: #2f6a7f; /* Original --button-background-base */
-  --primary-light: #319795; /* Tealish color */
+  --primary-light: #9ae6b4; /* Soft Lime Green (Bio-luminescence) */
   --primary-hover-dark: #2c5282; /* Darker blue */
-  --primary-hover-light: #2c7a7b; /* Darker teal */
+  --primary-hover-light: #88d4a3; /* Darker Lime Green */
   --button-foreground-dark: #edf2f7; /* Match light background */
-  --button-foreground-light: #ffffff; /* White */
+  --button-foreground-light: #205038; /* Dark Green text on Lime */
 
   --button-bg-dark: #4a5568; /* Using disabled bg */
-  --button-bg-light: #a0aec0; /* Using disabled fg */
+  --button-bg-light: #a0aec0; /* Light Grey Button */
   --button-hover-bg-dark: #2d3748; /* Using surface dark */
-  --button-hover-bg-light: #718096; /* Darker light grey */
+  --button-hover-bg-light: #8b97a8; /* Darker Light Grey */
   --button-border-dark: #718096; /* Derived */
-  --button-border-light: #cbd5e0; /* Derived */
+  --button-border-light: #9aabb9; /* Subtler Grey Border */
   --button-text-dark: var(--ui-text-primary);
-  --button-text-light: #1f1f1f; /* Standard dark text */
+  --button-text-light: #2d3748; /* Darkest Grey Text */
 
   /* Focus Ring */
   --primary-focus-dark: rgba(47, 106, 127, 0.4);
-  --primary-focus-light: rgba(49, 151, 149, 0.5);
+  --primary-focus-light: rgba(154, 230, 180, 0.5); /* Based on primary-light green */
 
   /* Settings Panel & Input Details */
   --surface-input-dark: #3a4558; /* Derived */
-  --surface-input-light: var(--input-bg-light);
+  --surface-input-light: #ffffff; /* White */
   --border-input-dark: #4a5568; /* Using disabled bg */
-  --border-input-light: #b0b0b0; /* Standard light */
+  --border-input-light: #cbd5e0; /* Light Grey Border */
   --focus-ring-accent-dark: var(--primary-dark);
   --focus-ring-accent-light: var(--primary-light);
   --focus-ring-color-dark: var(--primary-focus-dark);
   --focus-ring-color-light: var(--primary-focus-light);
   --text-secondary-dark: #a0aec0; /* Using disabled fg */
-  --text-secondary-light: #555; /* Standard light */
+  --text-secondary-light: #718096; /* Medium Grey Text */
   --primary-contrast-dark: var(--button-foreground-dark);
   --primary-contrast-light: var(--button-foreground-light);
   --surface-disabled-dark: var(--disabled-bg-dark);
@@ -76,9 +76,9 @@
   --text-disabled-dark: var(--disabled-fg-dark);
   --text-disabled-light: var(--disabled-fg-light);
   --surface-hover-dark: #404a5c; /* Derived */
-  --surface-hover-light: #dcdcdc; /* Standard light */
+  --surface-hover-light: #e2e8f0; /* Slightly darker cool grey */
   --border-input-hover-dark: #718096; /* Using button border */
-  --border-input-hover-light: #a0a0a0; /* Standard light */
+  --border-input-hover-light: #b8c1cc; /* Darker grey border */
 
   /* --- Base variables that will be switched --- */
   --background: var(--background-dark);
@@ -118,6 +118,14 @@
 
 /* --- Light Mode Overrides --- */
 body.light-mode {
+  /* Override root colors for light mode */
+  --ui-text-primary: #4a5568; /* Darker Grey Text */
+  --input-text-color: #4a5568;
+  --header-text-color: #4fd1c5; /* Desaturated Teal */
+  --user-message-glow-color: #f6ad55; /* Muted Orange Glow */
+  --backend-message-glow-color: #e57373; /* Muted Red Glow */
+  --button-background-base: #9ae6b4; /* Override original mapping */
+
   /* Base */
   --background: var(--background-light);
   --surface: var(--surface-light);

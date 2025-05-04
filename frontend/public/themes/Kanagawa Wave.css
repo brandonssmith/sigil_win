@@ -13,72 +13,72 @@
   --background-dark: #1f1f28; /* kanagawa.nvim bg_dark */
   --surface-dark: #2d4f67; /* kanagawa.nvim waveBlue2 */
   --panel-bg-dark: #223249; /* Derived */
-  --background-light: #dcd7ba; /* Using base text as light bg */
-  --surface-light: #c8c093; /* From Kanagawa Dragon theme */
-  --panel-bg-light: #e3e1cf; /* Derived light */
+  --background-light: #f0f8ff; /* Alice Blue (Foam) */
+  --surface-light: #f5f5f0; /* Ivory (Sand) */
+  --panel-bg-light: #e6f0f5; /* Light Blue/Grey */
 
   /* Inputs */
   --input-bg-dark: var(--panel-bg-dark);
-  --input-bg-light: #e0e0e0; /* Standard light */
+  --input-bg-light: #ffffff; /* White */
   --disabled-bg-dark: #575268; /* Derived */
-  --disabled-bg-light: #bdbdbd; /* Standard light */
+  --disabled-bg-light: #d8dee4; /* Lighter grey-blue */
   --disabled-fg-dark: #a9a4ac; /* Derived */
-  --disabled-fg-light: #757575; /* Standard light */
+  --disabled-fg-light: #8f98a0; /* Muted grey-blue */
 
   /* Panel Tabs */
   --panel-tab-bg-dark: var(--surface-dark);
-  --panel-tab-bg-light: #e8e8e8; /* Standard light */
+  --panel-tab-bg-light: #e6f0f5; /* Match panel bg light */
   --panel-tab-active-bg-dark: var(--panel-bg-dark);
-  --panel-tab-active-bg-light: #f5f5f5; /* Standard light */
+  --panel-tab-active-bg-light: #f5f5f0; /* Match surface light */
   --panel-tab-text-dark: #a9a4ac; /* Using disabled fg */
-  --panel-tab-text-light: #555; /* Standard light */
+  --panel-tab-text-light: #7a7065; /* Driftwood Brown/Grey */
   --panel-tab-active-text-dark: var(--ui-text-primary);
-  --panel-tab-active-text-light: #1f1f1f; /* Standard dark text */
+  --panel-tab-active-text-light: #4a5f70; /* Stone Blue/Grey */
   --panel-container-bg-dark: var(--panel-bg-dark);
-  --panel-container-bg-light: #f5f5f5; /* Standard light */
+  --panel-container-bg-light: #e6f0f5; /* Match panel bg light */
 
   /* Buttons */
   --primary-dark: #7e9cd8; /* Original --button-background-base */
-  --primary-light: #957fb8; /* Derived Lighter purple */
+  --primary-light: #6ca0d6; /* Deep Water Blue */
   --primary-hover-dark: #6c7fbc; /* Derived Darker blue */
-  --primary-hover-light: #806a9f; /* Derived Darker purple */
+  --primary-hover-light: #5a8bc4; /* Darker Water Blue */
   --button-foreground-dark: #1f1f28; /* Match dark background */
-  --button-foreground-light: #f0f0f0; /* Standard light */
+  --button-foreground-light: #ffffff; /* White */
 
   --button-bg-dark: #44496a; /* Derived darker blue/purple */
-  --button-bg-light: #c8c093; /* Borrowed from K. Dragon */
+  --button-bg-light: #a0b8d0; /* Lighter Blue */
   --button-hover-bg-dark: #575268; /* Using disabled bg */
-  --button-hover-bg-light: #b6ae84; /* Derived darker light */
+  --button-hover-bg-light: #8caccc; /* Darker Lighter Blue */
   --button-border-dark: #7a88a7; /* Derived */
-  --button-border-light: #a9a4ac; /* Using disabled fg */
+  --button-border-light: #889bb3; /* Slightly darker blue border */
   --button-text-dark: var(--ui-text-primary);
-  --button-text-light: #1f1f1f; /* Standard dark text */
+  --button-text-light: #2a3b4a; /* Darker blue text */
 
   /* Focus Ring */
   --primary-focus-dark: rgba(126, 156, 216, 0.4); /* Based on --primary-dark */
-  --primary-focus-light: rgba(149, 127, 184, 0.5); /* Based on --primary-light */
+  --primary-focus-light: rgba(108, 160, 214, 0.5); /* Based on --primary-light */
 
   /* Settings Panel & Input Details */
   --surface-input-dark: #33375a; /* Derived */
-  --surface-input-light: var(--input-bg-light);
+  --surface-input-light: #ffffff; /* White */
   --border-input-dark: #575268; /* Using disabled bg */
-  --border-input-light: #b0b0b0; /* Standard light */
+  --border-input-light: #c0c8d1; /* Lighter grey-blue border */
   --focus-ring-accent-dark: var(--primary-dark);
   --focus-ring-accent-light: var(--primary-light);
   --focus-ring-color-dark: var(--primary-focus-dark);
   --focus-ring-color-light: var(--primary-focus-light);
   --text-secondary-dark: #a9a4ac; /* Using disabled fg */
-  --text-secondary-light: #555; /* Standard light */
+  --text-secondary-light: #7a7065; /* Driftwood Brown/Grey */
   --primary-contrast-dark: var(--button-foreground-dark);
-  --primary-contrast-light: var(--button-foreground-light);
+  --primary-contrast-light: #ffffff; /* White text on primary blue */
   --surface-disabled-dark: var(--disabled-bg-dark);
   --surface-disabled-light: var(--disabled-bg-light);
   --text-disabled-dark: var(--disabled-fg-dark);
   --text-disabled-light: var(--disabled-fg-light);
   --surface-hover-dark: #404363; /* Derived */
-  --surface-hover-light: #dcdcdc; /* Standard light */
+  --surface-hover-light: #eaf2f8; /* Very light blue hover */
   --border-input-hover-dark: #7a88a7; /* Using button border */
-  --border-input-hover-light: #a0a0a0; /* Standard light */
+  --border-input-hover-light: #a8b5c0; /* Slightly darker hover border */
 
   /* --- Base variables that will be switched --- */
   --background: var(--background-dark);
@@ -118,6 +118,14 @@
 
 /* --- Light Mode Overrides --- */
 body.light-mode {
+  /* Override root colors for light mode */
+  --ui-text-primary: #4a5f70; /* Stone Blue/Grey */
+  --input-text-color: #4a5f70;
+  --header-text-color: #5a8bc4; /* Darker Water Blue */
+  --user-message-glow-color: #ff8c8c; /* Lighter Red/Orange */
+  --backend-message-glow-color: #ffab70; /* Lighter Orange */
+  --button-background-base: #6ca0d6; /* Override original mapping */
+
   /* Base */
   --background: var(--background-light);
   --surface: var(--surface-light);

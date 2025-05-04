@@ -13,62 +13,62 @@
   --background-dark: #16161d; /* kanagawa.nvim bg_dim */
   --surface-dark: #1f1f28; /* kanagawa.nvim bg_dark (used in Wave) */
   --panel-bg-dark: #2d4f67; /* kanagawa.nvim waveBlue2 (used in Wave) */
-  --background-light: #c8c093; /* Using base text as light bg */
-  --surface-light: #dcd7ba; /* From Kanagawa Wave theme */
-  --panel-bg-light: #e3e1cf; /* Derived light (used in Wave) */
+  --background-light: #fdfaef; /* Warm Off-White (Parchment) */
+  --surface-light: #fbf5e5; /* Light Beige (Scroll) */
+  --panel-bg-light: #f5ead8; /* Warm Beige */
 
   /* Inputs */
   --input-bg-dark: var(--panel-bg-dark);
-  --input-bg-light: #e0e0e0; /* Standard light */
+  --input-bg-light: #ffffff; /* White */
   --disabled-bg-dark: #5a5a6e; /* Derived */
-  --disabled-bg-light: #bdbdbd; /* Standard light */
+  --disabled-bg-light: #e0d8c0; /* Muted Beige */
   --disabled-fg-dark: #a6a6b8; /* Derived */
-  --disabled-fg-light: #757575; /* Standard light */
+  --disabled-fg-light: #998f78; /* Muted Brown/Grey */
 
   /* Panel Tabs */
   --panel-tab-bg-dark: var(--surface-dark);
-  --panel-tab-bg-light: #e8e8e8; /* Standard light */
+  --panel-tab-bg-light: #f5ead8; /* Match panel bg light */
   --panel-tab-active-bg-dark: var(--panel-bg-dark);
-  --panel-tab-active-bg-light: #f5f5f5; /* Standard light */
+  --panel-tab-active-bg-light: #fbf5e5; /* Match surface light */
   --panel-tab-text-dark: #a6a6b8; /* Using disabled fg */
-  --panel-tab-text-light: #555; /* Standard light */
+  --panel-tab-text-light: #a0522d; /* Sienna (Wood) */
   --panel-tab-active-text-dark: var(--ui-text-primary);
-  --panel-tab-active-text-light: #1f1f1f; /* Standard dark text */
+  --panel-tab-active-text-light: #6b4f37; /* Dark Brown (Ink) */
   --panel-container-bg-dark: var(--panel-bg-dark);
-  --panel-container-bg-light: #f5f5f5; /* Standard light */
+  --panel-container-bg-light: #f5ead8; /* Match panel bg light */
 
   /* Buttons */
   --primary-dark: #8ba4b0; /* Original --button-background-base */
-  --primary-light: #7e9cd8; /* From Kanagawa Wave */
+  --primary-light: #d4af37; /* Gold (Dragon Gold) */
   --primary-hover-dark: #738c99; /* Derived Darker blue/grey */
-  --primary-hover-light: #6c7fbc; /* From Kanagawa Wave hover */
+  --primary-hover-light: #c8a02b; /* Darker Gold */
   --button-foreground-dark: #16161d; /* Match dark background */
-  --button-foreground-light: #f0f0f0; /* Standard light */
+  --button-foreground-light: #5c4033; /* Dark brown text on Gold */
 
   --button-bg-dark: #4f5666; /* Derived darker blue/grey */
-  --button-bg-light: #dcd7ba; /* From Kanagawa Wave */
+  --button-bg-light: #e07a5f; /* Terracotta/Muted Red */
   --button-hover-bg-dark: #5a5a6e; /* Using disabled bg */
-  --button-hover-bg-light: #c8c093; /* Using base text */
+  --button-hover-bg-light: #d06a4f; /* Darker Terracotta */
   --button-border-dark: #838faa; /* Derived */
-  --button-border-light: #b0b0b0; /* Standard light */
+  --button-border-light: #c06040; /* Subtler Terracotta Border */
   --button-text-dark: var(--ui-text-primary);
-  --button-text-light: #1f1f1f; /* Standard dark text */
+  --button-text-light: #fdf0e0; /* Light text on terracotta */
 
   /* Focus Ring */
   --primary-focus-dark: rgba(139, 164, 176, 0.4); /* Based on --primary-dark */
-  --primary-focus-light: rgba(126, 156, 216, 0.5); /* Based on --primary-light */
+  --primary-focus-light: rgba(212, 175, 55, 0.5); /* Based on --primary-light gold */
 
   /* Settings Panel & Input Details */
   --surface-input-dark: #38384a; /* Derived */
-  --surface-input-light: var(--input-bg-light);
+  --surface-input-light: #ffffff; /* White */
   --border-input-dark: #5a5a6e; /* Using disabled bg */
-  --border-input-light: #b0b0b0; /* Standard light */
+  --border-input-light: #e0d8c0; /* Muted Beige Border */
   --focus-ring-accent-dark: var(--primary-dark);
   --focus-ring-accent-light: var(--primary-light);
   --focus-ring-color-dark: var(--primary-focus-dark);
   --focus-ring-color-light: var(--primary-focus-light);
   --text-secondary-dark: #a6a6b8; /* Using disabled fg */
-  --text-secondary-light: #555; /* Standard light */
+  --text-secondary-light: #a0522d; /* Sienna (Wood) */
   --primary-contrast-dark: var(--button-foreground-dark);
   --primary-contrast-light: var(--button-foreground-light);
   --surface-disabled-dark: var(--disabled-bg-dark);
@@ -76,9 +76,9 @@
   --text-disabled-dark: var(--disabled-fg-dark);
   --text-disabled-light: var(--disabled-fg-light);
   --surface-hover-dark: #49495a; /* Derived */
-  --surface-hover-light: #dcdcdc; /* Standard light */
+  --surface-hover-light: #f8f0e0; /* Slightly darker parchment */
   --border-input-hover-dark: #838faa; /* Using button border */
-  --border-input-hover-light: #a0a0a0; /* Standard light */
+  --border-input-hover-light: #d0c8b0; /* Darker beige border */
 
   /* --- Base variables that will be switched --- */
   --background: var(--background-dark);
@@ -118,6 +118,14 @@
 
 /* --- Light Mode Overrides --- */
 body.light-mode {
+  /* Override root colors for light mode */
+  --ui-text-primary: #6b4f37; /* Dark Brown (Ink) */
+  --input-text-color: #6b4f37;
+  --header-text-color: #a0522d; /* Sienna (Wood) */
+  --user-message-glow-color: #f0a0aa; /* Muted Pink Glow */
+  --backend-message-glow-color: #ffcc80; /* Warm Orange Glow */
+  --button-background-base: #d4af37; /* Override original mapping */
+
   /* Base */
   --background: var(--background-light);
   --surface: var(--surface-light);

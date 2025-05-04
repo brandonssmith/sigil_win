@@ -118,40 +118,48 @@
 
 /* --- Light Mode Overrides --- */
 body.light-mode {
-  /* Base */
-  --background: var(--background-light);
-  --surface: var(--surface-light);
-  --panel-bg-color: var(--panel-bg-light);
-  --input-bg: var(--input-bg-light);
-  --disabled-bg: var(--disabled-bg-light);
-  --disabled-fg: var(--disabled-fg-light);
+  /* Override root colors for light mode */
+  --ui-text-primary: #5c5547; /* Dark Tatami Brown/Grey */
+  --input-text-color: #5c5547;
+  --header-text-color: #1f3a4f; /* Dark Blue/Grey */
+  --user-message-glow-color: #ffb7c5; /* Cherry Blossom Pink Glow */
+  --backend-message-glow-color: #a0d8ef; /* Water Blue Glow */
+  --button-background-base: #a0d8ef; /* Override original mapping */
+
+  /* Base (Tatami Inspired) */
+  --background: #f5f1e8; /* Tatami Beige */
+  --surface: #faf8f0; /* Lighter Beige/Off-white */
+  --panel-bg-color: #e6e2d8; /* Tatami Panel */
+  --input-bg: #ffffff; /* White */
+  --disabled-bg: #dcd8cc; /* Muted Tatami */
+  --disabled-fg: #a8a399; /* Muted Text */
 
   /* Panel Tabs */
-  --panel-tab-bg: var(--panel-tab-bg-light);
-  --panel-tab-active-bg: var(--panel-tab-active-bg-light);
-  --panel-tab-text: var(--panel-tab-text-light);
-  --panel-tab-active-text: var(--panel-tab-active-text-light);
-  --panel-container-bg: var(--panel-container-bg-light);
+  --panel-tab-bg: #e6e2d8;
+  --panel-tab-active-bg: #faf8f0;
+  --panel-tab-text: #8a8374;
+  --panel-tab-active-text: #5c5547;
+  --panel-container-bg: #e6e2d8;
 
-  /* Button Base Variables */
-  --primary: var(--primary-light);
-  --primary-hover: var(--primary-hover-light);
-  --button-foreground: var(--button-foreground-light);
-  --button-bg: var(--button-bg-light);
-  --button-hover-bg: var(--button-hover-bg-light);
-  --button-border: var(--button-border-light);
-  --button-text: var(--button-text-light);
-  --primary-focus: var(--primary-focus-light);
+  /* Button Base Variables (Primary: Cherry Blossom, Default: Water) */
+  --primary: #ffb7c5; /* Cherry Blossom Pink */
+  --primary-hover: #f8a0af; /* Darker Pink */
+  --button-foreground: #1f3a4f; /* Dark Blue/Grey text on Pink */
+  --button-bg: #a0d8ef; /* Water Blue */
+  --button-hover-bg: #88c6e0; /* Darker Blue */
+  --button-border: #77b8d0; /* Subtler Blue */
+  --button-text: #1f3a4f; /* Dark Blue/Grey text on Blue */
+  --primary-focus: rgba(255, 183, 197, 0.5); /* Pink focus ring */
 
   /* Settings Panel Base Variables */
-  --surface-input: var(--surface-input-light);
-  --border-input: var(--border-input-light);
-  --focus-ring-accent: var(--focus-ring-accent-light);
-  --focus-ring-color: var(--focus-ring-color-light);
-  --text-secondary: var(--text-secondary-light);
-  --primary-contrast: var(--primary-contrast-light);
-  --surface-disabled: var(--surface-disabled-light);
-  --text-disabled: var(--text-disabled-light);
-  --surface-hover: var(--surface-hover-light);
-  --border-input-hover: var(--border-input-hover-light);
+  --surface-input: #ffffff;
+  --border-input: #dcd8cc; /* Subtle beige border */
+  --focus-ring-accent: var(--primary);
+  --focus-ring-color: var(--primary-focus);
+  --text-secondary: #8a8374; /* Muted brown/grey */
+  --primary-contrast: #1f3a4f; /* Dark text on primary pink elements */
+  --surface-disabled: var(--disabled-bg);
+  --text-disabled: var(--disabled-fg);
+  --surface-hover: #f0ece3; /* Slightly darker beige */
+  --border-input-hover: #c4bfb0; /* Darker beige border */
 }
