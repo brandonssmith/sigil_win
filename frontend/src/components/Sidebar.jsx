@@ -20,7 +20,9 @@ const Sidebar = ({
   onDeviceUpdate,
   currentDevice,
   onClearChat,
-  onLoadSession // <-- ADDED: Receive onLoadSession prop
+  onLoadSession, // <-- ADDED: Receive onLoadSession prop
+  // --- ADDED: Receive loadedSessionSettings prop ---
+  loadedSessionSettings 
 }) => {
   // Determine the class name based on the isOpen prop for styling
   const sidebarClassName = `sidebar ${isOpen ? 'open' : 'closed'}`;
@@ -46,6 +48,8 @@ const Sidebar = ({
             currentDevice={currentDevice}
             onClearChat={onClearChat}
             onLoadSession={onLoadSession} // Pass onLoadSession down
+            // --- ADDED: Pass loadedSessionSettings down ---
+            loadedSessionSettings={loadedSessionSettings}
           />
         )}
       </div>
@@ -71,6 +75,13 @@ Sidebar.propTypes = {
   currentDevice: PropTypes.oneOf(['cuda', 'cpu', null]),
   onClearChat: PropTypes.func.isRequired,
   onLoadSession: PropTypes.func.isRequired, // <-- ADDED: PropType for onLoadSession
+  // --- ADDED: PropType for loadedSessionSettings ---
+  loadedSessionSettings: PropTypes.shape({
+    systemPrompt: PropTypes.string,
+    temperature: PropTypes.number,
+    topP: PropTypes.number,
+    maxTokens: PropTypes.number,
+  }), // Can be null
 };
 
 export default Sidebar; 

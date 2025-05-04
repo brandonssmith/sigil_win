@@ -21,7 +21,8 @@ const CombinedPanel = (props) => {
       onDeviceUpdate,
       currentDevice,
       onClearChat,
-      onLoadSession
+      onLoadSession,
+      loadedSessionSettings
   } = props;
   
   const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', 'interface', 'precision', or 'help'
@@ -107,6 +108,7 @@ const CombinedPanel = (props) => {
           <SettingsPanel 
             modelLoaded={modelLoaded} 
             onClearChat={onClearChat}
+            loadedSessionSettings={loadedSessionSettings}
           />
         )}
         {activeTab === 'modelLoad' && (
@@ -180,7 +182,13 @@ CombinedPanel.propTypes = {
   onDeviceUpdate: PropTypes.func.isRequired,
   currentDevice: PropTypes.oneOf(['cuda', 'cpu', null]),
   onClearChat: PropTypes.func.isRequired,
-  onLoadSession: PropTypes.func.isRequired
+  onLoadSession: PropTypes.func.isRequired,
+  loadedSessionSettings: PropTypes.shape({
+    systemPrompt: PropTypes.string,
+    temperature: PropTypes.number,
+    topP: PropTypes.number,
+    maxTokens: PropTypes.number,
+  }),
 };
 
 export default CombinedPanel; 

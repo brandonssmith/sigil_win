@@ -1,0 +1,65 @@
+/* frontend/src/components/Tabs/Tab.css */
+
+.tab {
+  display: inline-flex; /* Use flex to align label and close button */
+  align-items: center; /* Vertically center items */
+  padding: 8px 12px;
+  margin-right: 4px; /* Space between tabs */
+  border: 1px solid var(--border-color, #ccc);
+  border-bottom: none; /* Remove bottom border for classic tab look */
+  border-radius: 4px 4px 0 0; /* Rounded top corners */
+  background-color: var(--tab-inactive-bg, #e0e0e0);
+  color: var(--tab-inactive-color, #333);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap; /* Prevent label wrapping */
+  overflow: hidden; /* Hide overflow */
+  text-overflow: ellipsis; /* Add ellipsis if label is too long */
+  max-width: 150px; /* Limit tab width */
+  position: relative; /* Needed for positioning close button absolutely if desired */
+  font-size: 0.9rem;
+}
+
+.tab:hover {
+  background-color: var(--tab-hover-bg, #d0d0d0);
+}
+
+.tab.active {
+  background-color: var(--tab-active-bg, #fff);
+  color: var(--tab-active-color, #000);
+  border-bottom: 1px solid var(--tab-active-bg, #fff); /* Make bottom border same as bg */
+  position: relative; /* Ensure active tab is visually on top */
+  z-index: 1; /* Bring active tab forward */
+  /* Extend the bottom slightly to cover the container's top border */
+  margin-bottom: -1px;
+}
+
+.tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-grow: 1; /* Allow label to take available space */
+  padding-right: 4px; /* Space between label and close button */
+}
+
+.tab-close-button {
+  background: none;
+  border: none;
+  color: var(--tab-close-color, #777);
+  cursor: pointer;
+  padding: 0 2px;
+  margin-left: 4px;
+  font-size: 1.1rem; /* Make X slightly larger */
+  line-height: 1; /* Ensure button doesn't increase tab height */
+  opacity: 0.7;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.tab:hover .tab-close-button {
+  opacity: 1;
+}
+
+.tab-close-button:hover {
+  color: var(--tab-close-hover-color, #000);
+  opacity: 1;
+} 

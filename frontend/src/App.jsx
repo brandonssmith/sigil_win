@@ -8,6 +8,7 @@ import { formatListText } from './utils/formatUtils.js'; // <-- Import the new l
 import { API_BASE_URL } from './constants.js'; // Import shared constants
 import DeviceIndicator from './components/DeviceIndicator.jsx'; // <-- Import the new component
 import Sidebar from './components/Sidebar.jsx'; // <-- Import the new Sidebar
+import TabContainer from './components/Tabs/TabContainer.jsx'; // <-- ADDED: Import TabContainer
 
 // Base API URL - Moved to constants.js
 // const API_BASE_URL = 'http://localhost:8000';
@@ -19,6 +20,18 @@ const DEFAULT_TEMPERATURE_CHAT = 0.7;
 const DEFAULT_TOP_P = 0.95;
 const DEFAULT_MAX_TOKENS = 1000;
 
+// --- ADDED: Tab Constants ---
+const NEW_CHAT_TAB_ID = '__NEW_CHAT__';
+
+// Default settings - Store these to revert to when switching to "New Chat"
+const DEFAULTS = {
+  SYSTEM_PROMPT: "You are a helpful assistant.",
+  TEMPERATURE: 0.7,
+  // TEMPERATURE_CHAT: 0.7, // This seems unused now? Keep TEMPERTURE consistent.
+  TOP_P: 0.95,
+  MAX_TOKENS: 1000
+};
+
 // Message structure (implied):
 // { sender: 'user' | 'backend' | 'system', text: string, id: string }
 
@@ -29,7 +42,19 @@ function App() {
   const [error, setError] = useState(null); // Error message string or null
   const messagesEndRef = useRef(null); // Ref for scrolling div
   const loadingMessageIdRef = useRef(null); // Ref to store loading message ID
-  const [currentThreadId, setCurrentThreadId] = useState(null); // <-- ADDED: State for current chat session ID
+  const [currentThreadId, setCurrentThreadId] = useState(null); // State for current chat session ID
+
+  // --- ADDED: Tab State ---
+  const [openTabs, setOpenTabs] = useState([
+    { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false }
+  ]);
+  const [activeTabId, setActiveTabId] = useState(NEW_CHAT_TAB_ID);
+  // --- END: Tab State ---
+
+  // --- ADDED: State for currently loaded session settings ---
+  // Holds null or { systemPrompt, temperature, topP, maxTokens }
+  const [currentSessionSettings, setCurrentSessionSettings] = useState(null);
+  // --- END: State for loaded settings ---
 
   // Settings State - Removed, managed within SettingsPanel
   // const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
@@ -53,7 +78,7 @@ function App() {
   const [themeList, setThemeList] = useState([]);
 
   const [currentLoadedModelName, setCurrentLoadedModelName] = useState(null);
-  const [showSettings, setShowSettings] = useState(true);
+  // const [showSettings, setShowSettings] = useState(true); // Consider removing if settings are only in sidebar
   const [hfUsername, setHfUsername] = useState(null); // <-- NEW: State for username
   const [currentDevice, setCurrentDevice] = useState(null); // <-- NEW: State for device (cuda/cpu)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // <-- ADDED: Sidebar state
@@ -63,9 +88,18 @@ function App() {
   const handleClearChat = useCallback(() => {
     setChatHistory([]);
     setError(null); // Also clear any existing errors
-    setCurrentThreadId(null); // <-- ADDED: Reset thread ID on clear
-    console.log("Chat cleared and thread ID reset.");
-  }, []); // Dependencies: setChatHistory, setError, setCurrentThreadId (all stable)
+    setCurrentThreadId(null); // Reset thread ID on clear
+    setActiveTabId(NEW_CHAT_TAB_ID); // Switch back to New Chat tab
+    // --- ADDED: Clear loaded session settings ---
+    setCurrentSessionSettings(null); // Revert to defaults when clearing
+    // --- END ---
+    // Ensure only one "New Chat" tab remains if others were closed
+    setOpenTabs(prevTabs => [
+      { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false },
+      ...prevTabs.filter(tab => tab.id !== NEW_CHAT_TAB_ID && tab.canClose) // Keep existing closable tabs
+    ]);
+    console.log("Chat cleared, thread ID reset, settings reverted to default, and switched to New Chat tab.");
+  }, []); // Dependencies: setChatHistory, setError, setCurrentThreadId, setActiveTabId, setCurrentSessionSettings, setOpenTabs (stable)
 
   const handleModelLoadStatusChange = (status, modelName = null) => {
     // Clear previous errors when starting to load or if load is successful
@@ -96,8 +130,8 @@ function App() {
   const handleChatModeChange = (mode) => {
     setAppChatMode(mode);
     localStorage.setItem('chatMode', mode);
-    // Optionally clear chat history when mode changes?
-    // setChatHistory([]); 
+    // Clearing chat on mode change might be disruptive with tabs, removing for now.
+    // handleClearChat(); // Maybe revisit this decision later
   };
 
   // --- ADDED: Handler for loading a selected session ---
@@ -114,15 +148,166 @@ function App() {
           }));
           setChatHistory(formattedHistory);
           setCurrentThreadId(sessionData.thread_id);
+
+          // --- ADDED: Extract and store loaded settings ---
+          const loadedSettings = sessionData.sampling_settings;
+          const loadedPrompt = sessionData.system_prompt;
+
+          if (loadedSettings || loadedPrompt !== undefined) {
+              console.log("App: Applying loaded session settings:", { loadedSettings, loadedPrompt });
+              setCurrentSessionSettings({
+                  // Use loaded value or fall back to default if null/undefined in saved data
+                  systemPrompt: loadedPrompt ?? DEFAULTS.SYSTEM_PROMPT,
+                  temperature: loadedSettings?.temperature ?? DEFAULTS.TEMPERATURE,
+                  topP: loadedSettings?.top_p ?? DEFAULTS.TOP_P,
+                  maxTokens: loadedSettings?.max_new_tokens ?? DEFAULTS.MAX_TOKENS,
+              });
+          } else {
+              // If no settings found in session, revert to defaults
+              console.log("App: No settings found in session, reverting to defaults.");
+              setCurrentSessionSettings(null); // Use null to signify defaults
+          }
+          // --- END: Extract and store loaded settings ---
+
+          // --- Sync tab state --- 
+          setActiveTabId(sessionData.thread_id);
+          // Add tab if not already open (e.g., loaded via sidebar without tab existing)
+          setOpenTabs(prevTabs => {
+              if (prevTabs.some(tab => tab.id === sessionData.thread_id)) {
+                  return prevTabs; // Tab already exists
+              }
+              // Determine label - use metadata if available, else fallback
+              const label = sessionData.first_user_message || `Session ${sessionData.thread_id.substring(0, 6)}...`;
+              return [...prevTabs, { id: sessionData.thread_id, label: label, canClose: true }];
+          });
+          // --- END Sync tab state ---
           setError(null); // Clear any previous errors
           setIsLoading(false); // Ensure loading indicator is off
-          // Optionally close sidebar after loading?
-          // setIsSidebarOpen(false);
       } else {
           console.error("App: Invalid session data received for loading:", sessionData);
           setError("Failed to load session data.");
+          setCurrentSessionSettings(null); // Revert settings on load error
       }
-  }, []); // Dependencies: setChatHistory, setCurrentThreadId, setError, setIsLoading (stable)
+  }, []); // Dependencies: setChatHistory, setCurrentThreadId, setActiveTabId, setOpenTabs, setError, setIsLoading, setCurrentSessionSettings (stable)
+
+  // --- ADDED: Tab Selection Handler --- 
+  const handleTabSelect = useCallback(async (tabId) => {
+    if (tabId === activeTabId) return; // Do nothing if already active
+
+    console.log(`Switching to tab: ${tabId}`);
+    setActiveTabId(tabId);
+
+    if (tabId === NEW_CHAT_TAB_ID) {
+      // Switch to a new chat - clear history, thread ID, and revert settings
+      handleClearChat();
+    } else {
+      // Switch to an existing session tab - load its data (incl. settings via handleLoadSession)
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/chat/session/${tabId}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ detail: `HTTP error! status: ${response.status}` }));
+          throw new Error(errorData.detail || `Failed to fetch session ${tabId}`);
+        }
+        const sessionData = await response.json();
+        handleLoadSession(sessionData);
+      } catch (e) {
+        console.error(`Error fetching session ${tabId}:`, e);
+        setError(`Failed to load session ${tabId}: ${e.message}`);
+        setChatHistory([]); // Clear chat area on error
+        setCurrentThreadId(null); // Clear thread ID
+        setActiveTabId(tabId); // Still set the tab as active even if load failed
+        setCurrentSessionSettings(null); // Revert settings on error
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, [activeTabId, handleClearChat, handleLoadSession]); // Dependencies
+  // --- END: Tab Selection Handler ---
+
+  // --- MODIFIED: Tab Close Handler --- 
+  const handleTabClose = useCallback(async (tabIdToClose) => {
+      if (tabIdToClose === NEW_CHAT_TAB_ID) return; // Cannot close the "New Chat" tab
+
+      console.log(`Attempting to close tab: ${tabIdToClose}`);
+
+      // Find the index of the tab to close
+      const closingTabIndex = openTabs.findIndex(tab => tab.id === tabIdToClose);
+      if (closingTabIndex === -1) {
+          console.warn(`Tab with ID ${tabIdToClose} not found in openTabs.`);
+          return; // Tab not found
+      }
+
+      // Determine the next active tab ID *before* removing the tab
+      let nextActiveTabId = activeTabId;
+      let switchToNewChat = false;
+      if (activeTabId === tabIdToClose) {
+          if (closingTabIndex > 0) {
+              nextActiveTabId = openTabs[closingTabIndex - 1].id;
+          } else {
+              const newChatTab = openTabs.find(t => t.id === NEW_CHAT_TAB_ID);
+              nextActiveTabId = newChatTab ? newChatTab.id : (openTabs.length > 1 ? openTabs[1].id : null);
+              if (!nextActiveTabId) { /* error handling */ return; }
+              if (nextActiveTabId === NEW_CHAT_TAB_ID) {
+                  switchToNewChat = true;
+              }
+          }
+      }
+
+      // Optimistically remove the tab from the UI
+      setOpenTabs(prevTabs => prevTabs.filter(tab => tab.id !== tabIdToClose));
+
+      // Switch to the new active tab if needed
+      if (nextActiveTabId !== activeTabId) {
+          console.log(`Switching active tab to ${nextActiveTabId} after closing ${tabIdToClose}`);
+          if (switchToNewChat) {
+              handleClearChat(); // Handles setting active tab and clearing settings
+          } else {
+              // Manually set active tab first, then load session (which sets settings)
+              setActiveTabId(nextActiveTabId);
+              setIsLoading(true);
+              setError(null);
+              try {
+                  const response = await fetch(`${API_BASE_URL}/api/v1/chat/session/${nextActiveTabId}`);
+                  if (!response.ok) { /* error handling */ throw new Error(/* ... */); }
+                  const sessionData = await response.json();
+                  handleLoadSession(sessionData); // Load data and settings
+              } catch (e) {
+                  console.error(`Error fetching session ${nextActiveTabId} after closing tab:`, e);
+                  setError(`Failed to load session ${nextActiveTabId}: ${e.message}`);
+                  // Fallback to New Chat on error loading next tab
+                  handleClearChat();
+              } finally {
+                  setIsLoading(false);
+              }
+          }
+      }
+
+      // Attempt to delete the session from the backend
+      try {
+          const response = await fetch(`${API_BASE_URL}/api/v1/chat/session/${tabIdToClose}`, {
+              method: 'DELETE',
+          });
+
+          if (!response.ok) {
+              // 404 is acceptable if the file was already gone
+              if (response.status !== 404) {
+                  const errorData = await response.json().catch(() => ({ detail: `DELETE request failed with status: ${response.status}` }));
+                  throw new Error(errorData.detail || `Failed to delete session ${tabIdToClose}`);
+              }
+          }
+          console.log(`Session ${tabIdToClose} deleted successfully or was already gone.`);
+
+      } catch (e) {
+          console.error(`Error deleting session ${tabIdToClose}:`, e);
+          // Notify user or log error. The tab is already closed in the UI.
+          // We could potentially add the tab back if deletion fails critically, but that might be complex.
+          setError(`Failed to delete session ${tabIdToClose} on the server: ${e.message}`); // Show non-critical error
+      }
+
+  }, [openTabs, activeTabId, handleClearChat, handleLoadSession, setActiveTabId, setIsLoading, setError, setChatHistory, setCurrentThreadId, setOpenTabs, setCurrentSessionSettings]); // Dependencies
+  // --- END: Tab Close Handler ---
 
   // --- useEffect Hooks ---
   useEffect(() => {
@@ -134,7 +319,41 @@ function App() {
         'Kanagawa Dragon', 'Kanagawa Wave', 'Shaman',
         'catppuccin-frappe', 'catppuccin-macchiato', 'catppuccin-mocha',
       ]));
-  }, []);
+
+    // --- ADDED: Fetch saved sessions --- 
+    fetch(`${API_BASE_URL}/api/v1/chat/sessions`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(sessions => {
+        if (sessions && Array.isArray(sessions)) {
+          const sessionTabs = sessions.map(session => ({
+            id: session.thread_id,
+            // Create a label - use first user message or thread_id as fallback
+            label: session.first_user_message || `Session ${session.thread_id.substring(0, 6)}...`,
+            canClose: true
+          }));
+          // Add fetched sessions to the initial 'New Chat' tab
+          // Avoid adding duplicates if already open (though unlikely on initial load)
+          setOpenTabs(prevTabs => [
+             ...prevTabs.filter(t => t.id === NEW_CHAT_TAB_ID), // Keep New Chat tab
+             ...sessionTabs.filter(st => !prevTabs.some(pt => pt.id === st.id)) // Add new session tabs
+          ]);
+        } else {
+          console.warn('No saved sessions found or invalid format.');
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching saved sessions:", err);
+        // Handle error appropriately, maybe show a message to the user
+        // setError("Could not load saved sessions."); 
+      });
+    // --- END: Fetch saved sessions ---
+
+  }, []); // Empty dependency array: Run only on initial mount
 
   // --- Keyboard Shortcuts --- useEffect
   useEffect(() => {
@@ -320,7 +539,8 @@ function App() {
             onDeviceUpdate={handleDeviceUpdate}
             currentDevice={currentDevice}
             onClearChat={handleClearChat}
-            onLoadSession={handleLoadSession} // <-- ADDED: Pass down session load handler
+            onLoadSession={handleLoadSession}
+            loadedSessionSettings={currentSessionSettings}
          />
         
         {/* Right Panel: Chat Area */}
@@ -380,9 +600,18 @@ function App() {
               {appModelLoadStatus === 'loading' && <span className="model-status-indicator loading">Loading Model...</span>}
             </div>
 
-            {/* Display Current Thread ID if available */}
-            {currentThreadId && <span className="thread-id-display">Session: {currentThreadId}</span>}
+            {/* Display Current Thread ID if available - Now part of the tab potentially */}
+            {/* {currentThreadId && <span className="thread-id-display">Session: {currentThreadId}</span>} */}
           </header>
+
+          {/* --- ADDED: Tab Container --- */}
+          <TabContainer
+            tabs={openTabs}
+            activeTabId={activeTabId}
+            onTabSelect={handleTabSelect}
+            onTabClose={handleTabClose} // Pass the close handler
+          />
+          {/* --- END: Tab Container --- */}
 
           <div className="messages-area">
             {/* Display message asking user to load model if not loaded */}
@@ -406,9 +635,11 @@ function App() {
             {chatHistory.map((msg) => (
               <div key={msg.id} className={`message ${msg.sender}-message ${msg.id.startsWith('loading-') ? 'loading-message' : ''}`}>
                 {msg.id.startsWith('loading-') ? (
-                  <div className="dots-container"><span>.</span><span>.</span><span>.</span></div>
+                  <div className="typing-indicator">
+                    <span></span><span></span><span></span>
+                  </div>
                 ) : (
-                  <p>{msg.text}</p>
+                  <p dangerouslySetInnerHTML={{ __html: msg.text }} /> // Use dangerouslySetInnerHTML if text contains HTML
                 )}
               </div>
             ))}
@@ -429,17 +660,22 @@ function App() {
             </button>
           )}
 
-          <form onSubmit={handleSubmit} className="input-bar">
-            <input
-              type="text"
+          <form onSubmit={handleSubmit} className="input-form">
+            <textarea
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
-              placeholder={modelLoaded ? "Type your message..." : "Load model first..."}
-              disabled={isLoading || !modelLoaded} // Disable if chat is loading OR model not loaded
-              aria-label="Chat message input"
+              placeholder={modelLoaded ? "Type your message..." : "Load a model using the sidebar first..."}
+              rows="3" // Start with 3 rows
+              disabled={isLoading || !modelLoaded}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault(); // Prevent newline on Enter
+                  handleSubmit(e); // Trigger form submission
+                }
+              }}
             />
-            <button type="submit" disabled={isLoading || !modelLoaded}> 
-              Send
+            <button type="submit" disabled={isLoading || !modelLoaded || !userInput.trim()}>
+              {isLoading ? 'Sending...' : 'Send'}
             </button>
           </form>
         </div>

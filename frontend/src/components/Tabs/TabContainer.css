@@ -1,0 +1,33 @@
+/* frontend/src/components/Tabs/TabContainer.css */
+
+.tab-container {
+  display: flex;
+  flex-wrap: nowrap; /* Prevent tabs from wrapping to the next line */
+  overflow-x: auto; /* Allow horizontal scrolling if tabs overflow */
+  border-bottom: 1px solid var(--border-color, #ccc);
+  padding-left: 4px; /* Align first tab slightly */
+  margin-bottom: 10px; /* Space below the tabs */
+
+  /* Basic scrollbar styling (optional, adjust as needed) */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--scrollbar-thumb-color, #aaa) var(--scrollbar-track-color, #eee); /* Firefox */
+}
+
+/* Webkit (Chrome, Safari, Edge) scrollbar styling */
+.tab-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tab-container::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-color, #eee);
+  border-radius: 3px;
+}
+
+.tab-container::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb-color, #aaa);
+  border-radius: 3px;
+}
+
+.tab-container::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover-color, #888);
+} 

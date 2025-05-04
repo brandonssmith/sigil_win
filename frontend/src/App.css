@@ -207,86 +207,87 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 0 15px var(--palette-9, rgba(187, 134, 252, 0.4));
 }
 
-/* Loading indicator message style */
-.system-message.loading-message {
-  background-color: transparent; 
-  /* Remove color/font-style here, apply to dots */
-  /* color: #aaa; */
+/* System message styling (for errors, info) */
+.system-message {
+  color: var(--foreground-muted, #aaa);
+  font-style: italic;
+  text-align: center; /* Center system messages */
+  margin-left: auto;
   margin-right: auto;
-  /* font-style: italic; */
-  /* Align the dots container */
-  display: flex;
-  align-items: flex-end; /* Align dots to bottom */
-  padding-top: 0.5rem; /* Adjust spacing if needed */
-  padding-bottom: 0.5rem;
+  max-width: 90%; /* Allow wider system messages */
+  padding: 0.5rem 1rem;
+  background-color: transparent; /* Usually no background */
+  border: none;
+  box-shadow: none;
 }
 
-.dots-container {
-  display: flex;
+.system-message.error-message {
+  color: var(--error-color, #cf6679); /* Use theme error color */
+  background-color: var(--error-bg-faded, rgba(207, 102, 121, 0.1)); /* Subtle error background */
+  font-style: normal;
+  border-radius: 4px;
 }
 
-.dots-container span {
+/* Loading indicator message style */
+.message.loading-message { /* Target the message container */
+  background-color: transparent;
+  box-shadow: none;
+  border: none;
+  margin-right: auto; /* Align left like backend messages */
+  margin-left: 0;
+  padding: 0.5rem 1.25rem; /* Match backend message padding */
+  max-width: 100px; /* Give it some width */
+  min-height: 40px; /* Ensure it has some height */
+  display: flex;
+  align-items: center; /* Center dots vertically */
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.typing-indicator span {
   display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: var(--palette-12, #aaa); /* Initial dot color */
-  margin: 0 3px; /* Spacing between dots */
-  /* Apply the animation */
+  background-color: var(--foreground-muted, #aaa); /* Use muted color */
+  margin: 0 3px;
   animation: bounce-flash 1.4s infinite ease-in-out both;
 }
 
-/* Apply animation delays to each dot */
-.dots-container span:nth-child(1) {
-  animation-delay: -0.32s;
-}
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0s; }
 
-.dots-container span:nth-child(2) {
-  animation-delay: -0.16s;
-}
-
-.dots-container span:nth-child(3) {
-  /* No delay on the third dot */
-  animation-delay: 0s;
-}
-
-/* Keyframes for bouncing and flashing effect */
 @keyframes bounce-flash {
   0%, 80%, 100% {
-    transform: scale(0.8) translateY(0);
-    background-color: var(--palette-12, #aaa); /* Standard color */
-    opacity: 0.6;
+    transform: scale(0);
+    opacity: 0.5;
   }
   40% {
-    transform: scale(1.1) translateY(-8px); /* Bounce up */
-    background-color: var(--palette-9, #03dac6); /* Flash with accent color */
+    transform: scale(1.0);
     opacity: 1;
   }
 }
 
-/* Ensure message text preserves newlines and wraps */
 .message p {
-  white-space: pre-wrap;
-  word-wrap: break-word; /* Ensure long words break */
+  margin: 0;
+  /* Ensure code blocks inside messages wrap */
+  white-space: pre-wrap; /* Wraps whitespace and breaks lines */
+  word-break: break-word; /* Breaks long words if necessary */
 }
 
-/* Optionally target only backend messages if needed */
-/*
-.backend-message p {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-*/
-
-/* Error message specific style - Keep clear */
-.error-message {
-  color: var(--palette-11, #cf6679); /* Softer red for errors */
-  text-align: center;
-  padding: 0.75rem;
-  font-weight: 500; /* Medium weight */
-  background-color: rgba(207, 102, 121, 0.1); /* Slight background tint */
+/* General Error Message Styling (e.g., chat fetch errors) */
+.error-message.chat-error {
+  color: var(--error-color, #cf6679);
+  background-color: var(--error-bg-faded, rgba(207, 102, 121, 0.1));
+  padding: 0.75rem 1.25rem;
+  margin: 0 1.5rem 1rem 1.5rem; /* Match messages-area padding + margin-bottom */
   border-radius: 4px;
-  margin: 0.5rem 1.5rem;
+  text-align: center;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 /* Input bar - Softer border, more padding */
@@ -497,12 +498,14 @@ body {
 */
 
 /* Style for general error messages (e.g., chat fetch errors) */
-.error-message.chat-error {
-  color: #dc3545; /* Red color for errors */
-  padding: 5px 10px; /* Add some padding */
-  text-align: center; /* Center the text */
-  font-size: 0.9em;
-  margin-top: 5px; /* Space from messages/input */
+.error-message {
+  color: var(--palette-11, #cf6679); /* Softer red for errors */
+  text-align: center;
+  padding: 0.75rem;
+  font-weight: 500; /* Medium weight */
+  background-color: rgba(207, 102, 121, 0.1); /* Slight background tint */
+  border-radius: 4px;
+  margin: 0.5rem 1.5rem;
 }
 
 /* Responsive adjustments if needed */
@@ -517,5 +520,271 @@ body {
   }
    .sidebar.open {
     /* width: 300px; */
+  }
+}
+
+/* --- NEW Input Form Styles --- */
+.input-form {
+  display: flex;
+  align-items: flex-start; /* Align items to the top initially */
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border, #333);
+  background-color: var(--surface-dark, #181818); 
+  flex-shrink: 0; /* Prevent form from shrinking */
+  gap: 0.75rem; /* Space between textarea and button */
+}
+
+.input-form textarea {
+  flex-grow: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border, #444);
+  border-radius: 4px;
+  background-color: var(--input-bg, #2a2a2a);
+  color: var(--foreground, #e0e0e0);
+  font-size: 1rem;
+  line-height: 1.4;
+  resize: vertical; /* Allow vertical resize only */
+  min-height: 50px; /* Minimum height roughly matching button */
+  max-height: 200px; /* Limit growth */
+  overflow-y: auto; /* Add scroll if content exceeds max-height */
+  font-family: inherit; /* Use the main app font */
+}
+
+.input-form textarea:focus {
+  outline: none;
+  border-color: var(--primary, #03dac6);
+  box-shadow: 0 0 0 2px var(--primary-focus, rgba(3, 218, 198, 0.3));
+}
+
+.input-form button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary, #03dac6);
+  color: var(--button-foreground, var(--background, #121212)); /* Use button-specific fg or fallback */
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-weight: bold;
+  height: 50px; /* Match min-height of textarea approx */
+  flex-shrink: 0; /* Prevent button shrinking */
+  align-self: flex-end; /* Align button to the bottom of the flex container */
+}
+
+.input-form button:hover:not(:disabled) {
+  background-color: var(--primary-dark, #018786);
+}
+
+.input-form button:disabled {
+  background-color: var(--disabled-bg, #555);
+  color: var(--disabled-fg, #999);
+  cursor: not-allowed;
+}
+/* --- END Input Form Styles --- */
+
+/* Clear Chat Button (outside form) */
+.clear-chat-button {
+  display: block; /* Take its own line */
+  margin: 0 auto 0.5rem auto; /* Center above input, add bottom margin */
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  background-color: var(--button-secondary-bg, #444);
+  color: var(--button-secondary-fg, #ccc);
+  border: 1px solid var(--border-dark, #555);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.clear-chat-button:hover:not(:disabled) {
+  opacity: 1;
+  background-color: var(--button-secondary-hover-bg, #555);
+}
+
+.clear-chat-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+
+/* Ensure #root takes full space */
+#root {
+  /* text-align: center; */ /* Removed - conflicts with flex layout */
+  /* Additional styles if needed to enforce full size */
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+/* Primary Button Style (example, use theme variables) */
+.button-primary {
+    background-color: var(--primary, #03dac6);
+    color: var(--background, #121212);
+    /* ... other button styles */
+}
+
+.button-primary:focus {
+    /* Focus styles */
+}
+
+.card {
+  padding: 2em;
+}
+
+/* Selection color */
+::selection {
+  background-color: var(--primary-dark, #018786); /* Use theme color */
+  color: var(--background, #121212); /* Contrast color */
+}
+
+/* Model status group and indicator styles (already exist above, ensure consistency) */
+.model-status-group {
+    /* Existing styles */
+}
+
+.model-status-indicator {
+    /* Existing styles */
+}
+
+.model-status-indicator.loading {
+     /* Use theme var if available, else a default */
+    /* background-color: var(--warning-bg, #ffc107); */
+    /* color: var(--warning-fg, #333); */
+    /* Or use animation? */
+}
+
+.model-status-indicator.error {
+    /* Existing styles */
+}
+
+/* Thread ID Display */
+.thread-id-display {
+    font-size: 0.8em;
+    color: var(--foreground-muted, #888);
+    margin-left: 10px;
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+/* Device Indicator styles */
+.device-indicator {
+    font-size: 0.8em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 10px;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+.device-indicator.cuda {
+    background-color: var(--palette-13, #2a9d8f); /* Teal/Green */
+    color: #fff;
+}
+
+.device-indicator.cpu {
+    background-color: var(--palette-14, #e9c46a); /* Yellow/Orange */
+    color: #333;
+}
+
+.device-indicator.unknown {
+    background-color: var(--disabled-bg, #555);
+    color: var(--disabled-fg, #999);
+}
+
+
+/* Typing indicator span (re-declared? Ensure consistent) */
+/* .typing-indicator span { ... } */
+
+/* Clear chat button in Settings Panel */
+.clear-chat-button-settings {
+    /* Add styles similar to .clear-chat-button if needed, */
+    /* or share styles if identical appearance is desired. */
+    margin-top: 15px; /* Space above button */
+    width: 100%; /* Make it full width within the panel */
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    background-color: var(--button-danger-bg, #cf6679); /* Danger color */
+    color: var(--button-danger-fg, #fff);
+    border: 1px solid var(--button-danger-border, #a14f5f);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.clear-chat-button-settings:hover:not(:disabled) {
+    background-color: var(--button-danger-hover-bg, #a14f5f);
+}
+
+.clear-chat-button-settings:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Ensure chat error message is styled */
+/* .error-message.chat-error { ... } */
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column; /* Stack sidebar and chat vertically? Maybe not ideal */
+    /* Or keep row but make sidebar overlay? */
+  }
+  .sidebar {
+    /* Adjust sidebar for smaller screens if needed */
+    /* width: 100%; */ /* Example: full width */
+    /* height: auto; */
+  }
+   .sidebar.open {
+      /* Adjust open state if needed */
+   }
+
+  .chat-container {
+     /* Take full width if sidebar is hidden/overlayed */
+     width: 100%;
+     margin-left: 0 !important; /* Override margin push */
+  }
+
+  .chat-header {
+    padding: 0.5rem 1rem;
+  }
+
+  .messages-area {
+    padding: 1rem;
+  }
+
+  .input-form {
+    padding: 0.5rem 1rem;
+  }
+
+  .message {
+    max-width: 90%; /* Allow messages to be wider */
   }
 }

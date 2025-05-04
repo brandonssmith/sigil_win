@@ -9,116 +9,112 @@ import {
 import PropTypes from 'prop-types';
 import './SettingsPanel.css'; // Import component styles
 
+// Default settings object for convenience
+const DEFAULTS = {
+  SYSTEM_PROMPT: DEFAULT_SYSTEM_PROMPT,
+  TEMPERATURE: DEFAULT_TEMPERATURE,
+  TOP_P: DEFAULT_TOP_P,
+  MAX_TOKENS: DEFAULT_MAX_TOKENS
+};
+
 // Settings Panel Component
 function SettingsPanel({
     modelLoaded, // Only need to know if the model is loaded to enable/disable
-    config, // Added config prop
-    onConfigChange, // Added onConfigChange prop
-    onReloadModel, // Added onReloadModel prop
-    reloadStatus, // Added reloadStatus prop
-    onClearChat // Added onClearChat prop
+    // config, // Removed - managing state internally or via loadedSessionSettings
+    // onConfigChange, // Removed
+    // onReloadModel, // Removed - No model reload button here
+    // reloadStatus, // Removed
+    onClearChat, // Keep for the clear chat button
+    // --- ADDED: Accept loaded settings prop ---
+    loadedSessionSettings
  }) {
-  // State moved from App.jsx
-  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
-  const [temperature, setTemperature] = useState(DEFAULT_TEMPERATURE);
-  const [topP, setTopP] = useState(DEFAULT_TOP_P);
-  const [maxTokens, setMaxTokens] = useState(DEFAULT_MAX_TOKENS);
-  const [applyStatus, setApplyStatus] = useState(null); // null | 'loading' | 'success' | 'error' - RENAMED
-  const [applyError, setApplyError] = useState(null); // Specific error for settings apply
-  // Add state to track initial fetch
-  const [initialFetchStatus, setInitialFetchStatus] = useState('idle'); // idle | loading | success | error
+  // State for settings inputs
+  const [systemPrompt, setSystemPrompt] = useState(DEFAULTS.SYSTEM_PROMPT);
+  const [temperature, setTemperature] = useState(DEFAULTS.TEMPERATURE);
+  const [topP, setTopP] = useState(DEFAULTS.TOP_P);
+  const [maxTokens, setMaxTokens] = useState(DEFAULTS.MAX_TOKENS);
+  
+  const [applyStatus, setApplyStatus] = useState(null); // null | 'loading' | 'success' | 'error'
+  const [applyError, setApplyError] = useState(null);
+  
+  // REMOVED: Initial fetch status state
+  // const [initialFetchStatus, setInitialFetchStatus] = useState('idle'); 
 
-  const isLoading = applyStatus === 'loading'; // Use renamed state
+  const isLoading = applyStatus === 'loading';
 
-  // Fetch current settings on mount or when model becomes loaded
+  // REMOVED: useEffect for fetching current settings on mount
+  // useEffect(() => { ... fetch logic ... }, [modelLoaded, initialFetchStatus]);
+
+  // --- ADDED: useEffect to update inputs based on loaded session settings ---
   useEffect(() => {
-    if (modelLoaded && initialFetchStatus === 'idle') {
-        const fetchSettings = async () => {
-            setInitialFetchStatus('loading');
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/settings/current`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const currentSettings = await response.json();
-                // Update local state only if values are provided
-                if (currentSettings.system_prompt !== null) setSystemPrompt(currentSettings.system_prompt);
-                if (currentSettings.temperature !== null) setTemperature(currentSettings.temperature);
-                if (currentSettings.top_p !== null) setTopP(currentSettings.top_p);
-                if (currentSettings.max_new_tokens !== null) setMaxTokens(currentSettings.max_new_tokens);
-                setInitialFetchStatus('success');
-            } catch (error) {
-                console.error("Failed to fetch current settings:", error);
-                setInitialFetchStatus('error');
-                // Optionally show an error message to the user
-            }
-        };
-        fetchSettings();
+    if (loadedSessionSettings) {
+      // A session tab is active, apply its settings
+      console.log("SettingsPanel: Applying loaded settings", loadedSessionSettings);
+      setSystemPrompt(loadedSessionSettings.systemPrompt ?? DEFAULTS.SYSTEM_PROMPT);
+      setTemperature(loadedSessionSettings.temperature ?? DEFAULTS.TEMPERATURE);
+      setTopP(loadedSessionSettings.topP ?? DEFAULTS.TOP_P);
+      setMaxTokens(loadedSessionSettings.maxTokens ?? DEFAULTS.MAX_TOKENS);
+    } else {
+      // "New Chat" tab is active, revert to defaults
+      console.log("SettingsPanel: Reverting to default settings");
+      setSystemPrompt(DEFAULTS.SYSTEM_PROMPT);
+      setTemperature(DEFAULTS.TEMPERATURE);
+      setTopP(DEFAULTS.TOP_P);
+      setMaxTokens(DEFAULTS.MAX_TOKENS);
     }
-    // If model becomes unloaded, perhaps reset status to refetch when reloaded?
-    // else if (!modelLoaded) {
-    //    setInitialFetchStatus('idle'); 
-    // }
-  }, [modelLoaded, initialFetchStatus]); // Depend on modelLoaded and fetch status
+  }, [loadedSessionSettings]); // Re-run whenever the loaded settings prop changes
+  // --- END: useEffect for loaded settings ---
 
-  // Handler for applying model settings (Moved from App.jsx)
+  // Handler for applying model settings (Updates backend with current UI values)
   const handleApplySettings = async () => {
-    setApplyStatus('loading'); // Use renamed setter
+    setApplyStatus('loading');
     setApplyError(null);
     try {
-      // Use the new endpoint path
       const response = await fetch(`${API_BASE_URL}/api/v1/settings/update`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
+            // Send values currently displayed in the UI
             system_prompt: systemPrompt,
             temperature: temperature,
             top_p: topP,
             max_new_tokens: maxTokens
         }),
       });
-
-      const data = await response.json(); // Always try to parse JSON
-
+      // ... (rest of fetch logic: check response, set status, handle errors) ...
+      const data = await response.json();
       if (!response.ok) {
         throw new Error(data.detail || `HTTP error! status: ${response.status}`);
       }
-
       console.log("Apply settings response:", data);
-      setApplyStatus('success'); // Use renamed setter
-       // Hide success message after a delay
-      const timer = setTimeout(() => setApplyStatus(null), 2000); // Use renamed setter
-      return () => clearTimeout(timer);
-
+      setApplyStatus('success');
     } catch (err) {
        console.error('Failed to apply model settings:', err);
-       setApplyError(`Apply settings failed: ${err.message}`); // Set specific error
-       setApplyStatus('error'); // Use renamed setter
-       // Hide error message after a delay
-      const timer = setTimeout(() => setApplyStatus(null), 3000); // Use renamed setter
-      return () => clearTimeout(timer);
+       setApplyError(`Apply settings failed: ${err.message}`);
+       setApplyStatus('error');
     }
   };
 
   // Effect to clear success/error messages
   useEffect(() => {
     let timer;
-    if (applyStatus === 'success') { // Use renamed state
-      timer = setTimeout(() => setApplyStatus(null), 2000); // Use renamed setter
-    } else if (applyStatus === 'error') { // Use renamed state
-      timer = setTimeout(() => setApplyStatus(null), 3000); // Use renamed setter
+    if (applyStatus === 'success') {
+      timer = setTimeout(() => setApplyStatus(null), 2000);
+    } else if (applyStatus === 'error') {
+      timer = setTimeout(() => setApplyStatus(null), 3000);
     }
     return () => clearTimeout(timer);
-  }, [applyStatus]); // Use renamed state
+  }, [applyStatus]);
 
-  // Disable form elements if fetching initial settings or applying changes
-  const isDisabled = !modelLoaded || isLoading || initialFetchStatus === 'loading';
+  // Disable form elements if applying changes
+  const isDisabled = !modelLoaded || isLoading;
 
   return (
     <div className="settings-panel">
       <h2>Settings</h2>
+      {/* Input fields remain the same, but their values are now controlled by state updated via props */}
       <div className="settings-group">
         <label htmlFor="system-prompt">System Prompt:</label>
         <textarea
@@ -126,7 +122,7 @@ function SettingsPanel({
           value={systemPrompt}
           onChange={(e) => setSystemPrompt(e.target.value)}
           rows={5}
-          disabled={isDisabled} // Use combined disabled state
+          disabled={isDisabled}
         />
       </div>
       <div className="settings-group">
@@ -139,7 +135,7 @@ function SettingsPanel({
           min="0"
           max="2.0" // Match backend validation
           step="0.1"
-          disabled={isDisabled} // Use combined disabled state
+          disabled={isDisabled}
         />
       </div>
        <div className="settings-group">
@@ -152,7 +148,7 @@ function SettingsPanel({
           min="0"
           max="1.0"
           step="0.05"
-          disabled={isDisabled} // Use combined disabled state
+          disabled={isDisabled}
         />
       </div>
        <div className="settings-group">
@@ -164,21 +160,20 @@ function SettingsPanel({
           onChange={(e) => setMaxTokens(parseInt(e.target.value, 10) || 1)}
           min="1"
           step="50"
-          disabled={isDisabled} // Use combined disabled state
+          disabled={isDisabled}
         />
       </div>
       <button onClick={handleApplySettings} disabled={isDisabled}>
         {isLoading ? 'Applying...' : 'Apply Settings'}
       </button>
       {applyStatus === 'success' && <p className="success-message">Settings applied!</p>}
-      {/* Display the specific applyError here */}
       {applyStatus === 'error' && <p className="error-message">{applyError || 'Failed to apply settings.'}</p>}
 
-      {/* Added Clear Chat Button */}
+      {/* Clear Chat Button */}
       <button 
         onClick={onClearChat} 
         className="clear-chat-button-settings" 
-        disabled={isLoading} // Optionally disable while applying settings?
+        disabled={isLoading}
       >
         Clear Chat History
       </button>
@@ -189,11 +184,19 @@ function SettingsPanel({
 
 SettingsPanel.propTypes = {
   modelLoaded: PropTypes.bool.isRequired,
-  config: PropTypes.object.isRequired,
-  onConfigChange: PropTypes.func.isRequired,
-  onReloadModel: PropTypes.func.isRequired,
-  reloadStatus: PropTypes.string, // This prop remains unchanged, refers to overall model reload
-  onClearChat: PropTypes.func.isRequired // Added prop type for the clear chat function
+  // Removed unused props
+  // config: PropTypes.object.isRequired,
+  // onConfigChange: PropTypes.func.isRequired,
+  // onReloadModel: PropTypes.func.isRequired,
+  // reloadStatus: PropTypes.string,
+  onClearChat: PropTypes.func.isRequired,
+  // --- ADDED: PropType for loadedSessionSettings ---
+  loadedSessionSettings: PropTypes.shape({
+    systemPrompt: PropTypes.string,
+    temperature: PropTypes.number,
+    topP: PropTypes.number,
+    maxTokens: PropTypes.number,
+  }), // Can be null
 };
 
 export default SettingsPanel; 
