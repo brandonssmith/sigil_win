@@ -145,7 +145,22 @@ const CombinedPanel = (props) => {
             {/* Theme Selection */}
             <div className="settings-group" style={{ marginTop: '0px', marginBottom: '20px' }}> {/* Adjusted margin */}
               <label htmlFor="theme-select">Theme:</label>
-              <select id="theme-select" value={themeName} onChange={e => setThemeName(e.target.value)}>
+              <select 
+                id="theme-select" 
+                value={themeName} 
+                onChange={e => setThemeName(e.target.value)}
+                style={{
+                  backgroundColor: 'var(--surface-input)',
+                  color: 'var(--input-text-color)',
+                  border: '1px solid var(--border-input)',
+                  padding: '0.6rem 0.8rem',
+                  borderRadius: 'var(--border-radius-small)',
+                  width: '100%',
+                  fontSize: '0.95rem', // Match other inputs
+                  fontFamily: 'inherit',
+                  cursor: 'pointer'
+                }}
+              >
                 {themeList.map(theme => (
                   <option key={theme} value={theme}>{theme}</option>
                 ))}
