@@ -9,8 +9,10 @@
 export const formatChatHistoryForBackend = (history) => {
   return history
     .filter(msg => msg.sender === 'user' || msg.sender === 'backend') // Only user/backend messages
-    .map(msg => ({ // Convert to {role: ..., content: ...}
+    .map(msg => ({
       role: msg.sender === 'user' ? 'user' : 'assistant',
-      content: msg.text
+      // Use the original 'content' field if available, otherwise fall back to 'text'
+      // This handles both newly created messages and messages loaded from history
+      content: msg.content !== undefined ? msg.content : msg.text 
     }));
 }; 

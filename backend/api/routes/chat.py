@@ -4,13 +4,14 @@ from typing import Optional, List, Dict, Any # Import necessary types
 
 # Import Pydantic models from schemas.chat
 from ..schemas.chat import (
-    ChatRequest, ChatResponse, Message, ChatRequestV2, ChatResponseV2
+    ChatRequest, ChatResponse, Message, ChatRequestV2, ChatResponseV2, MessageV2
 )
 
 # Import core logic functions using relative paths
 from ..core.inference import generate_response
 from ..core.prompt_builder import generate_prompt
 from ..core.cleaner import truncate_at_stop_token, clean_response
+from ..core.history_manager import save_chat_messages, get_session, list_sessions
 
 router = APIRouter()
 
@@ -86,6 +87,14 @@ def chat_v2(req: ChatRequestV2, request: Request): # Add request: Request
         )
 
     try:
+        # --- ADDED: Debug received messages --- 
+        print(f"--- Received Request Body (Thread: {req.thread_id or 'New'}) ---")
+        print(f"Mode: {req.mode}")
+        print(f"Message: {req.message}")
+        print(f"Messages: {req.messages}")
+        print("-------------------------------------------")
+        # --- End Debug --- 
+
         # Retrieve components from app_state
         current_tokenizer = app_state.tokenizer
         current_model = app_state.model
@@ -108,6 +117,12 @@ def chat_v2(req: ChatRequestV2, request: Request): # Add request: Request
             messages=messages_list
         )
 
+        # --- ADDED: Print the generated prompt for debugging ---
+        print(f"--- Prompt for Generation (Thread: {req.thread_id or 'New'}) ---")
+        print(prompt)
+        print("--------------------------------------------------")
+        # --- End Debug Print ---
+
         # --- Call Refactored Generation Function ---
         response_text = generate_response(
             model=current_model,
@@ -123,7 +138,59 @@ def chat_v2(req: ChatRequestV2, request: Request): # Add request: Request
         # Clean the response
         cleaned_response_text = clean_response(response_text)
         truncated_response_text = truncate_at_stop_token(cleaned_response_text)
-        response_data = {"response": truncated_response_text}
+
+        # --- Save Chat History ---
+        new_thread_id = None
+        try:
+            # Prepare messages to save
+            # In instruction mode, history starts with the user message and the response
+            # In chat mode, history includes the *input* messages + the new response
+            messages_to_save = []
+            if req.mode == 'instruction':
+                user_message = {"role": "user", "content": req.message}
+                assistant_message = {"role": "assistant", "content": truncated_response_text}
+                messages_to_save = [user_message, assistant_message]
+            elif req.mode == 'chat' and req.messages:
+                # Get the latest user message (should be the last one in the list)
+                last_user_message_obj = req.messages[-1] 
+                if last_user_message_obj.role != 'user':
+                    print("Warning: Expected last message in chat history to be from user for saving.", file=sys.stderr)
+                    # Decide how to handle this - maybe save only assistant? For now, proceed cautiously.
+                    last_user_message_dict = None 
+                else:
+                    last_user_message_dict = last_user_message_obj.dict()
+
+                assistant_message = {"role": "assistant", "content": truncated_response_text}
+                
+                if req.thread_id:
+                    # If continuing a thread, save the last user message AND the new assistant response
+                    messages_to_save = []
+                    if last_user_message_dict:
+                        messages_to_save.append(last_user_message_dict)
+                    messages_to_save.append(assistant_message)
+                else:
+                    # If starting a new thread, save all provided input messages + the new response
+                    input_message_dicts = [msg.dict() for msg in req.messages] # Includes the last user message
+                    messages_to_save = input_message_dicts + [assistant_message]
+            
+            if messages_to_save: # Only save if we have something to save
+                new_thread_id = save_chat_messages(req.thread_id, messages_to_save)
+            else:
+                 # Should not happen with validation, but handle defensively
+                 print("Warning: No messages to save.", file=sys.stderr)
+                 new_thread_id = req.thread_id # Return original thread_id if nothing was saved
+
+        except Exception as save_e:
+            # Log the saving error but don't fail the chat request
+            print(f"Error saving chat history: {save_e}", file=sys.stderr)
+            # Keep new_thread_id as None or the original req.thread_id
+            new_thread_id = req.thread_id
+        # --- End Save Chat History ---
+
+        response_data = {
+            "response": truncated_response_text,
+            "thread_id": new_thread_id # Include the thread_id in the response
+        }
         if req.return_prompt:
             response_data["raw_prompt"] = prompt
         return response_data
@@ -135,4 +202,39 @@ def chat_v2(req: ChatRequestV2, request: Request): # Add request: Request
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error during generation: {e}"
-        ) 
+        )
+
+# --- Session Management Endpoints --- ADDED
+
+@router.get("/sessions", response_model=List[Dict[str, Any]])
+def get_saved_sessions():
+    """Lists all saved chat sessions with metadata."""
+    try:
+        sessions = list_sessions()
+        return sessions
+    except Exception as e:
+        print(f"Error listing sessions: {e}", file=sys.stderr)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve saved sessions"
+        )
+
+@router.get("/session/{thread_id}", response_model=Dict[str, Any])
+def get_specific_session(thread_id: str):
+    """Loads a specific chat session by its thread_id."""
+    try:
+        session_data = get_session(thread_id)
+        if session_data is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Session with ID '{thread_id}' not found."
+            )
+        return session_data
+    except Exception as e:
+        # Catch potential exceptions from get_session apart from file not found
+        print(f"Error retrieving session {thread_id}: {e}", file=sys.stderr)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve session {thread_id}"
+        )
+# --- End Session Management Endpoints --- 

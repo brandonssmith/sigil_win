@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import CombinedPanel from './panels/CombinedPanel.jsx'; // Adjust path as necessary
+import SavedChatsPanel from './SavedChatsPanel'; // Import SavedChatsPanel
 import './Sidebar.css'; // We'll create this file for styling
 
 const Sidebar = ({
@@ -18,7 +19,8 @@ const Sidebar = ({
   onHfUsernameUpdate,
   onDeviceUpdate,
   currentDevice,
-  onClearChat
+  onClearChat,
+  onLoadSession // <-- ADDED: Receive onLoadSession prop
 }) => {
   // Determine the class name based on the isOpen prop for styling
   const sidebarClassName = `sidebar ${isOpen ? 'open' : 'closed'}`;
@@ -45,6 +47,28 @@ const Sidebar = ({
             onClearChat={onClearChat}
           />
         )}
+
+        {/* ADDED: Saved Chats Panel - Should likely be inside the CombinedPanel or conditionally rendered based on isOpen */}
+        {isOpen && (
+          <SavedChatsPanel 
+            onSelectSession={onLoadSession} 
+          />
+        )}
+
+        {/* REMOVED these as they are likely handled by CombinedPanel */}
+        {/* 
+        <ModelLoadPanel 
+          // ... props
+        />
+        <SettingsPanel 
+          // ... props
+          onClearChat={onClearChat}
+        />
+       
+        <ThemeSelector 
+          // ... props
+        /> 
+        */}
       </div>
     </div>
   );
@@ -65,7 +89,8 @@ Sidebar.propTypes = {
   onHfUsernameUpdate: PropTypes.func.isRequired,
   onDeviceUpdate: PropTypes.func.isRequired,
   currentDevice: PropTypes.oneOf(['cuda', 'cpu', null]),
-  onClearChat: PropTypes.func.isRequired
+  onClearChat: PropTypes.func.isRequired,
+  onLoadSession: PropTypes.func.isRequired, // <-- ADDED: PropType for onLoadSession
 };
 
 export default Sidebar; 

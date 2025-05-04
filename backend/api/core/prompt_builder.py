@@ -65,16 +65,38 @@ def generate_prompt(
     if prompt_mode == "template":
         template_messages = []
         if mode == "instruction":
+            if not message:
+                 raise ValueError("Message is required for 'instruction' mode with template.")
             template_messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": message},
             ]
         else:  # chat
-            template_messages = (
-                [{"role": "system", "content": system_prompt}] + messages
-                if (not messages or messages[0].get("role") != "system")
-                else messages
-            )
+            if not messages:
+                 raise ValueError("Messages list is required for 'chat' mode with template.")
+                 
+            # --- REMOVED: Rolling Window Logic ---
+            # history_window_size = 5 # Keep the last 5 messages
+            # truncated_history = messages[-history_window_size:]
+            # --- End Rolling Window Removal ---
+            
+            # Prepend system prompt, ensuring it's not duplicated if already first
+            # --- MODIFIED: Apply to the original full messages list ---
+            if not messages or messages[0].get("role") != "system":
+                template_messages = [{"role": "system", "content": system_prompt}] + messages
+            else:
+                 # If the history *already* starts with a system message, use it
+                 # but replace its content with the *current* system prompt
+                 messages[0]["content"] = system_prompt # Ensure current system prompt is used
+                 template_messages = messages
+            # --- End Modification ---
+                 
+        # Debugging: Print messages being sent to template
+        # print("--- Messages for apply_chat_template ---")
+        # for m in template_messages:
+        #     print(f"  Role: {m.get('role')}, Content: {m.get('content', '')[:50]}...")
+        # print("----------------------------------------")
+            
         return tokenizer.apply_chat_template(
             template_messages,
             tokenize=False,

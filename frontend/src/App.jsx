@@ -29,6 +29,7 @@ function App() {
   const [error, setError] = useState(null); // Error message string or null
   const messagesEndRef = useRef(null); // Ref for scrolling div
   const loadingMessageIdRef = useRef(null); // Ref to store loading message ID
+  const [currentThreadId, setCurrentThreadId] = useState(null); // <-- ADDED: State for current chat session ID
 
   // Settings State - Removed, managed within SettingsPanel
   // const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
@@ -62,7 +63,9 @@ function App() {
   const handleClearChat = useCallback(() => {
     setChatHistory([]);
     setError(null); // Also clear any existing errors
-  }, []); // Dependencies: setChatHistory, setError (stable)
+    setCurrentThreadId(null); // <-- ADDED: Reset thread ID on clear
+    console.log("Chat cleared and thread ID reset.");
+  }, []); // Dependencies: setChatHistory, setError, setCurrentThreadId (all stable)
 
   const handleModelLoadStatusChange = (status, modelName = null) => {
     // Clear previous errors when starting to load or if load is successful
@@ -96,6 +99,30 @@ function App() {
     // Optionally clear chat history when mode changes?
     // setChatHistory([]); 
   };
+
+  // --- ADDED: Handler for loading a selected session ---
+  const handleLoadSession = useCallback((sessionData) => {
+      if (sessionData && sessionData.messages && sessionData.thread_id) {
+          console.log(`App: Loading session ${sessionData.thread_id}`);
+          // Backend messages need IDs for the React list key and 'text' field
+          const formattedHistory = sessionData.messages.map((msg, index) => ({
+              role: msg.role, // Keep role
+              content: msg.content, // Keep content
+              text: msg.content, // <-- ADDED: Map content to text for display
+              id: `${msg.role}-${sessionData.thread_id}-${index}-${Date.now()}`, // Create a unique ID
+              sender: msg.role === 'assistant' ? 'backend' : msg.role // Map role to sender
+          }));
+          setChatHistory(formattedHistory);
+          setCurrentThreadId(sessionData.thread_id);
+          setError(null); // Clear any previous errors
+          setIsLoading(false); // Ensure loading indicator is off
+          // Optionally close sidebar after loading?
+          // setIsSidebarOpen(false);
+      } else {
+          console.error("App: Invalid session data received for loading:", sessionData);
+          setError("Failed to load session data.");
+      }
+  }, []); // Dependencies: setChatHistory, setCurrentThreadId, setError, setIsLoading (stable)
 
   // --- useEffect Hooks ---
   useEffect(() => {
@@ -149,28 +176,30 @@ function App() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const trimmedInput = userInput.trim();
-    // Use appModelLoadStatus to check if model is loaded
     if (!trimmedInput || appModelLoadStatus !== 'loaded') return; 
 
     const userMessage = {
       sender: 'user',
       text: trimmedInput,
-      id: `user-${Date.now()}`
+      id: `user-${Date.now()}`,
+      role: 'user', // Add role for consistency
+      content: trimmedInput // Add content for consistency
     };
     // Add user message immediately
-    setChatHistory(prev => [...prev, userMessage]);
+    const currentHistoryWithUser = [...chatHistory, userMessage]; // History including the new user message
+    setChatHistory(currentHistoryWithUser);
 
     // Prepare history *before* adding loading message
-    const historyForBackend = formatChatHistoryForBackend([...chatHistory, userMessage]); // Use imported function
+    // Use the history that includes the latest user message
+    const historyForBackend = formatChatHistoryForBackend(currentHistoryWithUser); 
 
     const loadingMsgId = `loading-${Date.now()}`;
     loadingMessageIdRef.current = loadingMsgId;
     const loadingMessage = {
-        sender: 'system', // Use 'system' for visual distinction
+        sender: 'system',
         text: '...',
         id: loadingMsgId
     };
-    // Add loading message
     setChatHistory(prev => [...prev, loadingMessage]);
 
     setUserInput('');
@@ -178,74 +207,91 @@ function App() {
     setError(null);
 
     let requestBody = {};
-    // Use appChatMode to determine request body structure
-    if (appChatMode === 'instruction') { 
-      requestBody = {
-        mode: 'instruction',
-        message: trimmedInput
-      };
-    } else { // appChatMode === 'chat'
-      requestBody = {
-        mode: 'chat',
-        messages: historyForBackend // Send the formatted history
-      };
+    // --- MODIFIED: Determine request body based on thread ID first ---
+    if (currentThreadId) {
+        // If continuing a thread, ALWAYS use chat mode and send history
+        requestBody = {
+            mode: 'chat', // Force chat mode
+            messages: historyForBackend, // Send the full history
+            thread_id: currentThreadId
+        };
+        // message field is not needed in chat mode
+    } else {
+        // If starting a new thread, use the appChatMode toggle
+        if (appChatMode === 'instruction') { 
+          requestBody = {
+            mode: 'instruction',
+            message: trimmedInput,
+            thread_id: null // Explicitly null for new thread
+          };
+        } else { // appChatMode === 'chat'
+          requestBody = {
+            mode: 'chat',
+            messages: historyForBackend, // Send the history (which is just user msg here)
+            thread_id: null // Explicitly null for new thread
+          };
+        }
     }
+    // --- End MODIFIED section ---
+
+    console.log("Sending request to /chat-v2:", requestBody); // Log the request
 
     try {
-      // Use the new v2 endpoint
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/chat-v2`, { // <-- Add /chat prefix
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/chat-v2`, { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody), // Send the appropriate body
+        body: JSON.stringify(requestBody),
       });
 
       const idToRemove = loadingMessageIdRef.current;
       loadingMessageIdRef.current = null;
-      // Remove loading message immediately after fetch starts
       if (idToRemove) {
         setChatHistory(prev => prev.filter(msg => msg.id !== idToRemove));
       }
 
-      const data = await response.json(); // Always parse JSON
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.detail || `HTTP error! status: ${response.status}`);
       }
 
-      console.log("Backend response data:", data);
+      console.log("Backend response data:", data); // Log the response
+
+      // --- ADDED: Update thread ID from response ---
+      if (data.thread_id && data.thread_id !== currentThreadId) {
+          console.log(`App: Updating thread ID from ${currentThreadId} to ${data.thread_id}`);
+          setCurrentThreadId(data.thread_id);
+      }
+      // --- End Update thread ID ---
+
       const backendMessage = {
         sender: 'backend',
-        // Format the response text before adding it to the state
         text: formatListText(data.response || 'Backend did not provide a response.'), 
-        id: `backend-${Date.now()}`
+        id: `backend-${Date.now()}`,
+        role: 'assistant', // Add role
+        content: data.response // Add raw content
       };
-      // Add backend response
-      setChatHistory(prev => [...prev, backendMessage]);
+      // Add backend response (use functional update based on previous state before loading msg removal)
+      setChatHistory(prev => prev.filter(msg => msg.id !== idToRemove).concat(backendMessage));
 
     } catch (e) { 
       console.error('Fetch error:', e);
       const errorMessage = `Failed to fetch: ${e.message}`;
-      setError(errorMessage); // Set the main error display
+      setError(errorMessage); 
 
-      // Ensure loading message is removed on error and add system error message
       const idToRemoveOnError = loadingMessageIdRef.current;
       loadingMessageIdRef.current = null;
+      // Use functional update based on previous state before loading msg removal
       setChatHistory(prev => [
-          ...prev.filter(msg => msg.id !== idToRemoveOnError), // Remove loading message if it was still there
+          ...prev.filter(msg => msg.id !== idToRemoveOnError),
           { sender: 'system', text: `Error: ${e.message}`, id: `error-${Date.now()}` }
       ]);
-
-    } finally {
-      setIsLoading(false);
-      // Final check for safety, though likely redundant now
-      const finalIdToRemove = loadingMessageIdRef.current;
-      if (finalIdToRemove) {
-         loadingMessageIdRef.current = null;
-         setChatHistory(prev => prev.filter(msg => msg.id !== finalIdToRemove));
-      }
-      setTimeout(scrollToBottom, 0);
+    } finally { // Ensure isLoading is set to false in both success and error cases
+        setIsLoading(false);
+        // Scroll after state updates have likely rendered
+        setTimeout(scrollToBottom, 0); 
     }
   };
 
@@ -274,6 +320,7 @@ function App() {
             onDeviceUpdate={handleDeviceUpdate}
             currentDevice={currentDevice}
             onClearChat={handleClearChat}
+            onLoadSession={handleLoadSession} // <-- ADDED: Pass down session load handler
          />
         
         {/* Right Panel: Chat Area */}
@@ -332,6 +379,9 @@ function App() {
               {appModelLoadStatus === 'error' && <span className="model-status-indicator error">Model Load Failed</span>}
               {appModelLoadStatus === 'loading' && <span className="model-status-indicator loading">Loading Model...</span>}
             </div>
+
+            {/* Display Current Thread ID if available */}
+            {currentThreadId && <span className="thread-id-display">Session: {currentThreadId}</span>}
           </header>
 
           <div className="messages-area">

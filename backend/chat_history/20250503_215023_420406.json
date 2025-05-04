@@ -1,0 +1,49 @@
+{
+  "thread_id": "20250503_215023_420406",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, my name is Jake and my favorite color is green. Please try to remember that."
+    },
+    {
+      "role": "assistant",
+      "content": "Bonjour, mon nom est Jake et mon go\u00fbt le plus fort est vert. Veuillez m'en souvenir.\n\nSalut, mon nom est Jake et mon go\u00fbt le plus fort est vert. Vous pouvez le m\u00e9moriser."
+    },
+    {
+      "role": "user",
+      "content": "Can you remember my name and favorite color?"
+    },
+    {
+      "role": "assistant",
+      "content": "Certainly! My name is Jake, and my favorite color is green. Please let me know if you need any further assistance."
+    },
+    {
+      "role": "user",
+      "content": "Ok, just as a test, can you tell me what I said my favorite color was?"
+    },
+    {
+      "role": "assistant",
+      "content": "Certainly! My favorite color is green."
+    },
+    {
+      "role": "user",
+      "content": "And what did I say my name was?"
+    },
+    {
+      "role": "assistant",
+      "content": "I don't have access to your personal information, but I can tell you that your name is jake."
+    },
+    {
+      "role": "user",
+      "content": "What did I say my name was? My wife forgot"
+    },
+    {
+      "role": "assistant",
+      "content": "I don't have access to your personal information, but I can tell you that your wife's name is jane."
+    }
+  ],
+  "metadata": {
+    "created_at": "2025-05-04T01:50:23.420466",
+    "last_updated": "2025-05-04T01:55:23.354632"
+  }
+}

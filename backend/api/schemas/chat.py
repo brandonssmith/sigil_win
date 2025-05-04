@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
@@ -12,30 +12,47 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
 
+class MessageV2(BaseModel):
+    role: str = Field(..., pattern="^(user|assistant|system)$")
+    content: str
+
 class ChatRequestV2(BaseModel):
-    mode: str = Field(..., description="Generation mode: 'instruction' or 'chat'.")
-    message: Optional[str] = Field(None, description="Single user message for 'instruction' mode.")
-    messages: Optional[List[Message]] = Field(None, description="List of messages for 'chat' mode.")
-    return_prompt: Optional[bool] = Field(False, description="If true, return the raw prompt string used for generation.")
+    mode: str = Field(..., pattern="^(instruction|chat)$")
+    message: Optional[str] = None
+    messages: Optional[List[MessageV2]] = None
+    thread_id: Optional[str] = None
+    return_prompt: Optional[bool] = False
 
-    @field_validator('mode')
-    def validate_mode(cls, v: str) -> str:
-        if v not in ["instruction", "chat"]:
-            raise ValueError("Mode must be either 'instruction' or 'chat'.")
+    @field_validator('message', mode='before')
+    @classmethod
+    def check_message_in_instruction_mode(cls, v: Optional[str], info: ValidationInfo):
+        if info.data.get('mode') == 'instruction' and (v is None or not str(v).strip()):
+            raise ValueError("Field 'message' cannot be empty or whitespace in 'instruction' mode")
         return v
 
-    @field_validator('messages')
-    def check_messages_for_chat_mode(cls, v: Optional[List[Message]], info: ValidationInfo) -> Optional[List[Message]]:
-        if info.data.get('mode') == 'chat' and not v:
-            raise ValueError("Messages list cannot be empty in 'chat' mode.")
+    @field_validator('messages', mode='before')
+    @classmethod
+    def check_messages_in_chat_mode(cls, v: Optional[List[Any]], info: ValidationInfo):
+        if info.data.get('mode') == 'chat':
+            if v is None or not isinstance(v, list) or not v:
+                raise ValueError("Field 'messages' must be a non-empty list in 'chat' mode")
         return v
 
-    @field_validator('message')
-    def check_message_for_instruction_mode(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
-        if info.data.get('mode') == 'instruction' and not v:
-            raise ValueError("Message cannot be empty in 'instruction' mode.")
+    @field_validator('message', mode='before')
+    @classmethod
+    def check_message_not_in_chat_mode(cls, v: Optional[str], info: ValidationInfo):
+        if info.data.get('mode') == 'chat' and v is not None:
+            raise ValueError("Field 'message' should not be provided in 'chat' mode")
+        return v
+
+    @field_validator('messages', mode='before')
+    @classmethod
+    def check_messages_not_in_instruction_mode(cls, v: Optional[List[Any]], info: ValidationInfo):
+        if info.data.get('mode') == 'instruction' and v is not None:
+            raise ValueError("Field 'messages' should not be provided in 'instruction' mode")
         return v
 
 class ChatResponseV2(BaseModel):
     response: str
-    raw_prompt: Optional[str] = None 
+    thread_id: Optional[str] = None
+    raw_prompt: Optional[str] = None
