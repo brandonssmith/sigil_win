@@ -2,6 +2,7 @@ import sys
 import os # <-- Add OS import for file operations
 from fastapi import APIRouter, HTTPException, status, Request, Response # Import Request and Response
 from typing import Optional, List, Dict, Any # Import necessary types
+from pydantic import BaseModel # Import BaseModel for request body
 
 # Import Pydantic models from schemas.chat
 from ..schemas.chat import (
@@ -12,11 +13,18 @@ from ..schemas.chat import (
 from ..core.inference import generate_response
 from ..core.prompt_builder import generate_prompt
 from ..core.cleaner import truncate_at_stop_token, clean_response
-from ..core.history_manager import save_chat_messages, get_session, list_sessions, delete_session
+from ..core.history_manager import (
+    save_chat_messages, get_session, list_sessions, delete_session, update_session_title
+)
 
 router = APIRouter()
 
 MIN_NARRATIVE_TOKENS = 350  # Replicate constant or import from a config module
+
+# --- ADDED: Pydantic model for rename request ---
+class RenameSessionRequest(BaseModel):
+    newName: str
+# --- END ADDITION ---
 
 # Chat endpoint - check if model is loaded
 @router.post("/chat", response_model=ChatResponse)
@@ -214,17 +222,17 @@ def chat_v2(req: ChatRequestV2, request: Request): # Add request: Request
     except ValueError as ve: # Catch specific errors from prompt generation or validation
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception as e:
-        print(f"Error during chat-v2 generation: {e}", file=sys.stderr)
+        print(f"Error during chat generation (v2): {e}", file=sys.stderr)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error during generation: {e}"
+            detail=f"Error during generation (v2): {e}"
         )
 
 # --- Session Management Endpoints --- ADDED
 
 @router.get("/sessions", response_model=List[Dict[str, Any]])
 def get_saved_sessions():
-    """Lists all saved chat sessions with metadata."""
+    """Lists all saved chat sessions with metadata and title."""
     try:
         sessions = list_sessions()
         return sessions
@@ -237,7 +245,7 @@ def get_saved_sessions():
 
 @router.get("/session/{thread_id}", response_model=Dict[str, Any])
 def get_specific_session(thread_id: str, request: Request): # <-- Added request: Request
-    """Loads a specific chat session by its thread_id and updates app state.""" # <-- Updated docstring
+    """Loads a specific chat session by its thread_id and updates app state."""
     app_state = request.app.state # <-- Added access to app_state
     try:
         session_data = get_session(thread_id)
@@ -267,6 +275,7 @@ def get_specific_session(thread_id: str, request: Request): # <-- Added request:
             print(f"No system_prompt found in thread {thread_id}, keeping current app state value.")
         # --- End Update ---
         
+        # Ensure custom_title is included in the response (get_session already does this)
         return session_data # Return the full session data as before
     except ValueError: # Catch invalid thread_id from get_session
         raise HTTPException(
@@ -280,6 +289,43 @@ def get_specific_session(thread_id: str, request: Request): # <-- Added request:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An unexpected server error occurred while retrieving session {thread_id}"
         )
+
+# --- NEW: Endpoint to Rename a Session ---
+@router.put("/session/{thread_id}/rename", status_code=status.HTTP_204_NO_CONTENT)
+def rename_specific_session(thread_id: str, req: RenameSessionRequest):
+    """Renames a specific chat session using the history manager."""
+    if not req.newName or not req.newName.strip():
+         raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New name cannot be empty."
+        )
+    try:
+        success = update_session_title(thread_id, req.newName)
+        if not success:
+            # update_session_title returns False if file not found or if update fails
+            # Assume file not found is the primary reason for failure here (404)
+            # A more robust approach would involve specific exceptions from history_manager
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Session with ID '{thread_id}' not found or could not be updated."
+            )
+        # If success is True
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    except ValueError as e:
+        # Raised by update_session_title (via get_session_filepath) for invalid thread_id format
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid thread_id format: {e}"
+        )
+    except Exception as e:
+        # Catch any other unexpected errors during the call
+        print(f"Unexpected error calling update_session_title for {thread_id}: {e}", file=sys.stderr)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected server error occurred while renaming session {thread_id}"
+        )
+# --- END NEW ENDPOINT ---
 
 # --- MODIFIED: Endpoint to Delete a Session (Uses history_manager) ---
 @router.delete("/session/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)

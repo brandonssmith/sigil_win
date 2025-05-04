@@ -36,7 +36,8 @@ body {
 }
 
 /* New App Layout - Using Flexbox */
-.app-layout {
+/* RENAMED from .app-layout */
+.App {
   display: flex;
   height: 100vh; /* Ensure it takes full viewport height */
   width: 100%;
@@ -45,53 +46,65 @@ body {
 
 /* Sidebar styles are in Sidebar.css */
 
-/* Chat container */
-.chat-container {
+/* Main Content area (previously chat-container) */
+/* RENAMED from .chat-container */
+.main-content {
   flex-grow: 1;
   display: flex; /* Use flexbox for internal layout (header, messages, input) */
   flex-direction: column;
-  height: 100%; /* Ensure chat container takes full height within flex layout */
+  height: 100%; /* Ensure content container takes full height within flex layout */
   background-color: var(--surface, #1e1e1e);
   overflow: hidden; /* Prevent internal scrolling issues at this level */
   min-width: 0; /* Allow shrinking below content size if needed */
-  /* Add a transition for smoothness when sidebar opens/closes */
-  transition: margin-left 0.3s ease-in-out;
-  margin-left: 0; /* Default margin when sidebar is closed */
+  /* REMOVED Transition and margin - let flexbox handle positioning */
+  /* transition: margin-left 0.3s ease-in-out; */
+  /* margin-left: 0; */ 
 }
 
-/* When sidebar is open, push the chat container */
-.app-layout.sidebar-open .chat-container {
-  /* This should match the sidebar's open width */
-  /* Assuming 350px from Sidebar.css, adjust if different */
-  /* margin-left: 350px; <-- We don't need margin push if flexbox handles it */
-  /* The flex layout should handle resizing automatically. */
-  /* Ensure flex-grow still works */
+/* When sidebar is open, adjust main content */
+/* SELECTOR UPDATED from .app-layout.sidebar-open .chat-container */
+.App.sidebar-open .main-content {
+  /* Flexbox handles the sizing, no margin needed */
   flex-grow: 1;
 }
 
 /* Ensure the sidebar itself doesn't shrink when open */
-.app-layout.sidebar-open .sidebar { 
+/* SELECTOR UPDATED from .app-layout.sidebar-open .sidebar */
+.App.sidebar-open .sidebar { 
   flex-shrink: 0;
   /* Width is handled by Sidebar.css */
 }
 
 /* Header */
-.chat-header {
+/* SELECTOR UPDATED to be child of .main-content */
+.main-content > .app-header {
   display: flex;
   align-items: center;
   gap: 10px;
   background-color: var(--surface, #252525);
   padding: 0.75rem 1.5rem;
   border-bottom: 1px solid var(--border, #333);
-  /* Removed position sticky, as sidebar handles its own scrolling */
-  /* top: 0; */ 
   z-index: 10;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   flex-shrink: 0; /* Prevent header from shrinking */
 }
 
-/* Style the new sidebar toggle button */
-.sidebar-toggle-button {
+/* Add styles for TabContainer if needed, assume flex-shrink: 0 */
+.main-content > .tab-container {
+  flex-shrink: 0;
+}
+
+/* Style the chat-area container */
+.main-content > .chat-area {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Allow chat area to fill remaining space */
+  overflow: hidden; /* Prevent content spill */
+  min-height: 0; /* Necessary for flex-grow in column direction */
+}
+
+/* Style the new sidebar toggle button within the header */
+.app-header .sidebar-toggle-btn {
   background: none;
   border: none;
   color: inherit;
@@ -102,13 +115,13 @@ body {
   margin-right: 5px; /* Space before title */
 }
 
-.sidebar-toggle-button:hover {
+.app-header .sidebar-toggle-btn:hover {
   opacity: 0.8;
 }
 
-.chat-header h1 {
-  /* margin-right: 10px; */ /* Removed, gap handles spacing */
-  margin-left: 0; /* Remove potential conflicting margin */
+/* SELECTOR UPDATED */
+.app-header .app-title {
+  margin-left: 0; 
   margin-top: 0;
   margin-bottom: 0;
   font-family: 'JetBrains Mono', monospace;
@@ -118,43 +131,91 @@ body {
   white-space: nowrap; /* Prevent title wrapping */
 }
 
-/* Welcome message and device indicator might need margin adjusted */
-.chat-header span[style*="marginLeft: auto"] {
+.app-title .loaded-model-name {
+    font-size: 0.8rem; /* Smaller font size for model name */
+    color: var(--foreground-muted, #aaa); /* Muted color */
+    margin-left: 8px;
+    font-weight: normal; /* Normal weight */
+}
+
+/* Header Controls Group */
+.app-header .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Space between control groups */
+    margin-left: auto; /* Push controls to the right */
+}
+
+/* Mode Selector Styling */
+.mode-selector {
+    display: flex;
+    border: 1px solid var(--border, #555);
+    border-radius: var(--border-radius-medium);
+    overflow: hidden; /* Clip child borders */
+}
+
+.mode-selector button {
+    background-color: var(--surface-input, #333);
+    color: var(--foreground-muted, #aaa);
+    border: none;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-size: 0.9rem;
+    border-left: 1px solid var(--border, #555); /* Separator */
+}
+
+.mode-selector button:first-child {
+    border-left: none;
+}
+
+.mode-selector button.active {
+    background-color: var(--primary, #6200ee);
+    color: var(--primary-contrast, #fff);
+}
+
+.mode-selector button:hover:not(.active) {
+    background-color: var(--surface-hover, #444);
+    color: var(--foreground, #fff);
+}
+
+
+/* SELECTOR UPDATED */
+.app-header span[style*="marginLeft: auto"] {
   margin-left: auto; /* Ensure it stays pushed right */
 }
 
 /* Group model status indicators together */
-.model-status-group {
+/* SELECTOR UPDATED */
+.app-header .model-status-group {
     display: flex;
     align-items: center;
     gap: 8px; /* Space between elements if multiple statuses are shown */
     font-size: 0.85em;
+    margin-left: 15px; /* Space from previous controls */
 }
 
 /* Individual status indicator */
 .model-status-indicator {
     padding: 3px 8px;
     border-radius: 4px; /* Reverted from 10px */
-    /* Use less specific defaults, assuming theme provides overrides */
     color: var(--ui-text-primary, #e0e0e0);
     background-color: rgba(255, 255, 255, 0.1); /* Default subtle background */
     opacity: 0.8;
 }
 
 .model-status-indicator.error {
-    /* Rely on theme or specific overrides for error state */
     background-color: rgba(207, 102, 121, 0.2); /* Existing subtle error bg */
     color: var(--palette-11, #cf6679); /* Existing error color */
 }
 
 .model-status-indicator.loading {
-    /* Rely on theme or specific overrides for loading state */
-    /* background-color: #ffc107; */ 
-    /* color: #333; */ 
+
 }
 
 /* Messages area - Softer scrollbar */
-.messages-area {
+/* SELECTOR UPDATED */
+.main-content .messages-area {
   flex-grow: 1;
   overflow-y: auto;
   padding: 1.5rem; /* Increase padding */
@@ -163,15 +224,18 @@ body {
 }
 
 /* Webkit scrollbar styles - Softer */
-.messages-area::-webkit-scrollbar {
+/* SELECTOR UPDATED */
+.main-content .messages-area::-webkit-scrollbar {
   width: 8px;
 }
 
-.messages-area::-webkit-scrollbar-track {
+/* SELECTOR UPDATED */
+.main-content .messages-area::-webkit-scrollbar-track {
   background: var(--surface, #1e1e1e);
 }
 
-.messages-area::-webkit-scrollbar-thumb {
+/* SELECTOR UPDATED */
+.main-content .messages-area::-webkit-scrollbar-thumb {
   background-color: var(--border, #444); /* Dimmer scrollbar handle */
   border-radius: 4px;
   border: 1px solid var(--surface, #1e1e1e);
@@ -184,8 +248,6 @@ body {
   border-radius: 8px; /* Softer corners */
   max-width: 75%; /* Adjust max width */
   word-wrap: break-word;
-  /* Removed border, using background difference */
-  /* Base shadow applied here, specific glows added below */
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
   overflow: hidden; /* Prevent content spill during animation */
   transition: height 0.3s ease-out, padding 0.3s ease-out, margin 0.3s ease-out; /* Animate size changes */
@@ -195,7 +257,6 @@ body {
   background-color: var(--surface, #4a4a70); /* Darker, slightly blueish bg for user - Lightened */
   color: var(--foreground, #e0e0e0); /* Standard light text */
   margin-left: auto;
-  /* Add uniform glow using primary theme color */
   box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 0 15px var(--user-message-glow-color, rgba(3, 218, 198, 0.4));
 }
 
@@ -203,7 +264,6 @@ body {
   background-color: var(--surface, #2a2a2a); /* Slightly lighter than container bg */
   color: var(--foreground, #e0e0e0); /* Standard light text */
   margin-right: auto;
-  /* Add uniform glow using accent theme color */
   box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 0 15px var(--backend-message-glow-color, rgba(187, 134, 252, 0.4));
 }
 
@@ -242,594 +302,133 @@ body {
   align-items: center; /* Center dots vertically */
 }
 
-.typing-indicator {
+/* SELECTOR UPDATED */
+.main-content .dots-container {
   display: flex;
   align-items: center;
 }
 
-.typing-indicator span {
-  display: inline-block;
-  width: 8px;
+/* SELECTOR UPDATED */
+.main-content .dots-container span {
   height: 8px;
+  width: 8px;
+  margin-right: 4px;
+  background-color: var(--foreground-muted, #aaa);
   border-radius: 50%;
-  background-color: var(--foreground-muted, #aaa); /* Use muted color */
-  margin: 0 3px;
+  display: inline-block;
   animation: bounce-flash 1.4s infinite ease-in-out both;
 }
 
-.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-.typing-indicator span:nth-child(3) { animation-delay: 0s; }
+/* SELECTOR UPDATED */
+.main-content .dots-container span:nth-child(1) { animation-delay: -0.32s; }
+/* SELECTOR UPDATED */
+.main-content .dots-container span:nth-child(2) { animation-delay: -0.16s; }
+/* SELECTOR UPDATED */
+.main-content .dots-container span:nth-child(3) { animation-delay: 0s; }
 
 @keyframes bounce-flash {
-  0%, 80%, 100% {
-    transform: scale(0);
+  0%, 80%, 100% { 
+    transform: scale(0); 
     opacity: 0.5;
-  }
-  40% {
-    transform: scale(1.0);
+  } 40% { 
+    transform: scale(1.0); 
     opacity: 1;
   }
 }
 
 .message p {
-  margin: 0;
-  /* Ensure code blocks inside messages wrap */
-  white-space: pre-wrap; /* Wraps whitespace and breaks lines */
-  word-break: break-word; /* Breaks long words if necessary */
+  margin: 0; /* Remove default paragraph margin */
+  white-space: pre-wrap; /* Preserve whitespace and wrap lines */
 }
 
-/* General Error Message Styling (e.g., chat fetch errors) */
 .error-message.chat-error {
-  color: var(--error-color, #cf6679);
-  background-color: var(--error-bg-faded, rgba(207, 102, 121, 0.1));
-  padding: 0.75rem 1.25rem;
-  margin: 0 1.5rem 1rem 1.5rem; /* Match messages-area padding + margin-bottom */
+  color: var(--error-color, #ff6b6b);
+  border: 1px solid var(--error-color, #ff6b6b);
+  background-color: rgba(255, 107, 107, 0.1);
+  padding: 10px;
+  margin: 10px 1.5rem; /* Match messages area padding */
   border-radius: 4px;
   text-align: center;
-  flex-shrink: 0; /* Prevent shrinking */
 }
 
-/* Input bar - Softer border, more padding */
-.input-bar {
+
+/* Input area */
+/* SELECTOR UPDATED */
+.main-content .input-area {
   display: flex;
-  align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 1rem 1.5rem; /* Match messages area horizontal padding */
   border-top: 1px solid var(--border, #333);
-  background-color: var(--surface, #252525);
-  /* Removed position sticky, handled by flex layout */
-  /* bottom: 0; */
-  z-index: 10;
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
-  flex-shrink: 0; /* Prevent input bar from shrinking */
-  position: relative; /* Added: Make it a positioning context */
+  background-color: var(--input-bg, #252526);
+  flex-shrink: 0; /* Prevent input area from shrinking */
 }
 
-.input-bar input[type="text"] {
-  flex-grow: 1;
-  padding: 0.75rem 1rem; /* Increase padding */
-  background-color: var(--surface, #333); /* Slightly lighter input bg */
-  border: 1px solid var(--border, #555); /* Dimmer border */
-  color: var(--foreground, #e0e0e0); /* Standard light text */
-  font-family: inherit;
-  font-size: 1rem;
-  margin-right: 0.75rem; /* Adjust spacing */
-  border-radius: 6px; /* Slightly softer corners */
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease; /* Add transition */
-}
-
-.input-bar input[type="text"]:focus {
-  border-color: var(--palette-9, #bb86fc); /* Use accent color for focus */
-  box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.3); /* Subtle focus ring */
-}
-
-.input-bar button {
-  padding: 0.75rem 1.25rem; /* Adjust padding */
-  background-color: var(--primary, #03dac6); /* Teal/cyan accent for button */
-  color: var(--background, #121212); /* Dark text for contrast on button */
-  border: none;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 600; /* Bold */
-  cursor: pointer;
-  transition: background-color 0.2s ease, opacity 0.2s ease;
-}
-
-.input-bar button:hover:not(:disabled) {
-  background-color: var(--primary, #00b3a4); /* Slightly darker teal on hover */
-}
-
-.input-bar button:disabled {
-  background-color: var(--surface, #444);
-  color: #888;
-  cursor: not-allowed;
-  opacity: 0.7; /* Make disabled state clearer */
-}
-
-/* Remove default Vite styles (or adjust as needed) */
-#root {
-  max-width: none;
-  margin: 0;
-  padding: 0;
-  text-align: left;
-}
-
-/* Keep or remove logo/other styles as needed */
-.logo {
-  display: none; /* Hide default logos */
-}
-
-/* Optional: Keyframes for loading animation */
-/*
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-*/
-
-/* Example: Buttons */
-.button-primary {
-  background: var(--primary, #2a84d2);
-  color: var(--primary-contrast, #fff);
-  border-radius: var(--border-radius, 8px);
-  border: none;
-  padding: var(--spacing, 16px);
-  font-family: var(--font-family, system-ui, sans-serif);
-}
-
-.button-primary:focus {
-  outline: 2px solid var(--focus-ring, #0f7ddb);
-}
-
-/* Example: Cards */
-.card {
-  background: var(--surface, #232323);
-  box-shadow: var(--shadow, 0 2px 8px rgba(0,0,0,0.25));
-  border-radius: var(--border-radius, 8px);
-  padding: var(--spacing, 16px);
-  color: var(--foreground, #d6dbe5);
-}
-
-::selection {
-  background: var(--selection-background, #1f1f1f);
-  color: var(--selection-foreground, #d6dbe5);
-}
-
-/* Model Status Indicator Styling */
-.model-status-group {
-    display: flex;
-    align-items: center;
-    gap: 8px; /* Space between elements if multiple statuses are shown */
-    font-size: 0.85em;
-}
-
-.model-status-indicator {
-    padding: 3px 8px;
-    border-radius: 4px; /* Reverted from 10px */
-    /* Use less specific defaults, assuming theme provides overrides */
-    color: var(--ui-text-primary, #e0e0e0);
-    background-color: rgba(255, 255, 255, 0.1); /* Default subtle background */
-    opacity: 0.8;
-}
-
-.model-status-indicator.loading {
-    /* Rely on theme or specific overrides for loading state */
-    /* background-color: #ffc107; */ 
-    /* color: #333; */ 
-}
-
-.model-status-indicator.error {
-    /* Rely on theme or specific overrides for error state */
-    background-color: rgba(207, 102, 121, 0.2); /* Existing subtle error bg */
-    color: var(--palette-11, #cf6679); /* Existing error color */
-}
-
-/* Assuming 'Model Ready' and 'Waiting' might get specific classes or rely on the default */
-/* Remove the overly broad rules with hardcoded colors */
-/*
-.model-status-indicator:not(.loading):not(.error):not(:empty) { 
-   background-color: #28a745; 
-}
-.model-status-group span:contains("Waiting") { 
-     background-color: #6c757d; 
-}
-*/
-
-
-/* --- NEW: Device Indicator --- */
-.device-indicator {
-  font-size: 0.8em;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 10px;
-  font-weight: bold;
-}
-
-.device-indicator.cuda {
-  background-color: #76b900; /* NVIDIA Green */
-  color: white;
-}
-
-.device-indicator.cpu {
-  background-color: #0071c5; /* Intel Blue */
-  color: white;
-}
-
-.device-indicator.unknown {
-  background-color: #6c757d; /* Gray */
-  color: white;
-}
-
-
-/* --- NEW: Clear Chat Button Styling --- */
-/*
-.clear-chat-button {
-  position: absolute; 
-  top: 50%; 
-  transform: translateY(-50%); 
-  right: 8rem; 
-  padding: 5px 8px; 
-  font-size: 0.8em; 
-  background-color: var(--secondary-button-bg, #6c757d);
-  color: var(--button-text-color, white);
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s ease, background-color 0.2s ease, right 0.2s ease; 
-  z-index: 11; 
-}
-
-.clear-chat-button:hover:not(:disabled) {
-  opacity: 1;
-  background-color: var(--secondary-button-hover-bg, #5a6268);
-}
-
-.clear-chat-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-*/
-
-/* Style for general error messages (e.g., chat fetch errors) */
-.error-message {
-  color: var(--palette-11, #cf6679); /* Softer red for errors */
-  text-align: center;
-  padding: 0.75rem;
-  font-weight: 500; /* Medium weight */
-  background-color: rgba(207, 102, 121, 0.1); /* Slight background tint */
-  border-radius: 4px;
-  margin: 0.5rem 1.5rem;
-}
-
-/* Responsive adjustments if needed */
-@media (max-width: 768px) {
-  .app-layout {
-    /* On smaller screens, you might want the sidebar to overlay */
-    /* Or adjust the default sidebar width */
-  }
-  .sidebar {
-    /* Adjust width for smaller screens */
-    /* width: 300px; */
-  }
-   .sidebar.open {
-    /* width: 300px; */
-  }
-}
-
-/* --- NEW Input Form Styles --- */
-.input-form {
-  display: flex;
-  align-items: flex-start; /* Align items to the top initially */
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border, #333);
-  background-color: var(--surface, #181818); /* CHANGED: Use --surface which switches modes */
-  flex-shrink: 0; /* Prevent form from shrinking */
-  gap: 0.75rem; /* Space between textarea and button */
-}
-
-.input-form textarea {
+/* SELECTOR UPDATED */
+.main-content .input-area textarea {
   flex-grow: 1;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--border, #444);
-  border-radius: 4px;
-  background-color: var(--input-bg, #2a2a2a);
-  color: var(--ui-text-primary, #e0e0e0);
+  border: 1px solid var(--border-input, #444);
+  border-radius: var(--border-radius-medium);
+  background-color: var(--surface-input, #333);
+  color: var(--input-text-color, #e0e0e0);
+  font-family: inherit;
   font-size: 1rem;
-  line-height: 1.4;
-  resize: vertical; /* Allow vertical resize only */
-  min-height: 50px; /* Minimum height roughly matching button */
-  max-height: 200px; /* Limit growth */
-  overflow-y: auto; /* Add scroll if content exceeds max-height */
-  font-family: inherit; /* Use the main app font */
+  resize: none; /* Disable manual resizing */
+  margin-right: 0.75rem;
+  line-height: 1.5;
+  min-height: calc(1.5em * 3 + 1.5rem); /* Approx 3 rows height */
+  max-height: 200px; /* Limit max height */
+  overflow-y: auto; /* Add scroll if needed */
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.input-form textarea:focus {
+/* SELECTOR UPDATED */
+.main-content .input-area textarea:focus {
   outline: none;
-  border-color: var(--primary, #03dac6);
-  box-shadow: 0 0 0 2px var(--primary-focus, rgba(3, 218, 198, 0.3)); /* Use theme variable */
+  border-color: var(--focus-ring-accent, #bb86fc);
+  box-shadow: 0 0 0 2px var(--focus-ring-color, rgba(187, 134, 252, 0.3));
 }
 
-.input-form button {
+/* SELECTOR UPDATED */
+.main-content .input-area textarea:disabled {
+  background-color: var(--disabled-bg, #444);
+  color: var(--disabled-fg, #888);
+  cursor: not-allowed;
+}
+
+/* SELECTOR UPDATED */
+.main-content .input-area button {
   padding: 0.75rem 1.5rem;
-  background-color: var(--primary, #03dac6);
-  color: var(--button-foreground, var(--background, #121212)); /* Use button-specific fg or fallback */
+  background-color: var(--primary, #6200ee);
+  color: var(--primary-contrast, #fff);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius-medium);
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  font-weight: bold;
-  height: 50px; /* Match min-height of textarea approx */
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
   flex-shrink: 0; /* Prevent button shrinking */
-  align-self: flex-end; /* Align button to the bottom of the flex container */
 }
 
-.input-form button:hover:not(:disabled) {
-  background-color: var(--primary-dark, #018786);
+/* SELECTOR UPDATED */
+.main-content .input-area button:hover:not(:disabled) {
+  background-color: var(--primary-hover, #7f39fb);
 }
 
-.input-form button:disabled {
+/* SELECTOR UPDATED */
+.main-content .input-area button:disabled {
   background-color: var(--disabled-bg, #555);
-  color: var(--disabled-fg, #999);
+  color: var(--disabled-fg, #888);
   cursor: not-allowed;
-}
-/* --- END Input Form Styles --- */
-
-/* Clear Chat Button (outside form) */
-.clear-chat-button {
-  display: block; /* Take its own line */
-  margin: 0 auto 0.5rem auto; /* Center above input, add bottom margin */
-  padding: 6px 12px;
-  font-size: 0.8rem;
-  background-color: var(--button-secondary-bg, #444);
-  color: var(--button-secondary-fg, #ccc);
-  border: 1px solid var(--border-dark, #555);
-  border-radius: 4px;
-  cursor: pointer;
   opacity: 0.7;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
-  flex-shrink: 0; /* Prevent shrinking */
 }
 
-.clear-chat-button:hover:not(:disabled) {
-  opacity: 1;
-  background-color: var(--button-secondary-hover-bg, #555);
-}
+/* --- Remove potentially conflicting styles --- */
+/* Removed old .input-form, .input-bar styles if they existed */
+/* Removed old .clear-chat-button styles if they existed */
 
-.clear-chat-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-
-/* Ensure #root takes full space */
+/* Ensure #root uses flex */
 #root {
-  /* text-align: center; */ /* Removed - conflicts with flex layout */
-  /* Additional styles if needed to enforce full size */
+  display: flex;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-/* Primary Button Style (example, use theme variables) */
-.button-primary {
-    background-color: var(--primary, #03dac6);
-    color: var(--background, #121212);
-    /* ... other button styles */
-}
-
-.button-primary:focus {
-    /* Focus styles */
-}
-
-.card {
-  padding: 2em;
-}
-
-/* Selection color */
-::selection {
-  background-color: var(--primary-dark, #018786); /* Use theme color */
-  color: var(--background, #121212); /* Contrast color */
-}
-
-/* Model status group and indicator styles (already exist above, ensure consistency) */
-.model-status-group {
-    /* Existing styles */
-}
-
-.model-status-indicator {
-    /* Existing styles */
-}
-
-.model-status-indicator.loading {
-     /* Use theme var if available, else a default */
-    /* background-color: var(--warning-bg, #ffc107); */
-    /* color: var(--warning-fg, #333); */
-    /* Or use animation? */
-}
-
-.model-status-indicator.error {
-    /* Existing styles */
-}
-
-/* Thread ID Display */
-.thread-id-display {
-    font-size: 0.8em;
-    color: var(--foreground-muted, #888);
-    margin-left: 10px;
-    background-color: rgba(255, 255, 255, 0.05);
-    padding: 2px 6px;
-    border-radius: 3px;
-    white-space: nowrap;
-}
-
-/* Device Indicator styles */
-.device-indicator {
-    font-size: 0.8em;
-    padding: 2px 6px;
-    border-radius: 3px;
-    margin-left: 10px;
-    opacity: 0.8;
-    white-space: nowrap;
-}
-
-.device-indicator.cuda {
-    background-color: var(--palette-13, #2a9d8f); /* Teal/Green */
-    color: #fff;
-}
-
-.device-indicator.cpu {
-    background-color: var(--palette-14, #e9c46a); /* Yellow/Orange */
-    color: #333;
-}
-
-.device-indicator.unknown {
-    background-color: var(--disabled-bg, #555);
-    color: var(--disabled-fg, #999);
-}
-
-
-/* Typing indicator span (re-declared? Ensure consistent) */
-/* .typing-indicator span { ... } */
-
-/* Clear chat button in Settings Panel */
-.clear-chat-button-settings {
-    /* Add styles similar to .clear-chat-button if needed, */
-    /* or share styles if identical appearance is desired. */
-    margin-top: 15px; /* Space above button */
-    width: 100%; /* Make it full width within the panel */
-    padding: 8px 12px;
-    font-size: 0.9rem;
-    background-color: var(--button-danger-bg, #cf6679); /* Danger color */
-    color: var(--button-danger-fg, #fff);
-    border: 1px solid var(--button-danger-border, #a14f5f);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease, opacity 0.2s ease;
-}
-
-.clear-chat-button-settings:hover:not(:disabled) {
-    background-color: var(--button-danger-hover-bg, #a14f5f);
-}
-
-.clear-chat-button-settings:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Ensure chat error message is styled */
-/* .error-message.chat-error { ... } */
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .app-layout {
-    flex-direction: column; /* Stack sidebar and chat vertically? Maybe not ideal */
-    /* Or keep row but make sidebar overlay? */
-  }
-  .sidebar {
-    /* Adjust sidebar for smaller screens if needed */
-    /* width: 100%; */ /* Example: full width */
-    /* height: auto; */
-  }
-   .sidebar.open {
-      /* Adjust open state if needed */
-   }
-
-  .chat-container {
-     /* Take full width if sidebar is hidden/overlayed */
-     width: 100%;
-     margin-left: 0 !important; /* Override margin push */
-  }
-
-  .chat-header {
-    padding: 0.5rem 1rem;
-  }
-
-  .messages-area {
-    padding: 1rem;
-  }
-
-  .input-form {
-    padding: 0.5rem 1rem;
-  }
-
-  .message {
-    max-width: 90%; /* Allow messages to be wider */
-  }
-}
-
-/* --- NEW: Light Mode Overrides --- */
-body.light-mode {
-  --background: var(--background-light);
-  --surface: var(--surface-light);
-  --panel-bg-color: var(--panel-bg-light);
-  /* Add other light-mode specific variable overrides here */
-  /* Example: adjust text color for light background */
-  --ui-text-primary: #1f1f1f; /* Darker text for light mode */
-  --input-text-color: #1f1f1f;
-  --foreground: #1f1f1f; /* Ensure message text is readable */
-  --foreground-muted: #555;
-  --border: #ccc;
-
-  /* --- Input Area Light Mode Overrides --- */
-  --input-bg: var(--input-bg-light);
-  --disabled-bg: var(--disabled-bg-light);
-  --disabled-fg: var(--disabled-fg-light);
-  /* --- END Input Area Overrides --- */
-
-  /* --- NEW: Panel Tab/Container Light Mode Overrides --- */
-  --panel-tab-bg: var(--panel-tab-bg-light);
-  --panel-tab-active-bg: var(--panel-tab-active-bg-light);
-  --panel-tab-text: var(--panel-tab-text-light);
-  --panel-tab-active-text: var(--panel-tab-active-text-light);
-  --panel-container-bg: var(--panel-container-bg-light);
-  /* --- END NEW --- */
-
-  /* --- NEW: Settings Panel Light Mode Overrides --- */
-  --input-text-color: #1f1f1f; /* Defined earlier, ensure it's here */
-  --surface-input: var(--surface-input-light);
-  --border-input: var(--border-input-light);
-  --focus-ring-accent: var(--focus-ring-accent-light);
-  --focus-ring-color: var(--focus-ring-color-light);
-  --text-secondary: var(--text-secondary-light);
-  --primary-contrast: var(--primary-contrast-light);
-  --surface-disabled: var(--surface-disabled-light);
-  --text-disabled: var(--text-disabled-light);
-  --surface-hover: var(--surface-hover-light);
-  --border-input-hover: var(--border-input-hover-light);
-  /* --- END NEW --- */
-
-  /* Add more overrides as needed... */
-}
-/* --- END NEW --- */
+/* ... rest of the file ... */

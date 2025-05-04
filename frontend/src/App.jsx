@@ -135,60 +135,68 @@ function App() {
   };
 
   // --- ADDED: Handler for loading a selected session ---
+  // This callback is passed down and called by SavedChatsPanel (or other components)
+  // when a specific session needs to be loaded into the main view.
   const handleLoadSession = useCallback((sessionData) => {
-      if (sessionData && sessionData.messages && sessionData.thread_id) {
-          console.log(`App: Loading session ${sessionData.thread_id}`);
-          // Backend messages need IDs for the React list key and 'text' field
-          const formattedHistory = sessionData.messages.map((msg, index) => ({
-              role: msg.role, // Keep role
-              content: msg.content, // Keep content
-              text: msg.content, // <-- ADDED: Map content to text for display
-              id: `${msg.role}-${sessionData.thread_id}-${index}-${Date.now()}`, // Create a unique ID
-              sender: msg.role === 'assistant' ? 'backend' : msg.role // Map role to sender
-          }));
-          setChatHistory(formattedHistory);
-          setCurrentThreadId(sessionData.thread_id);
-
-          // --- ADDED: Extract and store loaded settings ---
-          const loadedSettings = sessionData.sampling_settings;
-          const loadedPrompt = sessionData.system_prompt;
-
-          if (loadedSettings || loadedPrompt !== undefined) {
-              console.log("App: Applying loaded session settings:", { loadedSettings, loadedPrompt });
-              setCurrentSessionSettings({
-                  // Use loaded value or fall back to default if null/undefined in saved data
-                  systemPrompt: loadedPrompt ?? DEFAULTS.SYSTEM_PROMPT,
-                  temperature: loadedSettings?.temperature ?? DEFAULTS.TEMPERATURE,
-                  topP: loadedSettings?.top_p ?? DEFAULTS.TOP_P,
-                  maxTokens: loadedSettings?.max_new_tokens ?? DEFAULTS.MAX_TOKENS,
-              });
-          } else {
-              // If no settings found in session, revert to defaults
-              console.log("App: No settings found in session, reverting to defaults.");
-              setCurrentSessionSettings(null); // Use null to signify defaults
-          }
-          // --- END: Extract and store loaded settings ---
-
-          // --- Sync tab state --- 
-          setActiveTabId(sessionData.thread_id);
-          // Add tab if not already open (e.g., loaded via sidebar without tab existing)
-          setOpenTabs(prevTabs => {
-              if (prevTabs.some(tab => tab.id === sessionData.thread_id)) {
-                  return prevTabs; // Tab already exists
-              }
-              // Determine label - use metadata if available, else fallback
-              const label = sessionData.first_user_message || `Session ${sessionData.thread_id.substring(0, 6)}...`;
-              return [...prevTabs, { id: sessionData.thread_id, label: label, canClose: true }];
-          });
-          // --- END Sync tab state ---
-          setError(null); // Clear any previous errors
-          setIsLoading(false); // Ensure loading indicator is off
-      } else {
-          console.error("App: Invalid session data received for loading:", sessionData);
-          setError("Failed to load session data.");
-          setCurrentSessionSettings(null); // Revert settings on load error
+      // Validate sessionData structure (basic check)
+      if (!sessionData || !sessionData.thread_id || !sessionData.messages) {
+          console.error("App: Attempted to load invalid session data:", sessionData);
+          setError("Invalid session data received.");
+          return; // Prevent further processing
       }
-  }, []); // Dependencies: setChatHistory, setCurrentThreadId, setActiveTabId, setOpenTabs, setError, setIsLoading, setCurrentSessionSettings (stable)
+
+      console.log(`App: Loading session ${sessionData.thread_id}`);
+
+      // --- Update App State ---
+      // --- FIXED: Re-add message formatting ---
+      // Backend messages need IDs for the React list key and 'text' field
+      const formattedHistory = sessionData.messages.map((msg, index) => ({
+          // Ensure role and content exist, provide defaults if not (though backend should guarantee)
+          role: msg.role || 'unknown', 
+          content: msg.content || '', 
+          // Map backend structure to frontend structure
+          text: msg.content || '', // Use content for display text
+          id: `${msg.role || 'msg'}-${sessionData.thread_id}-${index}-${Date.now()}`, // Create a unique ID
+          sender: msg.role === 'assistant' ? 'backend' : (msg.role || 'unknown') // Map role to sender ('user', 'backend', 'system', etc.)
+      }));
+      setChatHistory(formattedHistory); // Use the formatted history
+      // --- END FIXED ---
+      setCurrentThreadId(sessionData.thread_id);
+      
+      // Settings: Apply settings from the loaded session
+      const loadedSettings = {
+          systemPrompt: sessionData.system_prompt ?? DEFAULTS.SYSTEM_PROMPT,
+          temperature: sessionData.sampling_settings?.temperature ?? DEFAULTS.TEMPERATURE,
+          topP: sessionData.sampling_settings?.top_p ?? DEFAULTS.TOP_P,
+          // --- FIXED: Typo session_data -> sessionData ---
+          maxTokens: sessionData.sampling_settings?.max_new_tokens ?? DEFAULTS.MAX_TOKENS, 
+          // --- END FIXED ---
+      };
+      setCurrentSessionSettings(loadedSettings);
+      console.log("App: Applied session settings:", loadedSettings);
+      
+      // --- Sync tab state --- 
+      setActiveTabId(sessionData.thread_id);
+      // Add tab if not already open (e.g., loaded via sidebar without tab existing)
+      setOpenTabs(prevTabs => {
+          if (prevTabs.some(tab => tab.id === sessionData.thread_id)) {
+              // Tab exists, potentially update label if it changed (though handleLoadSession might not be the best place for this)
+              // It's better handled by the rename function or initial load
+              return prevTabs.map(tab => 
+                  tab.id === sessionData.thread_id 
+                  ? { ...tab, label: sessionData.custom_title || sessionData.title || tab.label } // Prioritize custom_title, then title, keep existing if none
+                  : tab
+              );
+          }
+          // Determine label - prioritize custom_title, then title from list, else fallback
+          const label = sessionData.custom_title || sessionData.title || `Session ${sessionData.thread_id.substring(0, 6)}...`;
+          return [...prevTabs, { id: sessionData.thread_id, label: label, canClose: true }];
+      });
+      // --- END Sync tab state ---
+      setError(null); // Clear any previous errors
+      setIsLoading(false); // Ensure loading indicator is off
+
+  }, [setCurrentSessionSettings, setChatHistory, setCurrentThreadId, setActiveTabId, setOpenTabs, setError, setIsLoading]); // Dependencies
 
   // --- ADDED: Tab Selection Handler --- 
   const handleTabSelect = useCallback(async (tabId) => {
@@ -211,7 +219,7 @@ function App() {
           throw new Error(errorData.detail || `Failed to fetch session ${tabId}`);
         }
         const sessionData = await response.json();
-        handleLoadSession(sessionData);
+        handleLoadSession(sessionData); // This now also handles setting the tab label based on custom_title/title
       } catch (e) {
         console.error(`Error fetching session ${tabId}:`, e);
         setError(`Failed to load session ${tabId}: ${e.message}`);
@@ -223,7 +231,7 @@ function App() {
         setIsLoading(false);
       }
     }
-  }, [activeTabId, handleClearChat, handleLoadSession]); // Dependencies
+  }, [activeTabId, handleClearChat, handleLoadSession, setActiveTabId, setIsLoading, setError, setChatHistory, setCurrentThreadId, setCurrentSessionSettings, setOpenTabs]); // Added setOpenTabs and other dependencies from handleLoadSession
   // --- END: Tab Selection Handler ---
 
   // --- MODIFIED: Tab Close Handler --- 
@@ -246,17 +254,17 @@ function App() {
           if (closingTabIndex > 0) {
               nextActiveTabId = openTabs[closingTabIndex - 1].id;
           } else {
+              // If the first tab (after New Chat potentially) is closed, select New Chat
               const newChatTab = openTabs.find(t => t.id === NEW_CHAT_TAB_ID);
-              nextActiveTabId = newChatTab ? newChatTab.id : (openTabs.length > 1 ? openTabs[1].id : null);
-              if (!nextActiveTabId) { /* error handling */ return; }
-              if (nextActiveTabId === NEW_CHAT_TAB_ID) {
-                  switchToNewChat = true;
-              }
+              nextActiveTabId = newChatTab.id; // Should always exist
+              switchToNewChat = true;
+              // Removed more complex fallback logic, always switch to New Chat if the active one is closed and it's the first actual session tab.
           }
       }
 
       // Optimistically remove the tab from the UI
-      setOpenTabs(prevTabs => prevTabs.filter(tab => tab.id !== tabIdToClose));
+      const updatedTabs = openTabs.filter(tab => tab.id !== tabIdToClose);
+      setOpenTabs(updatedTabs);
 
       // Switch to the new active tab if needed
       if (nextActiveTabId !== activeTabId) {
@@ -265,14 +273,19 @@ function App() {
               handleClearChat(); // Handles setting active tab and clearing settings
           } else {
               // Manually set active tab first, then load session (which sets settings)
+              // No need to call handleTabSelect as we don't want infinite loops and already set state
               setActiveTabId(nextActiveTabId);
+              // Fetch and load the session data for the newly activated tab
               setIsLoading(true);
               setError(null);
               try {
                   const response = await fetch(`${API_BASE_URL}/api/v1/chat/session/${nextActiveTabId}`);
-                  if (!response.ok) { /* error handling */ throw new Error(/* ... */); }
+                  if (!response.ok) {
+                      const errorData = await response.json().catch(() => ({ detail: `HTTP error! status: ${response.status}` }));
+                      throw new Error(errorData.detail || `Failed to fetch session ${nextActiveTabId}`);
+                  }
                   const sessionData = await response.json();
-                  handleLoadSession(sessionData); // Load data and settings
+                  handleLoadSession(sessionData); // Load data and settings for the newly active tab
               } catch (e) {
                   console.error(`Error fetching session ${nextActiveTabId} after closing tab:`, e);
                   setError(`Failed to load session ${nextActiveTabId}: ${e.message}`);
@@ -283,9 +296,23 @@ function App() {
               }
           }
       }
+  // Only delete from backend if the close was successful? Or should it be separate?
+  // For now, let's assume close only affects UI state, deletion is explicit via SavedChatsPanel
 
-  }, [openTabs, activeTabId, handleClearChat, handleLoadSession, setActiveTabId, setIsLoading, setError, setChatHistory, setCurrentThreadId, setOpenTabs, setCurrentSessionSettings]); // Dependencies
+  }, [openTabs, activeTabId, handleClearChat, handleLoadSession, setActiveTabId, setIsLoading, setError, setOpenTabs]); // Dependencies updated
   // --- END: Tab Close Handler ---
+
+  // --- ADDED: Tab Rename Handler ---
+  const handleTabRename = useCallback((threadId, newName) => {
+    setOpenTabs(prevTabs =>
+      prevTabs.map(tab =>
+        tab.id === threadId ? { ...tab, label: newName } : tab
+      )
+    );
+    console.log(`App: Renamed tab ${threadId} to "${newName}" in UI state.`);
+  }, [setOpenTabs]); // Dependency on setOpenTabs (stable)
+  // --- END: Tab Rename Handler ---
+
 
   // --- useEffect Hooks ---
   useEffect(() => {
@@ -310,8 +337,8 @@ function App() {
         if (sessions && Array.isArray(sessions)) {
           const sessionTabs = sessions.map(session => ({
             id: session.thread_id,
-            // Create a label - use first user message or thread_id as fallback
-            label: session.first_user_message || `Session ${session.thread_id.substring(0, 6)}...`,
+            // Use the title from the backend (which prioritizes custom_title)
+            label: session.title || `Session ${session.thread_id.substring(0, 6)}...`, // Use title directly
             canClose: true
           }));
           // Add fetched sessions to the initial 'New Chat' tab
@@ -327,7 +354,7 @@ function App() {
       .catch(err => {
         console.error("Error fetching saved sessions:", err);
         // Handle error appropriately, maybe show a message to the user
-        // setError("Could not load saved sessions."); 
+        setError("Could not load saved sessions."); // Set error state
       });
     // --- END: Fetch saved sessions ---
 
@@ -336,243 +363,226 @@ function App() {
   // --- Keyboard Shortcuts --- useEffect
   useEffect(() => {
     const handleKeyDown = (event) => {
-      // Toggle Sidebar: Cmd/Ctrl + ,
+      // Toggle Settings: Cmd + , or Ctrl + ,
       if ((event.metaKey || event.ctrlKey) && event.key === ',') {
         event.preventDefault();
-        setIsSidebarOpen(prevIsOpen => !prevIsOpen);
+        setIsSidebarOpen(prev => !prev); // Toggle sidebar instead of old panel
+        console.log("Toggled sidebar visibility");
       }
-
-      // Clear Chat: Ctrl + Shift + C
-      if (event.ctrlKey && event.shiftKey && event.key === 'C') {
+      // Clear Chat: Ctrl + Shift + C (Be careful not to override browser dev tools)
+      else if (event.ctrlKey && event.shiftKey && event.key === 'C') {
         event.preventDefault();
-        handleClearChat(); // Now defined above
+        console.log("Clear Chat shortcut triggered");
+        handleClearChat();
+      }
+      // Submit on Enter (but not Shift+Enter)
+      else if (event.key === 'Enter' && !event.shiftKey && !isLoading) {
+          event.preventDefault();
+          const sendButton = document.getElementById('send-button'); // Assuming button has id="send-button"
+          if (sendButton && !sendButton.disabled) {
+              sendButton.click();
+          }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
 
+    // Cleanup function to remove the event listener
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleClearChat]); // Dependency is now valid
+  }, [handleClearChat, isLoading]); // Add isLoading dependency for Enter submit logic
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // Scroll to bottom when chatHistory changes or isLoading becomes true
   useEffect(() => {
-    scrollToBottom();
-  }, [chatHistory]);
+    // Only scroll if loading a new message OR if messages were added
+    if (isLoading || chatHistory.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatHistory, isLoading]);
 
-  // Handler for loading the model - Removed, handled by ModelLoadPanel
-  // const handleLoadModel = async () => { ... };
+  // --- Send Message Handler (Modified for v2) ---
+  const sendMessage = useCallback(async (currentChatHistory) => {
+    if (!userInput.trim()) return; // Don't send empty messages
+    if (appModelLoadStatus !== 'loaded') {
+        setError("Model is not loaded. Cannot send message.");
+        return;
+    }
 
-  // Handler for applying model settings - Removed, handled by SettingsPanel
-  // const handleApplySettings = async () => { ... };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    const trimmedInput = userInput.trim();
-    if (!trimmedInput || appModelLoadStatus !== 'loaded') return; 
-
-    const userMessage = {
-      sender: 'user',
-      text: trimmedInput,
-      id: `user-${Date.now()}`,
-      role: 'user', // Add role for consistency
-      content: trimmedInput // Add content for consistency
-    };
-    // Add user message immediately
-    const currentHistoryWithUser = [...chatHistory, userMessage]; // History including the new user message
-    setChatHistory(currentHistoryWithUser);
-
-    // Prepare history *before* adding loading message
-    // Use the history that includes the latest user message
-    const historyForBackend = formatChatHistoryForBackend(currentHistoryWithUser); 
-
-    const loadingMsgId = `loading-${Date.now()}`;
-    loadingMessageIdRef.current = loadingMsgId;
-    const loadingMessage = {
-        sender: 'system',
-        text: '...',
-        id: loadingMsgId
-    };
-    setChatHistory(prev => [...prev, loadingMessage]);
-
-    setUserInput('');
     setIsLoading(true);
     setError(null);
+    const newUserMessageId = `user-${Date.now()}`;
+    const newUserMessage = { sender: 'user', text: userInput, id: newUserMessageId };
 
-    let requestBody = {};
-    // --- MODIFIED: Determine request body based on thread ID first ---
-    if (currentThreadId) {
-        // If continuing a thread, ALWAYS use chat mode and send history
-        requestBody = {
-            mode: 'chat', // Force chat mode
-            messages: historyForBackend, // Send the full history
-            thread_id: currentThreadId
-        };
-        // message field is not needed in chat mode
-    } else {
-        // If starting a new thread, use the appChatMode toggle
-        if (appChatMode === 'instruction') { 
-          requestBody = {
-            mode: 'instruction',
-            message: trimmedInput,
-            thread_id: null // Explicitly null for new thread
-          };
-        } else { // appChatMode === 'chat'
-          requestBody = {
-            mode: 'chat',
-            messages: historyForBackend, // Send the history (which is just user msg here)
-            thread_id: null // Explicitly null for new thread
-          };
-        }
-    }
-    // --- End MODIFIED section ---
+    // Optimistically add user message
+    const updatedChatHistory = [...currentChatHistory, newUserMessage];
+    setChatHistory(updatedChatHistory);
+    const currentUserInput = userInput; // Capture current user input before clearing
+    setUserInput(''); // Clear input field immediately
 
-    console.log("Sending request to /chat-v2:", requestBody); // Log the request
+    // Add loading indicator message
+    const loadingId = `loading-${Date.now()}`;
+    loadingMessageIdRef.current = loadingId;
+    setChatHistory(prev => [...prev, { sender: 'backend', text: '', id: loadingId }]);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/chat-v2`, { 
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+        const payload = {
+            mode: appChatMode,
+            thread_id: currentThreadId, // Send current thread ID
+        };
 
-      const idToRemove = loadingMessageIdRef.current;
-      loadingMessageIdRef.current = null;
-      if (idToRemove) {
-        setChatHistory(prev => prev.filter(msg => msg.id !== idToRemove));
-      }
+        if (appChatMode === 'instruction') {
+            payload.message = currentUserInput;
+        } else { // 'chat' mode
+            // Format history, including the new user message
+            payload.messages = formatChatHistoryForBackend(updatedChatHistory);
+        }
 
-      const data = await response.json();
+        const response = await fetch(`${API_BASE_URL}/api/v1/chat/chat-v2`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
 
-      if (!response.ok) {
-        throw new Error(data.detail || `HTTP error! status: ${response.status}`);
-      }
+        // Remove loading indicator before processing response
+        setChatHistory(prev => prev.filter(msg => msg.id !== loadingMessageIdRef.current));
+        loadingMessageIdRef.current = null;
 
-      console.log("Backend response data:", data); // Log the response
+        if (!response.ok) {
+            let errorDetail = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorDetail = errorData.detail || errorDetail;
+            } catch (e) { /* Ignore JSON parsing error */ }
+            throw new Error(errorDetail);
+        }
 
-      // --- ADDED: Update thread ID from response ---
-      if (data.thread_id && data.thread_id !== currentThreadId) {
-          console.log(`App: Updating thread ID from ${currentThreadId} to ${data.thread_id}`);
-          setCurrentThreadId(data.thread_id);
-      }
-      // --- End Update thread ID ---
+        const data = await response.json();
+        const backendResponse = data.response;
+        const newThreadId = data.thread_id; // Get thread_id from response
 
-      const backendMessage = {
-        sender: 'backend',
-        text: formatListText(data.response || 'Backend did not provide a response.'), 
-        id: `backend-${Date.now()}`,
-        role: 'assistant', // Add role
-        content: data.response // Add raw content
-      };
-      // Add backend response (use functional update based on previous state before loading msg removal)
-      setChatHistory(prev => prev.filter(msg => msg.id !== idToRemove).concat(backendMessage));
+        const backendMessageId = `backend-${Date.now()}`;
+        const backendMessage = { sender: 'backend', text: backendResponse, id: backendMessageId };
 
-    } catch (e) { 
-      console.error('Fetch error:', e);
-      const errorMessage = `Failed to fetch: ${e.message}`;
-      setError(errorMessage); 
+        // Add backend message
+        setChatHistory(prev => [...prev, backendMessage]);
 
-      const idToRemoveOnError = loadingMessageIdRef.current;
-      loadingMessageIdRef.current = null;
-      // Use functional update based on previous state before loading msg removal
-      setChatHistory(prev => [
-          ...prev.filter(msg => msg.id !== idToRemoveOnError),
-          { sender: 'system', text: `Error: ${e.message}`, id: `error-${Date.now()}` }
-      ]);
-    } finally { // Ensure isLoading is set to false in both success and error cases
+        // --- Tab & Session ID Handling ---
+        if (newThreadId && newThreadId !== currentThreadId) {
+            setCurrentThreadId(newThreadId); // Update the current thread ID
+            console.log(`App: Switched to/created new thread ID: ${newThreadId}`);
+
+            // If this was the first message in the "New Chat" tab, update the tab
+            if (activeTabId === NEW_CHAT_TAB_ID) {
+                const newLabel = currentUserInput.substring(0, 30) + (currentUserInput.length > 30 ? '...' : '');
+                setOpenTabs(prevTabs => {
+                    // Remove the placeholder "New Chat" tab
+                    const filteredTabs = prevTabs.filter(tab => tab.id !== NEW_CHAT_TAB_ID);
+                    // Add the new session tab and a fresh "New Chat" tab
+                    return [
+                        { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false }, // Add back new chat
+                        ...filteredTabs,
+                        { id: newThreadId, label: newLabel, canClose: true }
+                    ];
+                });
+                setActiveTabId(newThreadId); // Make the new session tab active
+                 // Fetch updated session list for the sidebar (or update locally?)
+                 // For now, let's assume the sidebar will fetch on its own or be triggered later
+            } else if (currentThreadId === null) { // Edge case: loaded a deleted session? Switch to new tab
+                 const newLabel = currentUserInput.substring(0, 30) + (currentUserInput.length > 30 ? '...' : '');
+                 setOpenTabs(prevTabs => [
+                    ...prevTabs,
+                     { id: newThreadId, label: newLabel, canClose: true }
+                 ]);
+                 setActiveTabId(newThreadId);
+            }
+            // If it's an existing tab, the ID should match, no tab update needed here
+            // (Renaming is handled separately)
+        }
+        // --- End Tab & Session ID Handling ---
+
+    } catch (e) {
+        console.error("Error sending message:", e);
+        setError(e.message || "Failed to get response from backend.");
+        // Remove loading indicator on error as well
+        setChatHistory(prev => prev.filter(msg => msg.id !== loadingMessageIdRef.current));
+        loadingMessageIdRef.current = null;
+        // Optionally add a system error message to the chat
+        // setChatHistory(prev => [...prev, { sender: 'system', text: `Error: ${e.message}`, id: `error-${Date.now()}` }]);
+    } finally {
         setIsLoading(false);
-        // Scroll after state updates have likely rendered
-        setTimeout(scrollToBottom, 0); 
+        // Ensure loading indicator is removed even if error handling failed somehow
+        if (loadingMessageIdRef.current) {
+            setChatHistory(prev => prev.filter(msg => msg.id !== loadingMessageIdRef.current));
+            loadingMessageIdRef.current = null;
+        }
     }
-  };
+  }, [userInput, appChatMode, currentThreadId, activeTabId, appModelLoadStatus]); // Dependencies
 
-  // Derived state for convenience
-  const modelLoaded = appModelLoadStatus === 'loaded';
-
+  // --- Render --- 
   return (
-    // Use a Fragment <> ... </> to return multiple top-level elements
-    <>
-      <div className={`app-layout ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-        {/* Dynamically load the selected theme */}
-        <ThemeLoader themeName={themeName} />
-        
-        {/* Render the Sidebar */}
-        <Sidebar
-            isOpen={isSidebarOpen}
-            modelLoaded={modelLoaded}
-            setLoadStatus={handleModelLoadStatusChange}
-            setLoading={setIsLoading}
-            isLoading={isLoading}
-            currentModelPath={currentLoadedModelName}
-            themeName={themeName}
-            setThemeName={setThemeName}
-            themeList={themeList}
-            onHfUsernameUpdate={handleHfUsernameUpdate}
-            onDeviceUpdate={handleDeviceUpdate}
-            currentDevice={currentDevice}
-            onClearChat={handleClearChat}
-            onLoadSession={handleLoadSession}
-            loadedSessionSettings={currentSessionSettings}
-         />
-        
-        {/* Right Panel: Chat Area */}
-        <div className="chat-container">
-          <header className="chat-header">
-            {/* Sidebar Toggle Button */}
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="sidebar-toggle-button" // Add a class for styling
-              title="Toggle Sidebar (Cmd/Ctrl + ,)" // Accessibility
-            >
-              ☰ {/* Hamburger Icon */}
-            </button>
+    <div className={`App ${themeName}`}> {/* Apply theme class */}
+      <ThemeLoader themeName={themeName} /> {/* Theme CSS loader */}
 
-            {/* Original Header Content */}
-            <h1 style={{ marginLeft: '10px' }}>Sigil</h1> {/* Added margin for spacing */}
-            {/* Move the settings toggle button here */}
-            {/* 
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              style={{
-                background: 'none',
-                border: 'none',
-                marginLeft: '4px', // Reduce space from the title
-                cursor: 'pointer',
-                color: 'inherit', // Use the header's text color
-                fontSize: '20px', // Make the gear slightly larger
-                padding: 0, // Remove default padding
-                verticalAlign: 'middle' // Align with title text
-              }}
-              title="Toggle Settings" // Accessibility
-            >
-              ⚙️
-            </button>
-             */}
-            {/* --- NEW: Welcome Message --- */}
-            {hfUsername && (
-              <span style={{ marginLeft: 'auto', fontSize: '0.9em', opacity: 0.9 /* color: 'var(--color-username)' */ }}>
-                Welcome, {hfUsername}!
-              </span>
-            )}
-            {/* --- NEW: Device Indicator --- */}
-            <DeviceIndicator device={currentDevice} />
-            
-            {/* --- Chat Mode Toggle --- */}
-            <ModeToggleSwitch
-              mode={appChatMode}
-              onToggle={handleChatModeChange}
-              disabled={!modelLoaded}
-            />
+      {/* --- ADDED: Sidebar --- */}
+      <Sidebar 
+          isOpen={isSidebarOpen} 
+          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+          // Pass model load related props
+          setLoadStatus={handleModelLoadStatusChange}
+          setLoading={setIsLoading} // Allow sidebar components to set global loading
+          isLoading={isLoading}
+          isModelLoaded={appModelLoadStatus === 'loaded'} // Pass derived boolean
+          currentModelPath={currentLoadedModelName || 'None'} // Pass loaded model name
+          onHfUsernameUpdate={handleHfUsernameUpdate} // Pass username update handler
+          onDeviceUpdate={handleDeviceUpdate} // Pass device update handler
+          currentDevice={currentDevice} // Pass current device
+          // Pass theme props
+          themeName={themeName}
+          setThemeName={setThemeName}
+          themeList={themeList}
+          // Pass chat management props
+          onClearChat={handleClearChat}
+          onLoadSession={handleLoadSession} // Pass session loading handler
+          loadedSessionSettings={currentSessionSettings} // Pass currently applied settings
+          onTabRename={handleTabRename} // <-- Pass the rename handler
+      />
+      {/* --- END: Sidebar --- */}
 
-            {/* Model Status Group */}
+      <div className={`main-content ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+          <header className="app-header">
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="sidebar-toggle-btn header-btn">
+              {/* Use a simple icon or text for toggle */} {isSidebarOpen ? '<' : '>'}
+            </button>
+            <h1 className="app-title">
+                Sigil 
+                {currentLoadedModelName && 
+                    <span className="loaded-model-name">({currentLoadedModelName})</span>
+                }
+            </h1>
+
+            <div className="header-controls">
+                {/* Chat Mode Selector */}
+                <div className="mode-selector">
+                    <button 
+                        onClick={() => handleChatModeChange('instruction')}
+                        className={appChatMode === 'instruction' ? 'active' : ''}
+                    >
+                        Instruct
+                    </button>
+                    <button 
+                        onClick={() => handleChatModeChange('chat')}
+                        className={appChatMode === 'chat' ? 'active' : ''}
+                    >
+                        Chat
+                    </button>
+                </div>
+                 <DeviceIndicator device={currentDevice} username={hfUsername} />
+            </div>
+
+            {/* Status Indicators - Simplified Location */}
             <div className="model-status-group">
-              {modelLoaded && <span className="model-status-indicator">Model Ready</span>}
+              {appModelLoadStatus === 'loaded' && <span className="model-status-indicator">Model Ready</span>}
               {appModelLoadStatus === 'idle' && <span className="model-status-indicator">Waiting for Model</span>}
               {appModelLoadStatus === 'error' && <span className="model-status-indicator error">Model Load Failed</span>}
               {appModelLoadStatus === 'loading' && <span className="model-status-indicator loading">Loading Model...</span>}
@@ -591,75 +601,61 @@ function App() {
           />
           {/* --- END: Tab Container --- */}
 
-          <div className="messages-area">
-            {/* Display message asking user to load model if not loaded */}
-            {appModelLoadStatus === 'idle' && !isSidebarOpen && ( // Show only if sidebar is closed
-              <div className="message system-message">
-                <p>Click the ☰ icon or press Cmd/Ctrl+, to open the sidebar and load a model.</p>
-              </div>
-            )}
-             {appModelLoadStatus === 'idle' && isSidebarOpen && ( // Show when sidebar is open
-              <div className="message system-message">
-                <p>Use the 'Load Model' panel in the sidebar to choose a model.</p>
-              </div>
-            )}
-            {appModelLoadStatus === 'error' && (
-               <div className="message system-message error-message"> 
-                 {/* Display general error state if set by load failure */}
-                 <p>{error || 'Failed to load model. Check the sidebar for details.'}</p>
-               </div>
-            )}
+          <div className="chat-area">
+            {/* Display chat history */}
+            {/* Pass model status to ChatHistory */}
+            <div className="messages-area">
+              {/* Display message asking user to load model if not loaded */} 
+              {appModelLoadStatus === 'idle' && !chatHistory.length && (
+                <div className="message system-message">
+                  <p>Please load a model using the 'Load Model' panel in the sidebar to begin.</p>
+                </div>
+              )}
+              {/* Display error if model failed to load */} 
+              {appModelLoadStatus === 'error' && (
+                 <div className="message system-message error-message">
+                   <p>Failed to load model. Check console for details.</p>
+                 </div>
+              )}
+              {/* Display general errors */}
+              {error && !isLoading && (
+                 <div className="message system-message error-message">
+                   <p>Error: {error}</p>
+                 </div>
+              )}
 
-            {chatHistory.map((msg) => (
-              <div key={msg.id} className={`message ${msg.sender}-message ${msg.id.startsWith('loading-') ? 'loading-message' : ''}`}>
-                {msg.id.startsWith('loading-') ? (
-                  <div className="typing-indicator">
-                    <span></span><span></span><span></span>
-                  </div>
-                ) : (
-                  <p dangerouslySetInnerHTML={{ __html: msg.text }} /> // Use dangerouslySetInnerHTML if text contains HTML
-                )}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
+              {chatHistory.map((msg) => (
+                <div key={msg.id} className={`message ${msg.sender}-message ${msg.id.startsWith('loading-') ? 'loading-message' : ''}`}>
+                  {msg.id.startsWith('loading-') ? (
+                    <div className="dots-container"><span>.</span><span>.</span><span>.</span></div>
+                  ) : (
+                    <p>{msg.text}</p>
+                  )}
+                </div>
+              ))}
+              <div ref={messagesEndRef} /> {/* Element to scroll to */}
+            </div>
+
+            {/* Input area */} 
+            <div className="input-area">
+              <textarea
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder={appModelLoadStatus === 'loaded' ? (isLoading ? "Generating response..." : "Type your message here...") : "Load a model first"}
+                rows="3"
+                disabled={isLoading || appModelLoadStatus !== 'loaded'}
+              />
+              <button 
+                id="send-button" 
+                onClick={() => sendMessage(chatHistory)} 
+                disabled={isLoading || !userInput.trim() || appModelLoadStatus !== 'loaded'}
+              >
+                Send
+              </button>
+            </div>
           </div>
-
-           {/* Display general fetch error message if it exists (e.g., from chat fetch) */}
-           {error && appModelLoadStatus !== 'error' && <p className="error-message chat-error">Chat Error: {error}</p>}
-
-          {/* Clear Chat Button (New) - Placed near input bar for relevance */}
-          {chatHistory.length > 0 && (
-            <button
-              onClick={handleClearChat}
-              className="clear-chat-button"
-              disabled={isLoading}
-            >
-              Clear Chat
-            </button>
-          )}
-
-          <form onSubmit={handleSubmit} className="input-form">
-            <textarea
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              placeholder={modelLoaded ? "Type your message..." : "Load a model using the sidebar first..."}
-              rows="3" // Start with 3 rows
-              disabled={isLoading || !modelLoaded}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault(); // Prevent newline on Enter
-                  handleSubmit(e); // Trigger form submission
-                }
-              }}
-            />
-            <button type="submit" disabled={isLoading || !modelLoaded || !userInput.trim()}>
-              {isLoading ? 'Sending...' : 'Send'}
-            </button>
-          </form>
-        </div>
-      </div> 
-      {/* End of app-layout div */}
-    </> // End Fragment
+      </div>
+    </div>
   );
 }
 

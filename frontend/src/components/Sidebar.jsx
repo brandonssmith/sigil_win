@@ -22,7 +22,8 @@ const Sidebar = ({
   onClearChat,
   onLoadSession, // <-- ADDED: Receive onLoadSession prop
   // --- ADDED: Receive loadedSessionSettings prop ---
-  loadedSessionSettings 
+  loadedSessionSettings,
+  onTabRename // <-- ADDED: Receive onTabRename prop
 }) => {
   // Determine the class name based on the isOpen prop for styling
   const sidebarClassName = `sidebar ${isOpen ? 'open' : 'closed'}`;
@@ -50,6 +51,7 @@ const Sidebar = ({
             onLoadSession={onLoadSession} // Pass onLoadSession down
             // --- ADDED: Pass loadedSessionSettings down ---
             loadedSessionSettings={loadedSessionSettings}
+            onTabRename={onTabRename} // <-- ADDED: Pass onTabRename down
           />
         )}
       </div>
@@ -82,6 +84,7 @@ Sidebar.propTypes = {
     topP: PropTypes.number,
     maxTokens: PropTypes.number,
   }), // Can be null
+  onTabRename: PropTypes.func.isRequired, // <-- ADDED: PropType for onTabRename
 };
 
 export default Sidebar; 

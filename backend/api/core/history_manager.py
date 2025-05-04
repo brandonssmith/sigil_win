@@ -45,7 +45,8 @@ def save_chat_messages(
             "messages": messages, 
             "metadata": {"created_at": datetime.datetime.utcnow().isoformat()},
             "sampling_settings": sampling_settings,
-            "system_prompt": system_prompt
+            "system_prompt": system_prompt,
+            "custom_title": None # Initialize custom title for new sessions
         }
     else:
         try:
@@ -66,6 +67,9 @@ def save_chat_messages(
                     session_data["sampling_settings"] = sampling_settings
                 if system_prompt is not None:
                     session_data["system_prompt"] = system_prompt
+                # Ensure custom_title field exists if loading older session file
+                if "custom_title" not in session_data:
+                    session_data["custom_title"] = None
             except (json.JSONDecodeError, IOError) as e:
                 print(f"Error reading session file {thread_id}: {e}. Overwriting with new data.")
                 # If file is corrupted, overwrite with current state
@@ -74,7 +78,8 @@ def save_chat_messages(
                     "messages": messages, 
                     "metadata": {"last_updated": datetime.datetime.utcnow().isoformat()},
                     "sampling_settings": sampling_settings,
-                    "system_prompt": system_prompt
+                    "system_prompt": system_prompt,
+                    "custom_title": None
                 }
         else:
              # If file doesn't exist for the given ID, create it
@@ -83,7 +88,8 @@ def save_chat_messages(
                  "messages": messages, 
                  "metadata": {"created_at": datetime.datetime.utcnow().isoformat()},
                  "sampling_settings": sampling_settings,
-                 "system_prompt": system_prompt
+                 "system_prompt": system_prompt,
+                 "custom_title": None
              }
 
     # Get filepath again (needed if it was a new thread_id or file didn't exist)
@@ -102,6 +108,40 @@ def save_chat_messages(
 
     return thread_id
 
+# --- NEW: Function to update only the custom title ---
+def update_session_title(thread_id: str, new_title: str) -> bool:
+    """
+    Updates the custom_title field for a specific session.
+    Returns True if successful, False otherwise.
+    Raises ValueError on invalid thread_id.
+    """
+    try:
+        filepath = get_session_filepath(thread_id)
+    except ValueError as e:
+        print(f"Error updating title (invalid thread_id): {e}")
+        raise
+
+    if not os.path.exists(filepath):
+        print(f"Session file not found for title update: {filepath}")
+        return False
+
+    try:
+        with open(filepath, 'r') as f:
+            session_data = json.load(f)
+
+        session_data["custom_title"] = new_title.strip() # Save the stripped title
+        session_data["metadata"]["last_updated"] = datetime.datetime.utcnow().isoformat() # Also update timestamp
+
+        with open(filepath, 'w') as f:
+            json.dump(session_data, f, indent=2)
+        
+        print(f"Successfully updated title for session {thread_id}")
+        return True
+    except (json.JSONDecodeError, IOError, KeyError) as e:
+        print(f"Error updating title for session {thread_id}: {e}")
+        return False
+# --- END NEW FUNCTION ---
+
 def get_session(thread_id: str) -> Optional[Dict[str, Any]]:
     """Loads a chat session from its JSON file."""
     try:
@@ -114,14 +154,16 @@ def get_session(thread_id: str) -> Optional[Dict[str, Any]]:
     try:
         with open(filepath, 'r') as f:
             session_data = json.load(f)
-        # Add title generation here if needed, or handle in list_sessions
+        # Ensure custom_title field is present in the response, even if None
+        if "custom_title" not in session_data:
+            session_data["custom_title"] = None
         return session_data
     except (json.JSONDecodeError, IOError) as e:
         print(f"Error reading session file {thread_id}: {e}")
         return None # Indicate failure to load
 
 def list_sessions() -> List[Dict[str, Any]]:
-    """Lists all available chat sessions with basic metadata."""
+    """Lists all available chat sessions with basic metadata and title."""
     sessions_list = []
     if not os.path.isdir(HISTORY_DIR):
         print(f"History directory not found: {HISTORY_DIR}")
@@ -134,28 +176,34 @@ def list_sessions() -> List[Dict[str, Any]]:
                 if ".." in thread_id or "/" in thread_id or "\\" in thread_id:
                     print(f"Skipping potentially unsafe filename: {filename}")
                     continue
-                filepath = get_session_filepath(thread_id)
-                try:
-                    with open(filepath, 'r') as f:
-                        session_data = json.load(f)
-                    
-                    # Attempt to create a title (e.g., from first user message)
-                    title = thread_id # Default title is the ID
-                    if session_data.get("messages") and len(session_data["messages"]) > 0:
-                         # Find first user message maybe? Or first message overall?
-                         first_message = session_data["messages"][0]["content"]
-                         title = first_message[:50] + ('...' if len(first_message) > 50 else '') # Truncate
+                
+                # --- MODIFIED: Read title from session data ---
+                session_data = get_session(thread_id) # Use get_session to load full data
+                if not session_data:
+                    print(f"Skipping session {thread_id} due to loading error.")
+                    continue # Skip if session failed to load
 
-                    sessions_list.append({
-                        "thread_id": thread_id,
-                        "title": title, # Or generate a title based on content/timestamp
-                        "last_updated": session_data.get("metadata", {}).get("last_updated"),
-                        "created_at": session_data.get("metadata", {}).get("created_at")
-                    })
-                except (json.JSONDecodeError, IOError, KeyError, ValueError) as e: # Added ValueError
-                    print(f"Error reading or parsing session file {filename}: {e}. Skipping.")
-                    continue # Skip corrupted files
-        
+                # Prioritize custom_title
+                title = session_data.get("custom_title")
+                
+                # Fallback to first user message if custom_title is None or empty
+                if not title:
+                    messages = session_data.get("messages", [])
+                    first_user_message = next((msg.get("content") for msg in messages if msg.get("role") == "user"), None)
+                    if first_user_message:
+                         title = first_user_message[:50] + ('...' if len(first_user_message) > 50 else '') # Truncate
+                    else:
+                         title = thread_id # Ultimate fallback to thread_id
+
+                sessions_list.append({
+                    "thread_id": thread_id,
+                    "title": title, # Use the determined title
+                    "last_updated": session_data.get("metadata", {}).get("last_updated"),
+                    "created_at": session_data.get("metadata", {}).get("created_at")
+                    # Removed direct file reading here, use get_session
+                })
+                # --- END MODIFICATION ---
+
         # Sort sessions, e.g., by last updated descending (most recent first)
         sessions_list.sort(key=lambda x: x.get("last_updated") or x.get("created_at") or '', reverse=True)
 

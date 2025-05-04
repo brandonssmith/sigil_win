@@ -24,7 +24,8 @@ const CombinedPanel = (props) => {
       currentDevice,
       onClearChat,
       onLoadSession,
-      loadedSessionSettings
+      loadedSessionSettings,
+      onTabRename
   } = props;
   
   const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', 'interface', 'precision', or 'help'
@@ -138,6 +139,7 @@ const CombinedPanel = (props) => {
         {activeTab === 'savedChats' && (
           <SavedChatsPanel 
             onSelectSession={onLoadSession}
+            onRenameSession={onTabRename}
           />
         )}
         {activeTab === 'interface' && (
@@ -232,6 +234,7 @@ CombinedPanel.propTypes = {
     topP: PropTypes.number,
     maxTokens: PropTypes.number,
   }),
+  onTabRename: PropTypes.func.isRequired,
 };
 
 export default CombinedPanel; 
