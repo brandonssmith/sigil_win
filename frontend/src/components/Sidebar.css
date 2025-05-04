@@ -24,6 +24,7 @@
 /* Styles when the sidebar is open */
 .sidebar.open {
   width: 350px; /* Or your desired width */
+  flex-shrink: 0; /* Add this to prevent shrinking when open */
   /* transform: translateX(0); */
 }
 

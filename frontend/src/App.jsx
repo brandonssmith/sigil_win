@@ -552,7 +552,7 @@ function App() {
       <div className={`main-content ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
           <header className="app-header">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="sidebar-toggle-btn header-btn">
-              {/* Use a simple icon or text for toggle */} {isSidebarOpen ? '<' : '>'}
+              {/* Use a hamburger icon (Unicode) */} {'☰'}
             </button>
             <h1 className="app-title">
                 Sigil 
