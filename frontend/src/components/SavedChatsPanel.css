@@ -8,7 +8,7 @@
   margin-bottom: 15px;
   border-bottom: 1px solid var(--panel-border-color, #444);
   padding-bottom: 5px;
-  color: var(--text-color, #eee);
+  color: var(--ui-text-primary, #eee);
 }
 
 .saved-chats-list {
@@ -50,7 +50,7 @@
   display: block; /* Title on its own line */
   margin-bottom: 3px;
   font-size: 0.95em;
-  color: var(--text-color, #eee);
+  color: var(--ui-text-primary, #eee);
   white-space: nowrap; /* Prevent title wrap */
   overflow: hidden;
   text-overflow: ellipsis; /* Add ellipsis if title too long */

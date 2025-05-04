@@ -16,7 +16,7 @@
   /* Example styling - adapt as needed */
   padding: 6px 12px;
   background-color: var(--button-bg, #444);
-  color: var(--button-text, #eee);
+  color: var(--ui-text-primary, #eee);
   border: 1px solid var(--button-border, #666);
   border-radius: 4px;
   cursor: pointer;

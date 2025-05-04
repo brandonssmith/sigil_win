@@ -1,25 +1,9 @@
 /* Starshine Theme - CSS Variables */
 :root {
-  --palette-0: #2C1B2E;
-  --palette-1: #FF4F4F;
-  --palette-2: #00C896;
-  --palette-3: #FFD580;
-  --palette-4: #00E0C6;
-  --palette-5: #FF5FC6;
-  --palette-6: #912F56;
-  --palette-7: #D6C3E5;
-  --palette-8: #826C99;
-  --palette-9: #8B00FF;
-  --palette-10: #00C896;
-  --palette-11: #FFD580;
-  --palette-12: #00E0C6;
-  --palette-13: #8B00FF;
-  --palette-14: #912F56;
-  --palette-15: #D6C3E5;
-  --background: #2C1B2E;
-  --foreground: #D6C3E5;
-  --cursor-color: #FFD580;
-  --cursor-text: #D6C3E5;
-  --selection-background: #912F56;
-  --selection-foreground: #D6C3E5;
+  --button-background-base: #00E0C6; /* Renamed from --palette-4: Used for button background base */
+  --header-text-color: #a369ff; /* Renamed from --palette-9: Used for header text (chat, settings) */
+  --input-text-color: #D6C3E5; /* Renamed from --foreground: Used for text in settings inputs/textareas */
+  --ui-text-primary: #D6C3E5; /* Default UI text color */
+  --user-message-glow-color: #dfac1f; /* Original palette-1 */
+  --backend-message-glow-color: #8B00FF; /* Original palette-9 / Current header-text-color */
 }

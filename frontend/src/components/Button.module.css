@@ -3,7 +3,7 @@
   padding: var(--spacing-small) var(--spacing-medium);
   border: none;
   border-radius: var(--border-radius-medium);
-  background-color: var(--palette-4);
+  background-color: var(--button-background-base);
   color: var(--primary-contrast);
   font-weight: 500;
   cursor: pointer;

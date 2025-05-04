@@ -28,7 +28,7 @@
 }
 
 .settings-panel h2 {
-  color: var(--palette-9); /* Use --palette-9 as requested */
+  color: var(--header-text-color); /* Use --palette-9 as requested */
   margin-top: 0;
   margin-bottom: var(--spacing-large); /* 1.5rem */
   text-align: center;
@@ -54,7 +54,7 @@
   padding: 0.6rem 0.8rem; /* Specific padding */
   background-color: var(--surface-input);
   border: 1px solid var(--border-input);
-  color: var(--foreground);
+  color: var(--input-text-color);
   font-family: inherit;
   font-size: 0.95rem;
   border-radius: var(--border-radius-small);
@@ -117,7 +117,7 @@
 
 .clear-chat-button-settings:hover:not(:disabled) {
   background-color: var(--surface-hover); /* Subtle background on hover */
-  color: var(--foreground); /* Use primary text color on hover */
+  color: var(--input-text-color); /* Use primary text color on hover */
   border-color: var(--border-input-hover); /* Slightly darker border on hover */
 }
 

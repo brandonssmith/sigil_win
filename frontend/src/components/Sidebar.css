@@ -33,7 +33,7 @@
   overflow-y: auto; /* Allow vertical scrolling if content exceeds height */
   padding: 15px;
   box-sizing: border-box;
-  color: var(--text-color, #eee);
+  color: var(--ui-text-primary, #eee);
   /* Ensure content is hidden quickly when closing */
   opacity: 1;
   transition: opacity 0.1s linear;
