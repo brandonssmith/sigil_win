@@ -529,7 +529,7 @@ body {
   align-items: flex-start; /* Align items to the top initially */
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--border, #333);
-  background-color: var(--surface-dark, #181818); 
+  background-color: var(--surface, #181818); /* CHANGED: Use --surface which switches modes */
   flex-shrink: 0; /* Prevent form from shrinking */
   gap: 0.75rem; /* Space between textarea and button */
 }
@@ -553,7 +553,7 @@ body {
 .input-form textarea:focus {
   outline: none;
   border-color: var(--primary, #03dac6);
-  box-shadow: 0 0 0 2px var(--primary-focus, rgba(3, 218, 198, 0.3));
+  box-shadow: 0 0 0 2px var(--primary-focus, rgba(3, 218, 198, 0.3)); /* Use theme variable */
 }
 
 .input-form button {
@@ -788,3 +788,48 @@ body {
     max-width: 90%; /* Allow messages to be wider */
   }
 }
+
+/* --- NEW: Light Mode Overrides --- */
+body.light-mode {
+  --background: var(--background-light);
+  --surface: var(--surface-light);
+  --panel-bg-color: var(--panel-bg-light);
+  /* Add other light-mode specific variable overrides here */
+  /* Example: adjust text color for light background */
+  --ui-text-primary: #1f1f1f; /* Darker text for light mode */
+  --input-text-color: #1f1f1f;
+  --foreground: #1f1f1f; /* Ensure message text is readable */
+  --foreground-muted: #555;
+  --border: #ccc;
+
+  /* --- Input Area Light Mode Overrides --- */
+  --input-bg: var(--input-bg-light);
+  --disabled-bg: var(--disabled-bg-light);
+  --disabled-fg: var(--disabled-fg-light);
+  /* --- END Input Area Overrides --- */
+
+  /* --- NEW: Panel Tab/Container Light Mode Overrides --- */
+  --panel-tab-bg: var(--panel-tab-bg-light);
+  --panel-tab-active-bg: var(--panel-tab-active-bg-light);
+  --panel-tab-text: var(--panel-tab-text-light);
+  --panel-tab-active-text: var(--panel-tab-active-text-light);
+  --panel-container-bg: var(--panel-container-bg-light);
+  /* --- END NEW --- */
+
+  /* --- NEW: Settings Panel Light Mode Overrides --- */
+  --input-text-color: #1f1f1f; /* Defined earlier, ensure it's here */
+  --surface-input: var(--surface-input-light);
+  --border-input: var(--border-input-light);
+  --focus-ring-accent: var(--focus-ring-accent-light);
+  --focus-ring-color: var(--focus-ring-color-light);
+  --text-secondary: var(--text-secondary-light);
+  --primary-contrast: var(--primary-contrast-light);
+  --surface-disabled: var(--surface-disabled-light);
+  --text-disabled: var(--text-disabled-light);
+  --surface-hover: var(--surface-hover-light);
+  --border-input-hover: var(--border-input-hover-light);
+  /* --- END NEW --- */
+
+  /* Add more overrides as needed... */
+}
+/* --- END NEW --- */

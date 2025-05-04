@@ -4,6 +4,8 @@ import ModelLoadPanel from '../ModelLoadPanel.jsx';
 import PrecisionSettingsPanel from '../PrecisionSettingsPanel.jsx';
 import SavedChatsPanel from '../SavedChatsPanel.jsx';
 import PropTypes from 'prop-types';
+import ModeToggleSwitch from '../ModeToggleSwitch';
+import '../ModeToggleSwitch.css';
 
 // This component receives all props needed by both SettingsPanel and ModelLoadPanel
 const CombinedPanel = (props) => {
@@ -27,6 +29,15 @@ const CombinedPanel = (props) => {
   
   const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', 'interface', 'precision', or 'help'
 
+  // --- NEW: State for Light/Dark Mode ---
+  const [colorMode, setColorMode] = useState('dark'); // Default to 'dark'
+
+  // --- NEW: Effect to apply mode class to body ---
+  useEffect(() => {
+    document.body.classList.remove('light-mode', 'dark-mode'); // Clear existing classes
+    document.body.classList.add(`${colorMode}-mode`); // Add current mode class
+  }, [colorMode]); // Re-run only when colorMode changes
+
   // Effect to switch tab if device changes away from CUDA
   useEffect(() => {
     if (currentDevice !== 'cuda' && activeTab === 'precision') {
@@ -38,10 +49,10 @@ const CombinedPanel = (props) => {
   // Basic styling for tabs (can be improved later)
   const tabButtonStyle = (tabName) => ({
     padding: '6px 10px',
-    border: '1px solid #383838',
-    borderBottom: activeTab === tabName ? 'none' : '1px solid #383838',
-    background: activeTab === tabName ? '#2a2a2a' : '#1e1e1e',
-    color: activeTab === tabName ? '#eee' : '#aaa',
+    border: '1px solid var(--border, #383838)',
+    borderBottom: activeTab === tabName ? 'none' : '1px solid var(--border, #383838)',
+    background: activeTab === tabName ? 'var(--panel-tab-active-bg)' : 'var(--panel-tab-bg)',
+    color: activeTab === tabName ? 'var(--panel-tab-active-text)' : 'var(--panel-tab-text)',
     cursor: 'pointer',
     marginRight: '4px',
     borderTopLeftRadius: '5px',
@@ -49,10 +60,10 @@ const CombinedPanel = (props) => {
   });
 
   const panelContainerStyle = {
-    border: '1px solid #383838',
+    border: '1px solid var(--border, #383838)',
     borderTop: 'none',
     padding: '15px',
-    background: '#2a2a2a',
+    background: 'var(--panel-container-bg)',
     borderRadius: '0 0 5px 5px',
   };
 
@@ -131,8 +142,8 @@ const CombinedPanel = (props) => {
         )}
         {activeTab === 'interface' && (
           <div>
-            {/* ChatModeSelector removed, now controlled from header */}
-            <div className="settings-group" style={{ marginTop: '20px' }}>
+            {/* Theme Selection */}
+            <div className="settings-group" style={{ marginTop: '0px', marginBottom: '20px' }}> {/* Adjusted margin */}
               <label htmlFor="theme-select">Theme:</label>
               <select id="theme-select" value={themeName} onChange={e => setThemeName(e.target.value)}>
                 {themeList.map(theme => (
@@ -140,6 +151,23 @@ const CombinedPanel = (props) => {
                 ))}
               </select>
             </div>
+
+            {/* --- NEW: Light/Dark Mode Toggle --- */}
+            <div className="settings-group" style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+              <label htmlFor="mode-toggle" style={{ marginRight: '10px' }}>Mode:</label>
+              <ModeToggleSwitch
+                id="mode-toggle"
+                isDarkMode={colorMode === 'dark'}
+                onToggle={() => setColorMode(prevMode => prevMode === 'dark' ? 'light' : 'dark')}
+              />
+              <span style={{ marginLeft: '10px', textTransform: 'capitalize' }}>
+                 {colorMode}
+              </span>
+            </div>
+            {/* --- END NEW --- */}
+
+            {/* ChatModeSelector removed, now controlled from header */}
+            {/* Removed empty div */}
           </div>
         )}
         {activeTab === 'help' && (

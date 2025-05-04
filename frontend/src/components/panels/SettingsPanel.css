@@ -4,7 +4,6 @@
 .settings-panel {
   width: 280px; /* Fixed width for the panel */
   flex-shrink: 0; /* Prevent panel from shrinking */
-  background-color: var(--surface-light);
   padding: var(--spacing-large); /* 1.5rem */
   border-right: 1px solid var(--border);
   display: flex;

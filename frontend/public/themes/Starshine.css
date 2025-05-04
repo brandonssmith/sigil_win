@@ -6,4 +6,115 @@
   --ui-text-primary: #D6C3E5; /* Default UI text color */
   --user-message-glow-color: #dfac1f; /* Original palette-1 */
   --backend-message-glow-color: #8B00FF; /* Original palette-9 / Current header-text-color */
+
+  /* --- NEW: Light/Dark Mode Backgrounds --- */
+  /* Default (Dark Mode) */
+  --background-dark: #121212;
+  --surface-dark: #1e1e1e;
+  --panel-bg-dark: #2a2a2a;
+
+  /* Light Mode Variations (Adjusted for Readability) */
+  --background-light: #f0e6f9; /* Was #cd9af4 - Now Light Lilac */
+  --surface-light: #fbf8e7; /* Was #dcc14b - Now Pale Yellow/Cream */
+  --panel-bg-light: #f3e6f5; /* Was #e9a1f0 - Now Pastel Pink */
+
+  /* --- NEW: Input Area Colors --- */
+  --input-bg-dark: #2a2a2a;
+  --input-bg-light: #e0e0e0; /* Lighter gray for light mode input */
+  --disabled-bg-dark: #555;
+  --disabled-bg-light: #bdbdbd;
+  --disabled-fg-dark: #999;
+  --disabled-fg-light: #757575;
+
+  /* --- NEW: Panel Tab/Container Colors --- */
+  --panel-tab-bg-dark: #1e1e1e;
+  --panel-tab-bg-light: #e8e8e8; /* Light gray for inactive tabs */
+  --panel-tab-active-bg-dark: #2a2a2a;
+  --panel-tab-active-bg-light: #f5f5f5; /* Slightly lighter for active tab */
+  --panel-tab-text-dark: #aaa; /* Already similar to --foreground-muted */
+  --panel-tab-text-light: #555;
+  --panel-tab-active-text-dark: #be37f7; /* Already similar to --ui-text-primary */
+  --panel-tab-active-text-light: #f9fc75;
+  --panel-container-bg-dark: #2a2a2a;
+  --panel-container-bg-light: #f5f5f5; /* Same as active tab background */
+
+  /* --- NEW: Button Colors --- */
+  --primary-dark: #7e25b9; /* Starshine Button Base */
+  --primary-light: #e8da3e; /* Slightly desaturated/darker for light mode */
+  --primary-hover-dark: #00b39e; /* Darker version for dark mode hover */
+  --primary-hover-light: #008a7a; /* Even darker for light mode hover */
+  --button-foreground-dark: #121212; /* Dark text on primary */
+  --button-foreground-light: #f0f0f0; /* Very light text on primary (light) */
+
+  --button-bg-dark: #444;
+  --button-bg-light: #d1a8ed; /* Light purple for secondary buttons */
+  --button-hover-bg-dark: #555;
+  --button-hover-bg-light: #c08de0; /* Darker purple hover */
+  --button-border-dark: #666;
+  --button-border-light: #b17acf; /* Border matching purple */
+  --button-text-dark: #eee; /* Reusing --ui-text-primary essentially */
+  --button-text-light: #1f1f1f; /* Reusing --ui-text-primary essentially */
+
+  /* --- NEW: Focus Ring Color --- */
+  --primary-focus-dark: rgba(0, 224, 198, 0.4); /* Based on original --primary-dark */
+  --primary-focus-light: rgba(0, 179, 158, 0.5); /* Based on original --primary-light */
+
+  /* --- NEW: Settings Panel & Input Details --- */
+  --surface-input-dark: #333; /* Slightly darker than input-bg */
+  --surface-input-light: #e0e0e0; /* Same as --input-bg-light */
+  --border-input-dark: #555; /* Similar to input border */
+  --border-input-light: #b0b0b0; /* Lighter grey border */
+  --focus-ring-accent-dark: var(--primary-dark); /* Use primary color */
+  --focus-ring-accent-light: var(--primary-light);
+  --focus-ring-color-dark: var(--primary-focus-dark);
+  --focus-ring-color-light: var(--primary-focus-light);
+  --text-secondary-dark: #aaa;
+  --text-secondary-light: #555; /* Reusing --foreground-muted */
+  --primary-contrast-dark: var(--button-foreground-dark); /* Match primary button text */
+  --primary-contrast-light: var(--button-foreground-light);
+  --surface-disabled-dark: #555; /* Same as --disabled-bg-dark */
+  --surface-disabled-light: #bdbdbd; /* Same as --disabled-bg-light */
+  --text-disabled-dark: #999; /* Same as --disabled-fg-dark */
+  --text-disabled-light: #757575; /* Same as --disabled-fg-light */
+  --surface-hover-dark: #404040;
+  --surface-hover-light: #dcdcdc;
+  --border-input-hover-dark: #777;
+  --border-input-hover-light: #a0a0a0;
+  /* --- END NEW --- */
+
+  /* Base variables that will be switched */
+  --background: var(--background-dark);
+  --surface: var(--surface-dark);
+  --panel-bg-color: var(--panel-bg-dark);
+  --input-bg: var(--input-bg-dark);
+  --disabled-bg: var(--disabled-bg-dark);
+  --disabled-fg: var(--disabled-fg-dark);
+  --panel-tab-bg: var(--panel-tab-bg-dark);
+  --panel-tab-active-bg: var(--panel-tab-active-bg-dark);
+  --panel-tab-text: var(--panel-tab-text-dark);
+  --panel-tab-active-text: var(--panel-tab-active-text-dark);
+  --panel-container-bg: var(--panel-container-bg-dark);
+
+  /* Button Base Variables */
+  --primary: var(--primary-dark);
+  --primary-hover: var(--primary-hover-dark);
+  --button-foreground: var(--button-foreground-dark);
+  --button-bg: var(--button-bg-dark);
+  --button-hover-bg: var(--button-hover-bg-dark);
+  --button-border: var(--button-border-dark);
+  --button-text: var(--button-text-dark);
+  --primary-focus: var(--primary-focus-dark);
+
+  /* Settings Panel Base Variables */
+  --surface-input: var(--surface-input-dark);
+  --border-input: var(--border-input-dark);
+  --focus-ring-accent: var(--focus-ring-accent-dark);
+  --focus-ring-color: var(--focus-ring-color-dark);
+  --text-secondary: var(--text-secondary-dark);
+  --primary-contrast: var(--primary-contrast-dark);
+  --surface-disabled: var(--surface-disabled-dark);
+  --text-disabled: var(--text-disabled-dark);
+  --surface-hover: var(--surface-hover-dark);
+  --border-input-hover: var(--border-input-hover-dark);
+  /* --- END NEW --- */
 }

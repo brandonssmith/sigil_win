@@ -1,107 +1,121 @@
-# Prometheus UI Theme Guide
+# Sigil UI Theme Guide (v2)
 
-This document explains how to create custom themes for the Prometheus UI frontend.
+This guide explains how to create custom themes for the Sigil UI frontend using the updated CSS variable structure.
 
 ## Theme File Format
 
-Theme files should be placed in the `frontend/src/assets/themes/` directory and have the `.theme` extension (e.g., `MyCoolTheme.theme`).
+Theme files are standard CSS files placed in the `frontend/public/themes/` directory (e.g., `MyCoolTheme.css`).
 
-The format is inspired by Ghostty terminal themes, using simple key-value pairs:
+Themes define CSS custom properties (variables) within a `:root` block. The UI components use these variables to style themselves.
 
-```
-# Lines starting with # are comments and are ignored.
-# Empty lines are also ignored.
+The structure provides variables for both **dark mode (default)** and **light mode**. A `body.light-mode` rule at the end of the theme file overrides the base variables for light mode display.
 
-# General Colors
-background = #121212
-foreground = #e0e0e0
-cursor-color = #bb86fc
-selection-background = #33334d
-selection-foreground = #e0e0e0
+## Core Concepts
 
-# Palette Colors (0-15)
-# These are used for various UI elements.
-palette = 0 = #1f1f1f
-palette = 1 = #cf6679
-palette = 2 = #03dac6
-palette = 3 = #f3bd09
-palette = 4 = #33334d
-palette = 5 = #bb86fc
-palette = 6 = #03dac6
-palette = 7 = #e0e0e0
-palette = 8 = #d6dbe5
-palette = 9 = #de352e
-palette = 10 = #1dd361
-palette = 11 = #f3bd09
-palette = 12 = #1081d6
-palette = 13 = #5350b9
-palette = 14 = #0f7ddb
-palette = 15 = #ffffff
+1.  **Dark Mode First:** Define all `--variable-dark` colors within the main `:root` block. These are the defaults.
+2.  **Light Mode Variants:** Define corresponding `--variable-light` colors within the main `:root` block.
+3.  **Base Variables:** Define base variables (e.g., `--background`, `--primary`) that point to the *dark mode* versions initially.
+4.  **Light Mode Overrides:** Use the `body.light-mode` selector at the end of the file to switch the base variables to their *light mode* counterparts (e.g., `body.light-mode { --background: var(--background-light); --primary: var(--primary-light); }`).
+
+## CSS Variable Structure
+
+Refer to `Starshine.css` for a complete example. Here's a breakdown of the variable groups:
+
+### 1. Original Mappings (Optional Comments)
+
+It's helpful to include comments mapping any original color palette values if you're adapting an older theme.
+
+```css
+/* Original Mappings (Example) */
+--button-background-base: #00E0C6; /* Mapped to --primary-dark */
+--header-text-color: #a369ff;
+/* ... etc ... */
 ```
 
-*   **Keys:** `background`, `foreground`, `cursor-color`, `selection-background`, `selection-foreground`, and `palette = N` (where N is 0 to 15).
-*   **Values:** Standard CSS hex color codes (e.g., `#RRGGBB` or `#RGB`).
-*   **Parsing:** The parser converts keys to lowercase and standardizes `palette = N` to `palette_N` (e.g., `palette_0`).
-*   **Fallback:** If a key is missing in your theme file, a default color defined in `App.css` will be used.
+### 2. Derived & Default Colors
 
-## CSS Variable Mapping
+This is the main section where you define the specific colors for your theme for both dark and light modes.
 
-The application reads your theme file and applies the colors to CSS variables defined in `frontend/src/App.css`. The UI elements then use these variables.
+*   **Backgrounds:**
+    *   `--background-dark`, `--background-light`: Overall page background.
+    *   `--surface-dark`, `--surface-light`: Background for main content areas like the chat container.
+    *   `--panel-bg-dark`, `--panel-bg-light`: Background for side panels.
+*   **Inputs:**
+    *   `--input-bg-dark`, `--input-bg-light`: Background of text inputs, textareas.
+    *   `--disabled-bg-dark`, `--disabled-bg-light`: Background for disabled elements.
+    *   `--disabled-fg-dark`, `--disabled-fg-light`: Foreground (text) for disabled elements.
+*   **Panel Tabs:**
+    *   `--panel-tab-bg-dark`, `--panel-tab-bg-light`: Background of inactive panel tabs.
+    *   `--panel-tab-active-bg-dark`, `--panel-tab-active-bg-light`: Background of the active panel tab.
+    *   `--panel-tab-text-dark`, `--panel-tab-text-light`: Text color of inactive tabs.
+    *   `--panel-tab-active-text-dark`, `--panel-tab-active-text-light`: Text color of the active tab.
+    *   `--panel-container-bg-dark`, `--panel-container-bg-light`: Background of the content area below the tabs.
+*   **Buttons:**
+    *   `--primary-dark`, `--primary-light`: Background color for primary action buttons (e.g., Send, Apply Settings).
+    *   `--primary-hover-dark`, `--primary-hover-light`: Hover background for primary buttons.
+    *   `--button-foreground-dark`, `--button-foreground-light`: Text color *on* primary buttons.
+    *   `--button-bg-dark`, `--button-bg-light`: Background for *secondary* buttons (e.g., Load Model).
+    *   `--button-hover-bg-dark`, `--button-hover-bg-light`: Hover background for secondary buttons.
+    *   `--button-border-dark`, `--button-border-light`: Border color for secondary buttons.
+    *   `--button-text-dark`, `--button-text-light`: Text color for secondary buttons.
+*   **Focus Ring:**
+    *   `--primary-focus-dark`, `--primary-focus-light`: Color (often semi-transparent) for the focus outline around interactive elements.
+*   **Settings Panel & Input Details:** (These often reuse other variables but allow specific overrides)
+    *   `--surface-input-dark`, `--surface-input-light`: Input background within settings panels.
+    *   `--border-input-dark`, `--border-input-light`: Input border within settings panels.
+    *   `--focus-ring-accent-dark`, `--focus-ring-accent-light`: Accent color used in focus styles.
+    *   `--focus-ring-color-dark`, `--focus-ring-color-light`: Main color for focus ring styles.
+    *   `--text-secondary-dark`, `--text-secondary-light`: Color for secondary text/labels.
+    *   `--primary-contrast-dark`, `--primary-contrast-light`: Contrast color for text on primary backgrounds.
+    *   `--surface-disabled-dark`, `--surface-disabled-light`: Background for disabled surfaces.
+    *   `--text-disabled-dark`, `--text-disabled-light`: Text color for disabled elements.
+    *   `--surface-hover-dark`, `--surface-hover-light`: Background color for hovered surfaces (like list items).
+    *   `--border-input-hover-dark`, `--border-input-hover-light`: Border color for inputs on hover.
 
-Here's a mapping of the theme file keys to the primary CSS variables and their intended use:
+### 3. Base Variable Definitions
 
-| Theme Key              | CSS Variable                   | Default    | Primary Usage                                                                  |
-| :--------------------- | :----------------------------- | :--------- | :----------------------------------------------------------------------------- |
-| `background`           | `--theme-background`           | `#121212`  | Main background of the app, chat area.                                         |
-| `foreground`           | `--theme-foreground`           | `#e0e0e0`  | Default text color, message text, input text.                                  |
-| `cursor-color`         | `--theme-cursor-color`         | `#bb86fc`  | *Not directly used currently, but available.*                                  |
-| `selection-background` | `--theme-selection-background` | `#33334d`  | Background color of selected text.                                             |
-| `selection-foreground` | `--theme-selection-foreground` | `#e0e0e0`  | Text color of selected text.                                                   |
-|                        |                                |            |                                                                                |
-| `palette_0`            | `--theme-palette-0`            | `#1f1f1f`  | Panel/Header BG, Backend Msg BG, Input BG base, Border base, Scrollbar Track |
-| `palette_1`            | `--theme-palette-1`            | `#cf6679`  | Error text color base.                                                         |
-| `palette_2`            | `--theme-palette-2`            | `#03dac6`  | Success text color base, Loading dots flash color.                             |
-| `palette_3`            | `--theme-palette-3`            | `#f3bd09`  | Yellow/Warning (available for future use).                                     |
-| `palette_4`            | `--theme-palette-4`            | `#33334d`  | User message background, Scrollbar thumb color.                                |
-| `palette_5`            | `--theme-palette-5`            | `#bb86fc`  | Header text color, Focus ring color base.                                      |
-| `palette_6`            | `--theme-palette-6`            | `#03dac6`  | Button background color base.                                                  |
-| `palette_7`            | `--theme-palette-7`            | `#e0e0e0`  | Primary text color (alternative to `foreground`).                              |
-| `palette_8`            | `--theme-palette-8`            | `#d6dbe5`  | Lighter grey (available).                                                      |
-| `palette_9`            | `--theme-palette-9`            | `#de352e`  | Alternative Red (available).                                                   |
-| `palette_10`           | `--theme-palette-10`           | `#1dd361`  | Alternative Green (available).                                                 |
-| `palette_11`           | `--theme-palette-11`           | `#f3bd09`  | Alternative Yellow (available).                                                |
-| `palette_12`           | `--theme-palette-12`           | `#1081d6`  | Alternative Blue (available).                                                  |
-| `palette_13`           | `--theme-palette-13`           | `#5350b9`  | Alternative Purple (available).                                                |
-| `palette_14`           | `--theme-palette-14`           | `#0f7ddb`  | Alternative Cyan (available).                                                  |
-| `palette_15`           | `--theme-palette-15`           | `#ffffff`  | White (available).                                                             |
+Define the base variables used by the UI, initially pointing to the dark mode versions.
 
-**Derived CSS Variables:**
+```css
+/* --- Base variables that will be switched --- */
+--background: var(--background-dark);
+--surface: var(--surface-dark);
+--panel-bg-color: var(--panel-bg-dark);
+--input-bg: var(--input-bg-dark);
+/* ... etc for all groups ... */
+--primary: var(--primary-dark);
+--button-foreground: var(--button-foreground-dark);
+--button-bg: var(--button-bg-dark);
+/* ... etc ... */
+```
 
-Many specific UI elements use derived variables that are defined in `App.css` based on the primary variables above. This allows for fine-tuning using functions like `color-mix()` for transparency or slight variations.
+### 4. Light Mode Overrides
 
-Examples (`App.css`):
+Use the `body.light-mode` selector to switch the base variables to their light counterparts.
 
-*   `--theme-panel-background: var(--theme-palette-0, #252525);`
-*   `--theme-input-background: var(--theme-palette-0, #333);`
-*   `--theme-border-color: color-mix(in srgb, var(--theme-palette-0, #333) 80%, transparent);`
-*   `--theme-user-message-bg: var(--theme-palette-4, #33334d);`
-*   `--theme-backend-message-bg: var(--theme-palette-0, #2a2a2a);`
-*   `--theme-button-background: var(--theme-palette-6, #03dac6);`
-*   `--theme-button-text: var(--theme-background, #121212);` (Uses main background for contrast)
-*   `--theme-button-hover-background: color-mix(in srgb, var(--theme-button-background, #03dac6) 90%, black);`
-*   `--theme-header-background: var(--theme-panel-background);`
-*   `--theme-header-text: var(--theme-palette-5, #bb86fc);`
-*   `--theme-error-text: var(--theme-palette-1, #cf6679);`
-*   `--theme-error-background: color-mix(in srgb, var(--theme-error-text, #cf6679) 10%, transparent);`
-*   `--theme-success-text: var(--theme-palette-2, #03dac6);`
-*   `--theme-success-background: color-mix(in srgb, var(--theme-success-text, #03dac6) 15%, transparent);`
-*   `--theme-scrollbar-thumb: var(--theme-palette-4, #444);`
-*   `--theme-scrollbar-track: var(--theme-palette-0, #1e1e1e);`
-*   `--theme-focus-ring: color-mix(in srgb, var(--theme-palette-5, #bb86fc) 30%, transparent);`
-*   `--theme-label-color: color-mix(in srgb, var(--theme-foreground, #e0e0e0) 80%, transparent);`
-*   `--theme-dots-color: color-mix(in srgb, var(--theme-foreground, #e0e0e0) 60%, transparent);`
-*   `--theme-dots-flash-color: var(--theme-success-text);`
-*   `--theme-disabled-background: color-mix(in srgb, var(--theme-foreground, #e0e0e0) 30%, transparent);`
-*   `--theme-disabled-text: color-mix(in srgb, var(--theme-foreground, #e0e0e0) 50%, transparent);`
+```css
+/* --- Light Mode Overrides --- */
+body.light-mode {
+  /* Base */
+  --background: var(--background-light);
+  --surface: var(--surface-light);
+  --panel-bg-color: var(--panel-bg-light);
+  --input-bg: var(--input-bg-light);
+  /* ... etc for all groups ... */
+  --primary: var(--primary-light);
+  --button-foreground: var(--button-foreground-light);
+  --button-bg: var(--button-bg-light);
+  /* ... etc ... */
+}
+```
 
-By customizing the `background`, `foreground`, and `palette_0` through `palette_15` values in your `.theme` file, you can significantly alter the look and feel of the UI. 
+## Creating a New Theme
+
+1.  **Copy:** Duplicate an existing theme file (like `Starshine.css`).
+2.  **Rename:** Rename the file (e.g., `MyTheme.css`).
+3.  **Modify Colors:** Adjust the `--variable-dark` and `--variable-light` values in the "Derived & Default Colors" section to match your desired palette. You can use standard CSS color formats (`#rrggbb`, `rgb()`, `hsl()`, etc.).
+4.  **Test:** Select your theme from the Interface panel in the UI to see the results.
+
+## Helper Script (Coming Soon!)
+
+A helper script is planned to simplify the process of generating a new theme template by prompting for key colors and deriving the rest automatically. Stay tuned! 

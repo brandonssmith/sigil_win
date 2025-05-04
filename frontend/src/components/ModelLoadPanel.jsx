@@ -335,7 +335,13 @@ function ModelLoadPanel({
           disabled={searchLoading}
           style={{ width: '70%', marginRight: '4px' }}
         />
-        <button type="submit" disabled={searchLoading || !searchQuery.trim()}>Search</button>
+        <button
+          type="submit"
+          disabled={searchLoading || !searchQuery.trim()}
+          className="model-load-button"
+        >
+          Search
+        </button>
       </form>
       {/* --- Display Download Status Message --- (NEW) */}
       {downloadMessage.text && (
@@ -355,6 +361,7 @@ function ModelLoadPanel({
                 onClick={() => handleDownloadModel(res.id)}
                 // Disable if this specific model is downloading, OR if any other download is in progress, OR if search is happening
                 disabled={downloadingModelId === res.id || (downloadingModelId !== null && downloadingModelId !== res.id) || searchLoading}
+                className="model-load-button"
               >
                 {downloadingModelId === res.id ? 'Downloading...' : 'Download'}
               </button>

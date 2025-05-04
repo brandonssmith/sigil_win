@@ -1,9 +1,157 @@
 /* AlienBlood Theme - CSS Variables */
 :root {
-  --button-background-base: #2f6a7f; /* Renamed from --palette-4: Used for button background base */
-  --header-text-color: #e08009; /* Renamed from --palette-9: Used for header text (chat, settings) */
-  --input-text-color: #637d75; /* Renamed from --foreground: Used for text in settings inputs/textareas */
-  --ui-text-primary: #637d75; /* Default UI text color */
-  --user-message-glow-color: #7f2b27; /* Original palette-1 */
-  --backend-message-glow-color: #e08009; /* Original palette-9 / Current header-text-color */
+  /* Original Mappings */
+  --button-background-base: #2f6a7f; /* Mapped to --primary-dark */
+  --header-text-color: #e08009;
+  --input-text-color: #637d75; /* Base Text */
+  --ui-text-primary: #637d75; /* Base Text */
+  --user-message-glow-color: #7f2b27;
+  --backend-message-glow-color: #e08009;
+
+  /* --- Derived & Default Colors --- */
+  /* Backgrounds */
+  --background-dark: #1a202c; /* Dark blue/grey */
+  --surface-dark: #2d3748; /* Slightly lighter */
+  --panel-bg-dark: #212a38; /* Derived */
+  --background-light: #edf2f7; /* Light grey */
+  --surface-light: #f7fafc; /* Very light */
+  --panel-bg-light: #e6eaf0; /* Derived */
+
+  /* Inputs */
+  --input-bg-dark: var(--panel-bg-dark);
+  --input-bg-light: #e0e0e0; /* Standard light */
+  --disabled-bg-dark: #4a5568; /* Derived */
+  --disabled-bg-light: #bdbdbd; /* Standard light */
+  --disabled-fg-dark: #a0aec0; /* Derived */
+  --disabled-fg-light: #757575; /* Standard light */
+
+  /* Panel Tabs */
+  --panel-tab-bg-dark: var(--surface-dark);
+  --panel-tab-bg-light: #e8e8e8; /* Standard light */
+  --panel-tab-active-bg-dark: var(--panel-bg-dark);
+  --panel-tab-active-bg-light: #f5f5f5; /* Standard light */
+  --panel-tab-text-dark: #a0aec0; /* Using disabled fg */
+  --panel-tab-text-light: #555; /* Standard light */
+  --panel-tab-active-text-dark: var(--ui-text-primary);
+  --panel-tab-active-text-light: #1f1f1f; /* Standard dark text */
+  --panel-container-bg-dark: var(--panel-bg-dark);
+  --panel-container-bg-light: #f5f5f5; /* Standard light */
+
+  /* Buttons */
+  --primary-dark: #2f6a7f; /* Original --button-background-base */
+  --primary-light: #319795; /* Tealish color */
+  --primary-hover-dark: #2c5282; /* Darker blue */
+  --primary-hover-light: #2c7a7b; /* Darker teal */
+  --button-foreground-dark: #edf2f7; /* Match light background */
+  --button-foreground-light: #ffffff; /* White */
+
+  --button-bg-dark: #4a5568; /* Using disabled bg */
+  --button-bg-light: #a0aec0; /* Using disabled fg */
+  --button-hover-bg-dark: #2d3748; /* Using surface dark */
+  --button-hover-bg-light: #718096; /* Darker light grey */
+  --button-border-dark: #718096; /* Derived */
+  --button-border-light: #cbd5e0; /* Derived */
+  --button-text-dark: var(--ui-text-primary);
+  --button-text-light: #1f1f1f; /* Standard dark text */
+
+  /* Focus Ring */
+  --primary-focus-dark: rgba(47, 106, 127, 0.4);
+  --primary-focus-light: rgba(49, 151, 149, 0.5);
+
+  /* Settings Panel & Input Details */
+  --surface-input-dark: #3a4558; /* Derived */
+  --surface-input-light: var(--input-bg-light);
+  --border-input-dark: #4a5568; /* Using disabled bg */
+  --border-input-light: #b0b0b0; /* Standard light */
+  --focus-ring-accent-dark: var(--primary-dark);
+  --focus-ring-accent-light: var(--primary-light);
+  --focus-ring-color-dark: var(--primary-focus-dark);
+  --focus-ring-color-light: var(--primary-focus-light);
+  --text-secondary-dark: #a0aec0; /* Using disabled fg */
+  --text-secondary-light: #555; /* Standard light */
+  --primary-contrast-dark: var(--button-foreground-dark);
+  --primary-contrast-light: var(--button-foreground-light);
+  --surface-disabled-dark: var(--disabled-bg-dark);
+  --surface-disabled-light: var(--disabled-bg-light);
+  --text-disabled-dark: var(--disabled-fg-dark);
+  --text-disabled-light: var(--disabled-fg-light);
+  --surface-hover-dark: #404a5c; /* Derived */
+  --surface-hover-light: #dcdcdc; /* Standard light */
+  --border-input-hover-dark: #718096; /* Using button border */
+  --border-input-hover-light: #a0a0a0; /* Standard light */
+
+  /* --- Base variables that will be switched --- */
+  --background: var(--background-dark);
+  --surface: var(--surface-dark);
+  --panel-bg-color: var(--panel-bg-dark);
+  --input-bg: var(--input-bg-dark);
+  --disabled-bg: var(--disabled-bg-dark);
+  --disabled-fg: var(--disabled-fg-dark);
+  --panel-tab-bg: var(--panel-tab-bg-dark);
+  --panel-tab-active-bg: var(--panel-tab-active-bg-dark);
+  --panel-tab-text: var(--panel-tab-text-dark);
+  --panel-tab-active-text: var(--panel-tab-active-text-dark);
+  --panel-container-bg: var(--panel-container-bg-dark);
+
+  /* Button Base Variables */
+  --primary: var(--primary-dark);
+  --primary-hover: var(--primary-hover-dark);
+  --button-foreground: var(--button-foreground-dark);
+  --button-bg: var(--button-bg-dark);
+  --button-hover-bg: var(--button-hover-bg-dark);
+  --button-border: var(--button-border-dark);
+  --button-text: var(--button-text-dark);
+  --primary-focus: var(--primary-focus-dark);
+
+  /* Settings Panel Base Variables */
+  --surface-input: var(--surface-input-dark);
+  --border-input: var(--border-input-dark);
+  --focus-ring-accent: var(--focus-ring-accent-dark);
+  --focus-ring-color: var(--focus-ring-color-dark);
+  --text-secondary: var(--text-secondary-dark);
+  --primary-contrast: var(--primary-contrast-dark);
+  --surface-disabled: var(--surface-disabled-dark);
+  --text-disabled: var(--text-disabled-dark);
+  --surface-hover: var(--surface-hover-dark);
+  --border-input-hover: var(--border-input-hover-dark);
+}
+
+/* --- Light Mode Overrides --- */
+body.light-mode {
+  /* Base */
+  --background: var(--background-light);
+  --surface: var(--surface-light);
+  --panel-bg-color: var(--panel-bg-light);
+  --input-bg: var(--input-bg-light);
+  --disabled-bg: var(--disabled-bg-light);
+  --disabled-fg: var(--disabled-fg-light);
+
+  /* Panel Tabs */
+  --panel-tab-bg: var(--panel-tab-bg-light);
+  --panel-tab-active-bg: var(--panel-tab-active-bg-light);
+  --panel-tab-text: var(--panel-tab-text-light);
+  --panel-tab-active-text: var(--panel-tab-active-text-light);
+  --panel-container-bg: var(--panel-container-bg-light);
+
+  /* Button Base Variables */
+  --primary: var(--primary-light);
+  --primary-hover: var(--primary-hover-light);
+  --button-foreground: var(--button-foreground-light);
+  --button-bg: var(--button-bg-light);
+  --button-hover-bg: var(--button-hover-bg-light);
+  --button-border: var(--button-border-light);
+  --button-text: var(--button-text-light);
+  --primary-focus: var(--primary-focus-light);
+
+  /* Settings Panel Base Variables */
+  --surface-input: var(--surface-input-light);
+  --border-input: var(--border-input-light);
+  --focus-ring-accent: var(--focus-ring-accent-light);
+  --focus-ring-color: var(--focus-ring-color-light);
+  --text-secondary: var(--text-secondary-light);
+  --primary-contrast: var(--primary-contrast-light);
+  --surface-disabled: var(--surface-disabled-light);
+  --text-disabled: var(--text-disabled-light);
+  --surface-hover: var(--surface-hover-light);
+  --border-input-hover: var(--border-input-hover-light);
 }
