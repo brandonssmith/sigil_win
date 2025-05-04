@@ -284,28 +284,6 @@ function App() {
           }
       }
 
-      // Attempt to delete the session from the backend
-      try {
-          const response = await fetch(`${API_BASE_URL}/api/v1/chat/session/${tabIdToClose}`, {
-              method: 'DELETE',
-          });
-
-          if (!response.ok) {
-              // 404 is acceptable if the file was already gone
-              if (response.status !== 404) {
-                  const errorData = await response.json().catch(() => ({ detail: `DELETE request failed with status: ${response.status}` }));
-                  throw new Error(errorData.detail || `Failed to delete session ${tabIdToClose}`);
-              }
-          }
-          console.log(`Session ${tabIdToClose} deleted successfully or was already gone.`);
-
-      } catch (e) {
-          console.error(`Error deleting session ${tabIdToClose}:`, e);
-          // Notify user or log error. The tab is already closed in the UI.
-          // We could potentially add the tab back if deletion fails critically, but that might be complex.
-          setError(`Failed to delete session ${tabIdToClose} on the server: ${e.message}`); // Show non-critical error
-      }
-
   }, [openTabs, activeTabId, handleClearChat, handleLoadSession, setActiveTabId, setIsLoading, setError, setChatHistory, setCurrentThreadId, setOpenTabs, setCurrentSessionSettings]); // Dependencies
   // --- END: Tab Close Handler ---
 
