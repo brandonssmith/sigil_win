@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { API_BASE_URL } from '../constants'; // Assuming you have this constants file
 import './SavedChatsPanel.css'; // <-- Import the CSS file
@@ -9,44 +9,48 @@ function SavedChatsPanel({ onSelectSession }) {
   const [error, setError] = useState(null); // Error for initial list fetch
   const [loadingSessionId, setLoadingSessionId] = useState(null); // Track which session is loading
   const [sessionLoadError, setSessionLoadError] = useState(null); // Error specific to loading a session
+  const [deletingSessionId, setDeletingSessionId] = useState(null); // <-- NEW: Track deleting session
+  const [deleteError, setDeleteError] = useState(null); // <-- NEW: Error specific to deleting
 
-  // useEffect hook for fetching sessions will go here
-  useEffect(() => {
-    const fetchSessions = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/chat/sessions`);
-        if (!response.ok) {
-          let errorMsg = `Failed to fetch sessions (status: ${response.status})`;
-          try {
-            const errorData = await response.json();
-            errorMsg = errorData.detail || errorMsg;
-          } catch (parseError) { /* Ignore if response body isn't JSON */ }
-          throw new Error(errorMsg);
-        }
-        const data = await response.json();
-        // Assuming data is the array: [{ thread_id: "...", title: "..." }, ...]
-        setSessions(data);
-      } catch (err) {
-        console.error("Error fetching sessions:", err);
-        setError(err.message);
-        setSessions([]); // Clear sessions on error
-      } finally {
-        setIsLoading(false);
+  // --- Fetch Sessions --- 
+  const fetchSessions = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    setDeleteError(null); // Clear delete error on refresh
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/sessions`);
+      if (!response.ok) {
+        let errorMsg = `Failed to fetch sessions (status: ${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.detail || errorMsg;
+        } catch (parseError) { /* Ignore if response body isn't JSON */ }
+        throw new Error(errorMsg);
       }
-    };
+      const data = await response.json();
+      setSessions(data);
+    } catch (err) {
+      console.error("Error fetching sessions:", err);
+      setError(err.message);
+      setSessions([]); // Clear sessions on error
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // Removed unnecessary dependencies
 
+  useEffect(() => {
     fetchSessions();
-  }, []); // Empty dependency array means run once on mount
+  }, [fetchSessions]);
 
   // --- Handle click on a session item --- 
   const handleSessionClick = async (threadId) => {
-    if (loadingSessionId) return; // Prevent multiple loads at once
+    // Prevent loading if deleting or already loading
+    if (loadingSessionId || deletingSessionId === threadId) return; 
 
     console.log(`Attempting to load session: ${threadId}`);
     setLoadingSessionId(threadId);
     setSessionLoadError(null); // Clear previous load errors
+    setDeleteError(null); // Clear delete errors
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/chat/session/${threadId}`);
@@ -59,19 +63,57 @@ function SavedChatsPanel({ onSelectSession }) {
         throw new Error(errorMsg);
       }
       const loadedSessionData = await response.json();
-      
-      // Pass the full loaded data up to the parent component
       onSelectSession(loadedSessionData);
-
-      // Optionally clear error on success if displayed within the panel
-      // setSessionLoadError(null); 
-
     } catch (err) {
       console.error("Error loading session:", err);
       setSessionLoadError(`Failed to load session ${threadId}: ${err.message}`);
-      // Optionally, display this error near the item or in a general status area
     } finally {
-      setLoadingSessionId(null); // Clear loading state regardless of success/failure
+      setLoadingSessionId(null); // Clear loading state 
+    }
+  };
+  
+  // --- NEW: Handle Deleting a Session --- 
+  const handleDeleteSession = async (threadId, event) => {
+    event.stopPropagation(); // Prevent the click from triggering handleSessionClick
+    
+    // Prevent deleting if already deleting another or loading this one
+    if (deletingSessionId || loadingSessionId === threadId) return;
+
+    // Optional: Confirm deletion
+    if (!window.confirm(`Are you sure you want to delete session ${threadId}? This cannot be undone.`)) {
+        return;
+    }
+
+    console.log(`Attempting to delete session: ${threadId}`);
+    setDeletingSessionId(threadId); // Mark this session as being deleted
+    setDeleteError(null); // Clear previous delete errors
+    setSessionLoadError(null); // Clear load errors
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/chat/session/${threadId}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            let errorMsg = `Failed to delete session ${threadId} (status: ${response.status})`;
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.detail || errorMsg;
+            } catch (parseError) { /* Ignore if response body isn't JSON */ }
+            throw new Error(errorMsg);
+        }
+
+        // On successful deletion, remove the session from the list state
+        setSessions(prevSessions => prevSessions.filter(session => session.thread_id !== threadId));
+        console.log(`Session ${threadId} deleted successfully.`);
+        // Optionally show a success message briefly?
+
+    } catch (err) {
+        console.error("Error deleting session:", err);
+        setDeleteError(`Failed to delete session ${threadId}: ${err.message}`);
+        // Keep the item in the list on error, but show the error message
+    } finally {
+        setDeletingSessionId(null); // Clear deleting state
     }
   };
 
@@ -80,8 +122,6 @@ function SavedChatsPanel({ onSelectSession }) {
     if (session.title && session.title.trim() !== '') {
         return { title: session.title, id: session.thread_id };
     }
-    // If no title, format the timestamp ID for slightly better readability
-    // Example ID: 20231027_103055_123456
     const parts = session.thread_id.split('_');
     if (parts.length >= 2) {
         const date = parts[0]; // YYYYMMDD
@@ -97,8 +137,11 @@ function SavedChatsPanel({ onSelectSession }) {
     <div className="saved-chats-panel">
       <h4>Saved Chats</h4>
       {isLoading && <p>Loading sessions...</p>}
-      {error && <p className="error-message">Error: {error}</p>}
-      {sessionLoadError && <p className="error-message">{sessionLoadError}</p>}
+      {error && <p className="error-message">List Error: {error}</p>}
+      {/* Display specific errors near the top for clarity */}
+      {sessionLoadError && <p className="error-message">Load Error: {sessionLoadError}</p>}
+      {deleteError && <p className="error-message">Delete Error: {deleteError}</p>}
+      
       {!isLoading && !error && sessions.length === 0 && (
         <p>No saved sessions found.</p>
       )}
@@ -106,22 +149,35 @@ function SavedChatsPanel({ onSelectSession }) {
         <ul className="saved-chats-list">
           {sessions.map((session) => {
             const display = formatSessionDisplay(session);
+            const isThisLoading = loadingSessionId === session.thread_id;
+            const isThisDeleting = deletingSessionId === session.thread_id;
+            
             return (
+              // Add is-loading/is-deleting classes for potential styling
               <li 
                 key={session.thread_id} 
-                className="session-item" 
-                onClick={() => handleSessionClick(session.thread_id)}
+                className={`session-item ${isThisLoading ? 'is-loading' : ''} ${isThisDeleting ? 'is-deleting' : ''}`}
+                onClick={!isThisDeleting ? () => handleSessionClick(session.thread_id) : undefined} // Prevent click if deleting
                 title={`ID: ${session.thread_id}`}
               >
-                {/* Indicate if this specific session is loading */} 
-                {loadingSessionId === session.thread_id ? (
-                  <strong>Loading...</strong> 
-                ) : (
-                  <strong>{display.title}</strong>
-                )}
-                
-                {/* Optionally show ID if title is different */}
-                {display.title !== display.id && <span>{display.id}</span>}
+                <div className="session-info"> {/* Wrap text content */}
+                  {isThisLoading && <strong>Loading...</strong>}
+                  {isThisDeleting && <strong>Deleting...</strong>} 
+                  {!isThisLoading && !isThisDeleting && <strong>{display.title}</strong>}
+                  
+                  {/* Optionally show ID if title is different and not loading/deleting */}
+                  {!isThisLoading && !isThisDeleting && display.title !== display.id && <span>{display.id}</span>}
+                </div>
+                {/* --- NEW: Delete Button --- */}
+                <button
+                    className="delete-session-button"
+                    onClick={(e) => handleDeleteSession(session.thread_id, e)}
+                    disabled={isThisDeleting || !!deletingSessionId || isThisLoading} // Disable if this or any other is deleting, or if this is loading
+                    title={`Delete session ${session.thread_id}`}
+                >
+                    &#x2715; {/* Unicode multiplication sign 'X' */}
+                </button>
+                {/* ------------------------ */}
               </li>
             );
           })}

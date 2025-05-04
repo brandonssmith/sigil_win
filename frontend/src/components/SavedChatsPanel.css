@@ -1,15 +1,14 @@
 .saved-chats-panel {
   padding: 10px;
-  border-right: 1px solid #ccc; /* Example border */
-  height: 100%; /* Example height */
   overflow-y: auto; /* Allow scrolling if list is long */
 }
 
 .saved-chats-panel h4 {
   margin-top: 0;
   margin-bottom: 15px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--panel-border-color, #444);
   padding-bottom: 5px;
+  color: var(--text-color, #eee);
 }
 
 .saved-chats-list {
@@ -19,6 +18,9 @@
 }
 
 .session-item {
+  display: flex; /* Use flexbox to align info and button */
+  justify-content: space-between; /* Push info to left, button to right */
+  align-items: center; /* Vertically center items */
   padding: 8px 5px;
   margin-bottom: 5px;
   cursor: pointer;
@@ -26,23 +28,70 @@
   transition: background-color 0.2s ease;
 }
 
-.session-item:hover {
-  background-color: #f0f0f0;
+/* Apply hover effect only when not deleting */
+.session-item:not(.is-deleting):hover {
+  background-color: var(--list-item-hover-bg, #444);
+}
+
+/* Dim the item slightly when deleting */
+.session-item.is-deleting {
+    opacity: 0.7;
+    cursor: default; /* No pointer cursor when deleting */
+}
+
+.session-item .session-info {
+    /* Allow info block to grow but prevent overflow */
+    flex-grow: 1;
+    margin-right: 10px; /* Space between info and delete button */
+    overflow: hidden; /* Hide overflow if text is too long */
 }
 
 .session-item strong {
   display: block; /* Title on its own line */
   margin-bottom: 3px;
   font-size: 0.95em;
+  color: var(--text-color, #eee);
+  white-space: nowrap; /* Prevent title wrap */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Add ellipsis if title too long */
 }
 
 .session-item span {
   font-size: 0.8em;
-  color: #666;
+  color: var(--text-secondary, #aaa);
   word-break: break-all; /* Prevent long IDs from overflowing */
+  display: block; /* Ensure ID is on its own line if shown */
+}
+
+/* Styling for the new delete button */
+.delete-session-button {
+  background-color: var(--button-danger-bg, #7f1d1d); /* Dark red */
+  color: var(--button-danger-text, #fecaca); /* Light red text */
+  border: 1px solid var(--button-danger-border, #b91c1c);
+  padding: 2px 6px; /* Smaller padding */
+  margin-left: 5px; /* Space from the session info */
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em; /* Slightly smaller font */
+  line-height: 1; /* Ensure button height fits text */
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+.delete-session-button:hover:not(:disabled) {
+  background-color: var(--button-danger-hover-bg, #b91c1c); /* Brighter red on hover */
+  color: var(--button-danger-hover-text, #fee2e2);
+}
+
+.delete-session-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--button-danger-bg, #7f1d1d); /* Keep base color when disabled */
 }
 
 .error-message {
-    color: #d9534f; /* Bootstrap danger color */
+    color: var(--accent-color-error, #dc3545); /* Red color for errors */
     font-size: 0.9em;
+    margin-top: 5px; /* Space from list/header */
+    margin-bottom: 10px;
 } 

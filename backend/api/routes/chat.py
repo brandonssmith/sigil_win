@@ -1,5 +1,6 @@
 import sys
-from fastapi import APIRouter, HTTPException, status, Request # Import Request
+import os # <-- Add OS import for file operations
+from fastapi import APIRouter, HTTPException, status, Request, Response # Import Request and Response
 from typing import Optional, List, Dict, Any # Import necessary types
 
 # Import Pydantic models from schemas.chat
@@ -11,7 +12,7 @@ from ..schemas.chat import (
 from ..core.inference import generate_response
 from ..core.prompt_builder import generate_prompt
 from ..core.cleaner import truncate_at_stop_token, clean_response
-from ..core.history_manager import save_chat_messages, get_session, list_sessions
+from ..core.history_manager import save_chat_messages, get_session, list_sessions, delete_session
 
 router = APIRouter()
 
@@ -237,4 +238,41 @@ def get_specific_session(thread_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve session {thread_id}"
         )
+
+# --- MODIFIED: Endpoint to Delete a Session (Uses history_manager) ---
+@router.delete("/session/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_specific_session(thread_id: str):
+    """Deletes a specific chat session file by its thread_id using the history manager."""
+    try:
+        deleted = delete_session(thread_id)
+        if not deleted:
+            # delete_session returns False if file not found or if deletion fails
+            # We need to check if the file existed before attempting deletion
+            # Re-check existence via get_session maybe? Or assume failure means 404/500?
+            # Let's assume if delete_session returns False, it means file wasn't found initially
+            # (as OSError is handled internally and printed by delete_session)
+            # A more robust way would be for delete_session to raise specific exceptions.
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Session file for ID '{thread_id}' not found or could not be deleted."
+                # Consider separating 404 from 500 based on delete_session return/exceptions later
+            )
+        # If deleted is True, success!
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    except ValueError as e:
+        # Raised by delete_session (via get_session_filepath) for invalid thread_id format
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid thread_id format: {e}"
+        )
+    except Exception as e:
+        # Catch any other unexpected errors during the call
+        print(f"Unexpected error calling delete_session for {thread_id}: {e}", file=sys.stderr)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected server error occurred while deleting session {thread_id}"
+        )
+# --- End Modified Delete Endpoint ---
+
 # --- End Session Management Endpoints --- 
