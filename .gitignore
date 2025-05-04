@@ -23,6 +23,9 @@ __pycache__/
 # Models - ignore subdirectories
 backend/models/*/
 
+# Saved Chats
+saved_chats/
+
 # Potential future additions:
 
 # IDE directories
