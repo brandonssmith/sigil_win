@@ -5,8 +5,8 @@
   --header-text-color: #ff5757;
   --input-text-color: #e63946; /* Base Text (Red) */
   --ui-text-primary: #e63946; /* Base Text (Red) */
-  --user-message-glow-color: #e63946;
-  --backend-message-glow-color: #ff5757;
+  --user-message-glow-color: #4c77f7;
+  --backend-message-glow-color: #29ca6c;
 
   /* --- Derived & Default Colors --- */
   /* Backgrounds */
