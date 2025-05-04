@@ -25,6 +25,7 @@ backend/models/*/
 
 # Saved Chats
 saved_chats/
+backend/chat_history
 
 # Potential future additions:
 
