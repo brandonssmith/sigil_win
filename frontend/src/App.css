@@ -264,10 +264,19 @@ body {
   }
 }
 
+/* Ensure message text preserves newlines and wraps */
 .message p {
-  margin: 0;
-  line-height: 1.5; /* Adjust line height within messages */
+  white-space: pre-wrap;
+  word-wrap: break-word; /* Ensure long words break */
 }
+
+/* Optionally target only backend messages if needed */
+/*
+.backend-message p {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+*/
 
 /* Error message specific style - Keep clear */
 .error-message {

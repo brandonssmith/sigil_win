@@ -4,6 +4,7 @@ import ThemeLoader from './components/ThemeLoader.jsx';
 import ModelLoadPanel from './components/ModelLoadPanel.jsx';
 import ModeToggleSwitch from './components/ModeToggleSwitch.jsx';
 import { formatChatHistoryForBackend } from './utils/chatUtils.js'; // Import the utility function
+import { formatListText } from './utils/formatUtils.js'; // <-- Import the new list formatter
 import { API_BASE_URL } from './constants.js'; // Import shared constants
 import DeviceIndicator from './components/DeviceIndicator.jsx'; // <-- Import the new component
 import Sidebar from './components/Sidebar.jsx'; // <-- Import the new Sidebar
@@ -216,7 +217,8 @@ function App() {
       console.log("Backend response data:", data);
       const backendMessage = {
         sender: 'backend',
-        text: data.response || 'Backend did not provide a response.',
+        // Format the response text before adding it to the state
+        text: formatListText(data.response || 'Backend did not provide a response.'), 
         id: `backend-${Date.now()}`
       };
       // Add backend response
