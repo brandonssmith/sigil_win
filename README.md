@@ -21,6 +21,7 @@ Use Sigil as a starting point for your own local AI workflows, or extend it to s
   - [Interface Walkthrough](#interface-walkthrough)
     - [Model Loading](#model-loading)
     - [Chat Interface](#chat-interface)
+    - [Themes](#themes)
     - [Developer Tools and Feedback](#developer-tools-and-feedback)
   - [Prerequisites](#prerequisites)
   - [Setup](#setup)
@@ -99,8 +100,37 @@ After loading a model, the frontend presents a clean interface to interact with 
 - Type prompts and receive model responses
 - Backend routes input through either instruction or chat prompt templates
 - Frontend displays complete output once inference is completed
+- **Chats are Saved:** Your conversations are automatically saved locally, so you can close the application and resume your chat later.
+- **Settings Persist:** Sampling parameters (like temperature, top_p, etc.) are saved with each chat and will be restored when you reopen it.
+- **Multiple Chats:** You can open multiple Sigil instances in different browser tabs to work with different models or conversations simultaneously.
 
 ![Chat Interface Inference Example](assets/inference.gif)
+
+### Themes
+
+Sigil supports both light and dark variants of each theme. The theme system is designed to be easily extensible:
+
+- Each theme consists of CSS variables defining colors and UI properties
+- Themes automatically support both light and dark modes
+- Custom themes can be added by creating new CSS files in the `frontend/public/themes` directory
+- A theme creation helper tool is planned for future releases
+
+
+### Examples of a few themes
+
+Irezumi - Dark Theme
+![Irezumi - Dark Theme](assets/irezumi_dark.png)
+
+Kanagawa Wave - Dark Theme
+![Kanagawa Wave - Dark Theme](assets/kana_wave_dark.png)
+
+Irezumi - Light Theme
+![Irezumi - Light Theme](assets/irezumi_light.png)
+
+Starshine - Light Theme
+![Starshine - Light Theme](assets/starshine_light.png)
+
+
 
 ### Developer Tools and Feedback
 
@@ -217,5 +247,4 @@ MIT License — use it, remix it, extend it.
 
 ---
 
-Support Thrasher Intelligence: [patreon.com/Thrasher_Intelligence](https://patreon.com/Thrasher_Intelligence)  
 Explore the TUI version: [Prometheus on GitHub](https://github.com/Thrasher-Intelligence/prometheus)
