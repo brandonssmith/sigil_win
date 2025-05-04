@@ -175,7 +175,22 @@ def chat_v2(req: ChatRequestV2, request: Request): # Add request: Request
                     messages_to_save = input_message_dicts + [assistant_message]
             
             if messages_to_save: # Only save if we have something to save
-                new_thread_id = save_chat_messages(req.thread_id, messages_to_save)
+                # --- ADDED: Gather current settings for saving ---
+                current_settings = {
+                    "temperature": app_state.temperature,
+                    "top_p": app_state.top_p,
+                    "max_new_tokens": app_state.max_new_tokens 
+                    # Add any other relevant sampling params stored in app_state here
+                }
+                current_sys_prompt = app_state.system_prompt
+                # --- End gather ---
+
+                new_thread_id = save_chat_messages(
+                    req.thread_id, 
+                    messages_to_save,
+                    sampling_settings=current_settings,  # <-- Pass settings
+                    system_prompt=current_sys_prompt     # <-- Pass system prompt
+                )
             else:
                  # Should not happen with validation, but handle defensively
                  print("Warning: No messages to save.", file=sys.stderr)
@@ -221,8 +236,9 @@ def get_saved_sessions():
         )
 
 @router.get("/session/{thread_id}", response_model=Dict[str, Any])
-def get_specific_session(thread_id: str):
-    """Loads a specific chat session by its thread_id."""
+def get_specific_session(thread_id: str, request: Request): # <-- Added request: Request
+    """Loads a specific chat session by its thread_id and updates app state.""" # <-- Updated docstring
+    app_state = request.app.state # <-- Added access to app_state
     try:
         session_data = get_session(thread_id)
         if session_data is None:
@@ -230,13 +246,39 @@ def get_specific_session(thread_id: str):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Session with ID '{thread_id}' not found."
             )
-        return session_data
+        
+        # --- ADDED: Update app_state with loaded settings --- 
+        loaded_settings = session_data.get("sampling_settings")
+        loaded_prompt = session_data.get("system_prompt")
+
+        if loaded_settings is not None and isinstance(loaded_settings, dict):
+            app_state.temperature = loaded_settings.get("temperature", app_state.temperature) # Keep old value if missing
+            app_state.top_p = loaded_settings.get("top_p", app_state.top_p)
+            app_state.max_new_tokens = loaded_settings.get("max_new_tokens", app_state.max_new_tokens)
+            # Update any other settings similarly
+            print(f"Loaded settings for thread {thread_id}: Temp={app_state.temperature}, TopP={app_state.top_p}, MaxTokens={app_state.max_new_tokens}")
+        else:
+            print(f"No valid sampling_settings found in thread {thread_id}, keeping current app state values.")
+
+        if loaded_prompt is not None:
+            app_state.system_prompt = loaded_prompt
+            print(f"Loaded system prompt for thread {thread_id}")
+        else:
+            print(f"No system_prompt found in thread {thread_id}, keeping current app state value.")
+        # --- End Update ---
+        
+        return session_data # Return the full session data as before
+    except ValueError: # Catch invalid thread_id from get_session
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid thread_id format for '{thread_id}'"
+        )
     except Exception as e:
-        # Catch potential exceptions from get_session apart from file not found
-        print(f"Error retrieving session {thread_id}: {e}", file=sys.stderr)
+        # Catch any other unexpected errors during the call
+        print(f"Unexpected error calling get_session for {thread_id}: {e}", file=sys.stderr)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve session {thread_id}"
+            detail=f"An unexpected server error occurred while retrieving session {thread_id}"
         )
 
 # --- MODIFIED: Endpoint to Delete a Session (Uses history_manager) ---

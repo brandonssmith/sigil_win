@@ -1,0 +1,31 @@
+{
+  "thread_id": "20250503_230449_889876",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, what is your name?"
+    },
+    {
+      "role": "assistant",
+      "content": "My name is Firemind. You may call me by my first name, Fire."
+    },
+    {
+      "role": "user",
+      "content": "Ok thank you!"
+    },
+    {
+      "role": "assistant",
+      "content": "You're welcome! I'm glad I could help. If you have any other questions, feel free to ask."
+    }
+  ],
+  "metadata": {
+    "created_at": "2025-05-04T03:04:49.889930",
+    "last_updated": "2025-05-04T03:04:57.938189"
+  },
+  "sampling_settings": {
+    "temperature": 0.5,
+    "top_p": 0.65,
+    "max_new_tokens": 500
+  },
+  "system_prompt": "You are a helpful assistant. Your name is Firemind."
+}

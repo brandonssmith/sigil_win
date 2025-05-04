@@ -25,40 +25,68 @@ def get_session_filepath(thread_id: str) -> str:
         raise ValueError("Invalid thread_id format containing path elements.")
     return os.path.join(HISTORY_DIR, f"{thread_id}.json")
 
-def save_chat_messages(thread_id: Optional[str], messages: List[Dict[str, Any]]) -> str:
+def save_chat_messages(
+    thread_id: Optional[str], 
+    messages: List[Dict[str, Any]],
+    sampling_settings: Optional[Dict[str, Any]] = None,
+    system_prompt: Optional[str] = None
+) -> str:
     """
-    Saves a list of messages to a chat session file.
+    Saves a list of messages and associated settings to a chat session file.
     If thread_id is None, creates a new session.
+    Saves sampling settings and system prompt if provided.
     Returns the thread_id of the saved session.
     """
     if thread_id is None:
         thread_id = generate_thread_id()
-        # For a new thread, we assume the messages list is the start of the chat
-        session_data = {"thread_id": thread_id, "messages": messages, "metadata": {"created_at": datetime.datetime.utcnow().isoformat()}}
+        # For a new thread, create the full structure
+        session_data = {
+            "thread_id": thread_id, 
+            "messages": messages, 
+            "metadata": {"created_at": datetime.datetime.utcnow().isoformat()},
+            "sampling_settings": sampling_settings,
+            "system_prompt": system_prompt
+        }
     else:
         try:
             filepath = get_session_filepath(thread_id)
         except ValueError as e:
-             # Handle invalid thread_id from get_session_filepath
              print(f"Error saving: {e}")
-             raise # Re-raise to signal failure
-        
+             raise 
+
         if os.path.exists(filepath):
             try:
                 with open(filepath, 'r') as f:
                     session_data = json.load(f)
-                # Append new messages to existing ones
+                # Append new messages
                 session_data["messages"].extend(messages)
                 session_data["metadata"]["last_updated"] = datetime.datetime.utcnow().isoformat()
+                # Update settings only if they are explicitly passed in
+                if sampling_settings is not None:
+                    session_data["sampling_settings"] = sampling_settings
+                if system_prompt is not None:
+                    session_data["system_prompt"] = system_prompt
             except (json.JSONDecodeError, IOError) as e:
-                print(f"Error reading session file {thread_id}: {e}. Starting fresh.")
-                # If file is corrupted or unreadable, overwrite with new messages
-                session_data = {"thread_id": thread_id, "messages": messages, "metadata": {"last_updated": datetime.datetime.utcnow().isoformat()}}
+                print(f"Error reading session file {thread_id}: {e}. Overwriting with new data.")
+                # If file is corrupted, overwrite with current state
+                session_data = {
+                    "thread_id": thread_id, 
+                    "messages": messages, 
+                    "metadata": {"last_updated": datetime.datetime.utcnow().isoformat()},
+                    "sampling_settings": sampling_settings,
+                    "system_prompt": system_prompt
+                }
         else:
-             # If file doesn't exist for the given ID (unexpected case, but handle it)
-             session_data = {"thread_id": thread_id, "messages": messages, "metadata": {"created_at": datetime.datetime.utcnow().isoformat()}}
+             # If file doesn't exist for the given ID, create it
+             session_data = {
+                 "thread_id": thread_id, 
+                 "messages": messages, 
+                 "metadata": {"created_at": datetime.datetime.utcnow().isoformat()},
+                 "sampling_settings": sampling_settings,
+                 "system_prompt": system_prompt
+             }
 
-    # Get filepath again in case it was a new thread_id
+    # Get filepath again (needed if it was a new thread_id or file didn't exist)
     try:
         filepath = get_session_filepath(thread_id)
     except ValueError as e:
