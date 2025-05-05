@@ -52,9 +52,17 @@ function App() {
   // --- END: Tab State ---
 
   // --- ADDED: State for currently loaded session settings ---
-  // Holds null or { systemPrompt, temperature, topP, maxTokens }
   const [currentSessionSettings, setCurrentSessionSettings] = useState(null);
   // --- END: State for loaded settings ---
+  
+  // --- ADDED: State for Pending New Chat Settings ---
+  const [newChatSettings, setNewChatSettings] = useState({
+      systemPrompt: DEFAULTS.SYSTEM_PROMPT,
+      temperature: DEFAULTS.TEMPERATURE,
+      topP: DEFAULTS.TOP_P,
+      maxTokens: DEFAULTS.MAX_TOKENS,
+  });
+  // --- END ADDED ---
 
   // Settings State - Removed, managed within SettingsPanel
   // const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
@@ -93,13 +101,21 @@ function App() {
     // --- ADDED: Clear loaded session settings ---
     setCurrentSessionSettings(null); // Revert to defaults when clearing
     // --- END ---
+    // --- ADDED: Reset pending new chat settings ---
+    setNewChatSettings({
+        systemPrompt: DEFAULTS.SYSTEM_PROMPT,
+        temperature: DEFAULTS.TEMPERATURE,
+        topP: DEFAULTS.TOP_P,
+        maxTokens: DEFAULTS.MAX_TOKENS,
+    });
+    // --- END ADDED ---
     // Ensure only one "New Chat" tab remains if others were closed
     setOpenTabs(prevTabs => [
       { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false },
       ...prevTabs.filter(tab => tab.id !== NEW_CHAT_TAB_ID && tab.canClose) // Keep existing closable tabs
     ]);
     console.log("Chat cleared, thread ID reset, settings reverted to default, and switched to New Chat tab.");
-  }, []); // Dependencies: setChatHistory, setError, setCurrentThreadId, setActiveTabId, setCurrentSessionSettings, setOpenTabs (stable)
+  }, [setChatHistory, setError, setCurrentThreadId, setActiveTabId, setCurrentSessionSettings, setOpenTabs, setNewChatSettings]); // Added setNewChatSettings
 
   const handleModelLoadStatusChange = (status, modelName = null) => {
     // Clear previous errors when starting to load or if load is successful
@@ -313,6 +329,10 @@ function App() {
   }, [setOpenTabs]); // Dependency on setOpenTabs (stable)
   // --- END: Tab Rename Handler ---
 
+  // --- NEW: Handler to update current session's settings ---
+  const handleCurrentSessionSettingsChange = useCallback((updatedSettings) => {
+    setCurrentSessionSettings(updatedSettings);
+  }, []);
 
   // --- useEffect Hooks ---
   useEffect(() => {
@@ -431,6 +451,28 @@ function App() {
             thread_id: currentThreadId, // Send current thread ID
         };
 
+        // Determine settings to send based on whether this is a new chat or existing session
+        let settingsToSend;
+        let systemPromptToSend;
+        if (currentThreadId === null) {
+            settingsToSend = {
+                temperature: newChatSettings.temperature,
+                top_p: newChatSettings.topP,
+                max_new_tokens: newChatSettings.maxTokens,
+            };
+            systemPromptToSend = newChatSettings.systemPrompt;
+        } else {
+            const cur = currentSessionSettings || newChatSettings;
+            settingsToSend = {
+                temperature: cur.temperature,
+                top_p: cur.topP,
+                max_new_tokens: cur.maxTokens,
+            };
+            systemPromptToSend = cur.systemPrompt;
+        }
+        payload.sampling_settings = settingsToSend;
+        payload.system_prompt = systemPromptToSend;
+
         if (appChatMode === 'instruction') {
             payload.message = currentUserInput;
         } else { // 'chat' mode
@@ -443,10 +485,6 @@ function App() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
-
-        // Remove loading indicator before processing response
-        setChatHistory(prev => prev.filter(msg => msg.id !== loadingMessageIdRef.current));
-        loadingMessageIdRef.current = null;
 
         if (!response.ok) {
             let errorDetail = `HTTP error! status: ${response.status}`;
@@ -464,8 +502,12 @@ function App() {
         const backendMessageId = `backend-${Date.now()}`;
         const backendMessage = { sender: 'backend', text: backendResponse, id: backendMessageId };
 
-        // Add backend message
-        setChatHistory(prev => [...prev, backendMessage]);
+        // Add backend message and remove loading indicator in a single state update
+        setChatHistory(prev => {
+            const withoutLoading = prev.filter(msg => msg.id !== loadingMessageIdRef.current);
+            return [...withoutLoading, backendMessage];
+        });
+        loadingMessageIdRef.current = null;
 
         // --- Tab & Session ID Handling ---
         if (newThreadId && newThreadId !== currentThreadId) {
@@ -517,7 +559,7 @@ function App() {
             loadingMessageIdRef.current = null;
         }
     }
-  }, [userInput, appChatMode, currentThreadId, activeTabId, appModelLoadStatus]); // Dependencies
+  }, [userInput, appChatMode, currentThreadId, activeTabId, appModelLoadStatus, newChatSettings, currentSessionSettings]); // Added currentSessionSettings
 
   // --- Render --- 
   return (
@@ -529,10 +571,11 @@ function App() {
           isOpen={isSidebarOpen} 
           onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
           // Pass model load related props
+          modelLoaded={appModelLoadStatus === 'loaded'} // <-- Added explicit boolean
           setLoadStatus={handleModelLoadStatusChange}
           setLoading={setIsLoading} // Allow sidebar components to set global loading
           isLoading={isLoading}
-          isModelLoaded={appModelLoadStatus === 'loaded'} // Pass derived boolean
+          isModelLoaded={appModelLoadStatus === 'loaded'} // Pass derived boolean (alias for other panels)
           currentModelPath={currentLoadedModelName || 'None'} // Pass loaded model name
           onHfUsernameUpdate={handleHfUsernameUpdate} // Pass username update handler
           onDeviceUpdate={handleDeviceUpdate} // Pass device update handler
@@ -546,6 +589,13 @@ function App() {
           onLoadSession={handleLoadSession} // Pass session loading handler
           loadedSessionSettings={currentSessionSettings} // Pass currently applied settings
           onTabRename={handleTabRename} // <-- Pass the rename handler
+          // --- ADDED: Pass New Chat Settings and Updater ---
+          activeTabId={activeTabId} // Let Sidebar know which tab is active
+          newChatSettings={newChatSettings}
+          onNewChatSettingsChange={setNewChatSettings} // Pass the setter
+          // --- END ADDED ---
+          // --- ADDED: Pass settings change handler ---
+          onSessionSettingsChange={handleCurrentSessionSettingsChange}
       />
       {/* --- END: Sidebar --- */}
 

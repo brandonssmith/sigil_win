@@ -25,7 +25,10 @@ const CombinedPanel = (props) => {
       onClearChat,
       onLoadSession,
       loadedSessionSettings,
-      onTabRename
+      onTabRename,
+      activeTabId,
+      newChatSettings,
+      onNewChatSettingsChange,
   } = props;
   
   const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'modelLoad', 'interface', 'precision', or 'help'
@@ -121,6 +124,9 @@ const CombinedPanel = (props) => {
             modelLoaded={modelLoaded} 
             onClearChat={onClearChat}
             loadedSessionSettings={loadedSessionSettings}
+            activeTabId={activeTabId}
+            newChatSettings={newChatSettings}
+            onNewChatSettingsChange={onNewChatSettingsChange}
           />
         )}
         {activeTab === 'modelLoad' && (
@@ -235,6 +241,14 @@ CombinedPanel.propTypes = {
     maxTokens: PropTypes.number,
   }),
   onTabRename: PropTypes.func.isRequired,
+  activeTabId: PropTypes.string.isRequired,
+  newChatSettings: PropTypes.shape({
+    systemPrompt: PropTypes.string.isRequired,
+    temperature: PropTypes.number.isRequired,
+    topP: PropTypes.number.isRequired,
+    maxTokens: PropTypes.number.isRequired,
+  }).isRequired,
+  onNewChatSettingsChange: PropTypes.func.isRequired,
 };
 
 export default CombinedPanel; 

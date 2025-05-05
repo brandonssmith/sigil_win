@@ -23,7 +23,11 @@ const Sidebar = ({
   onLoadSession, // <-- ADDED: Receive onLoadSession prop
   // --- ADDED: Receive loadedSessionSettings prop ---
   loadedSessionSettings,
-  onTabRename // <-- ADDED: Receive onTabRename prop
+  onTabRename, // <-- ADDED: Receive onTabRename prop
+  // --- NEW: Props for new chat settings logic ---
+  activeTabId,
+  newChatSettings,
+  onNewChatSettingsChange,
 }) => {
   // Determine the class name based on the isOpen prop for styling
   const sidebarClassName = `sidebar ${isOpen ? 'open' : 'closed'}`;
@@ -52,6 +56,10 @@ const Sidebar = ({
             // --- ADDED: Pass loadedSessionSettings down ---
             loadedSessionSettings={loadedSessionSettings}
             onTabRename={onTabRename} // <-- ADDED: Pass onTabRename down
+            // --- ADDED: Pass new chat settings props ---
+            activeTabId={activeTabId}
+            newChatSettings={newChatSettings}
+            onNewChatSettingsChange={onNewChatSettingsChange}
           />
         )}
       </div>
@@ -85,6 +93,15 @@ Sidebar.propTypes = {
     maxTokens: PropTypes.number,
   }), // Can be null
   onTabRename: PropTypes.func.isRequired, // <-- ADDED: PropType for onTabRename
+  // --- ADDED: PropTypes for new chat settings logic ---
+  activeTabId: PropTypes.string.isRequired,
+  newChatSettings: PropTypes.shape({
+    systemPrompt: PropTypes.string.isRequired,
+    temperature: PropTypes.number.isRequired,
+    topP: PropTypes.number.isRequired,
+    maxTokens: PropTypes.number.isRequired,
+  }).isRequired,
+  onNewChatSettingsChange: PropTypes.func.isRequired,
 };
 
 export default Sidebar; 
