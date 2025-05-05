@@ -31,6 +31,8 @@ function SettingsPanel({
     activeTabId,
     newChatSettings,
     onNewChatSettingsChange,
+    // --- ADDED: Accept session settings handler ---
+    onSessionSettingsChange,
  }) {
   // State for settings inputs - These now reflect the UI state which might be
   // derived from newChatSettings or loadedSessionSettings
@@ -48,12 +50,13 @@ function SettingsPanel({
   // const [initialFetchStatus, setInitialFetchStatus] = useState('idle'); 
 
   // Determine if inputs should be disabled
-  // Disabled if model isn't loaded OR if viewing an existing session's settings (read-only for now)
-  const isDisabled = !modelLoaded || activeTabId !== '__NEW_CHAT__'; // Disable if not on New Chat tab
+  // --- MODIFIED: Only disable if model isn't loaded ---
+  const isDisabled = !modelLoaded; 
 
   // --- MODIFIED: useEffect to update inputs based on active tab and props ---
   useEffect(() => {
-    if (activeTabId === '__NEW_CHAT__') {
+    const isNewChat = activeTabId === '__NEW_CHAT__';
+    if (isNewChat) {
       // "New Chat" tab is active, use newChatSettings
       console.log("SettingsPanel: Applying new chat settings from props", newChatSettings);
       setSystemPrompt(newChatSettings.systemPrompt ?? DEFAULTS.SYSTEM_PROMPT);
@@ -61,15 +64,16 @@ function SettingsPanel({
       setTopP(newChatSettings.topP ?? DEFAULTS.TOP_P);
       setMaxTokens(newChatSettings.maxTokens ?? DEFAULTS.MAX_TOKENS);
     } else if (loadedSessionSettings) {
-      // An existing session tab is active, apply its loaded settings (read-only)
-      console.log("SettingsPanel: Applying loaded session settings (read-only)", loadedSessionSettings);
+      // An existing session tab is active, apply its loaded settings
+      // Inputs are now enabled if model is loaded
+      console.log("SettingsPanel: Applying loaded session settings (editable)", loadedSessionSettings);
       setSystemPrompt(loadedSessionSettings.systemPrompt ?? DEFAULTS.SYSTEM_PROMPT);
       setTemperature(loadedSessionSettings.temperature ?? DEFAULTS.TEMPERATURE);
       setTopP(loadedSessionSettings.topP ?? DEFAULTS.TOP_P);
       setMaxTokens(loadedSessionSettings.maxTokens ?? DEFAULTS.MAX_TOKENS);
     } else {
       // Existing session tab active, but settings failed to load? Revert to defaults.
-      // This case might indicate an error elsewhere.
+      // This case might indicate an error elsewhere. Still editable if model loaded.
       console.log("SettingsPanel: Reverting to default settings (existing tab, no loaded settings)");
       setSystemPrompt(DEFAULTS.SYSTEM_PROMPT);
       setTemperature(DEFAULTS.TEMPERATURE);
@@ -82,25 +86,45 @@ function SettingsPanel({
 
   // --- MODIFIED: Input change handlers --- 
   // These now update the local state for UI feedback AND call the 
-  // onNewChatSettingsChange callback *only* if on the New Chat tab.
+  // appropriate callback (onNewChatSettingsChange or onSessionSettingsChange)
+  // based on the active tab.
 
   const handleSettingChange = (field, value) => {
     // Update local state immediately for responsive UI
+    let currentVal = value;
     if (field === 'systemPrompt') setSystemPrompt(value);
-    else if (field === 'temperature') setTemperature(value);
-    else if (field === 'topP') setTopP(value);
-    else if (field === 'maxTokens') setMaxTokens(value);
+    else if (field === 'temperature') {
+        currentVal = parseFloat(value) || 0; // Ensure numeric conversion
+        setTemperature(currentVal);
+    }
+    else if (field === 'topP') {
+        currentVal = parseFloat(value) || 0; // Ensure numeric conversion
+        setTopP(currentVal);
+    }
+    else if (field === 'maxTokens') {
+        currentVal = parseInt(value, 10) || 1; // Ensure numeric conversion
+        setMaxTokens(currentVal);
+    }
 
-    // If on the New Chat tab, propagate the change up to App.jsx
-    if (activeTabId === '__NEW_CHAT__') {
-      const updatedSettings = { 
+    const isNewChat = activeTabId === '__NEW_CHAT__';
+    
+    if (isNewChat) {
+      // If on the New Chat tab, propagate the change up using onNewChatSettingsChange
+       const updatedSettings = { 
           ...newChatSettings, 
-          [field]: value 
+          [field]: currentVal 
       };
       onNewChatSettingsChange(updatedSettings); 
+    } else if (onSessionSettingsChange && loadedSessionSettings) {
+        // If on an existing chat tab, propagate the change up using onSessionSettingsChange
+        const updatedSettings = { 
+          ...loadedSessionSettings, 
+          [field]: currentVal 
+        };
+        onSessionSettingsChange(updatedSettings);
+    } else {
+        console.warn("SettingsPanel: Cannot propagate setting change - missing handler or session settings.");
     }
-    // NOTE: Changes made when viewing an existing session are NOT saved.
-    // Inputs are disabled in this case anyway based on the `isDisabled` logic.
   };
 
   // --- RESTORED: handleApplySettings function ---
@@ -208,21 +232,23 @@ function SettingsPanel({
       </div>
       {/* --- RESTORED: Apply Settings Button --- */}
       {/* This button updates the backend's global/default settings */}
-      {/* Enabled only when model is loaded AND on the New Chat tab */}
+      {/* Enabled only when model is loaded */}
+      {/* --- MODIFIED: Apply button disabled only if model not loaded or applying --- */}
       <button 
         onClick={handleApplySettings} 
-        disabled={!modelLoaded || activeTabId !== '__NEW_CHAT__' || applyStatus === 'loading'}
+        disabled={!modelLoaded || applyStatus === 'loading'}
       >
-        {applyStatus === 'loading' ? 'Applying...' : 'Apply Settings'}
+        {applyStatus === 'loading' ? 'Applying...' : 'Apply Defaults'} 
+        {/* Changed label slightly */}
       </button>
       {applyStatus === 'success' && <p className="success-message">Backend default settings applied!</p>}
       {applyStatus === 'error' && <p className="error-message">{applyError || 'Failed to apply settings.'}</p>}
 
-      {/* Clear Chat Button - Disable based on the same logic as inputs */}
+      {/* Clear Chat Button - Disable based only on model load status */}
       <button 
         onClick={onClearChat} 
         className="clear-chat-button-settings" 
-        disabled={isDisabled}
+        disabled={!modelLoaded} // Only disable if model not loaded
       >
         Clear Chat History
       </button>
@@ -255,6 +281,8 @@ SettingsPanel.propTypes = {
     maxTokens: PropTypes.number.isRequired,
   }).isRequired,
   onNewChatSettingsChange: PropTypes.func.isRequired,
+  // --- ADDED: PropType for session settings change handler ---
+  onSessionSettingsChange: PropTypes.func.isRequired,
 };
 
 export default SettingsPanel; 

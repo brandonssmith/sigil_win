@@ -28,6 +28,7 @@ const Sidebar = ({
   activeTabId,
   newChatSettings,
   onNewChatSettingsChange,
+  onSessionSettingsChange,
 }) => {
   // Determine the class name based on the isOpen prop for styling
   const sidebarClassName = `sidebar ${isOpen ? 'open' : 'closed'}`;
@@ -60,6 +61,8 @@ const Sidebar = ({
             activeTabId={activeTabId}
             newChatSettings={newChatSettings}
             onNewChatSettingsChange={onNewChatSettingsChange}
+            // --- ADDED: Pass settings change handler ---
+            onSessionSettingsChange={onSessionSettingsChange}
           />
         )}
       </div>
@@ -102,6 +105,8 @@ Sidebar.propTypes = {
     maxTokens: PropTypes.number.isRequired,
   }).isRequired,
   onNewChatSettingsChange: PropTypes.func.isRequired,
+  // --- ADDED: PropType for session settings change handler ---
+  onSessionSettingsChange: PropTypes.func.isRequired,
 };
 
 export default Sidebar; 
