@@ -503,8 +503,9 @@ function App() {
         const backendMessage = { sender: 'backend', text: backendResponse, id: backendMessageId };
 
         // Add backend message and remove loading indicator in a single state update
+        const loadingIdToRemove = loadingMessageIdRef.current; // Capture before clearing
         setChatHistory(prev => {
-            const withoutLoading = prev.filter(msg => msg.id !== loadingMessageIdRef.current);
+            const withoutLoading = prev.filter(msg => msg.id !== loadingIdToRemove);
             return [...withoutLoading, backendMessage];
         });
         loadingMessageIdRef.current = null;
@@ -547,15 +548,17 @@ function App() {
         console.error("Error sending message:", e);
         setError(e.message || "Failed to get response from backend.");
         // Remove loading indicator on error as well
-        setChatHistory(prev => prev.filter(msg => msg.id !== loadingMessageIdRef.current));
+        const errLoadingId = loadingMessageIdRef.current;
+        if (errLoadingId) {
+            setChatHistory(prev => prev.filter(msg => msg.id !== errLoadingId));
+        }
         loadingMessageIdRef.current = null;
-        // Optionally add a system error message to the chat
-        // setChatHistory(prev => [...prev, { sender: 'system', text: `Error: ${e.message}`, id: `error-${Date.now()}` }]);
     } finally {
         setIsLoading(false);
         // Ensure loading indicator is removed even if error handling failed somehow
-        if (loadingMessageIdRef.current) {
-            setChatHistory(prev => prev.filter(msg => msg.id !== loadingMessageIdRef.current));
+        const finalLoadingId = loadingMessageIdRef.current;
+        if (finalLoadingId) {
+            setChatHistory(prev => prev.filter(msg => msg.id !== finalLoadingId));
             loadingMessageIdRef.current = null;
         }
     }
