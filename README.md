@@ -7,6 +7,7 @@ Designed for developers and researchers, Sigil offers a modular and transparent 
 Use Sigil as a starting point for your own local AI workflows, or extend it to suit the needs of your own projects.
 
 [![Hugging Face Models](https://img.shields.io/badge/HuggingFace-supported-ffcc00?logo=huggingface&logoColor=black)](https://huggingface.co/models)
+[![Last Commit](https://img.shields.io/github/last-commit/Thrasher-Intelligence/sigil?color=blue)](https://github.com/Thrasher-Intelligence/sigil/commits/main)
 ## 📑 Table of Contents
 
 - [Sigil – Local LLM Runner with Web UI](#sigil--local-llm-runner-with-web-ui)
