@@ -33,6 +33,7 @@ Use Sigil as a starting point for your own local AI workflows, or extend it to s
   - [Customization](#customization)
   - [🪪 License](#-license)
 
+<a name="top"></a>
 ## Features
 
 Sigil is built for developers who want full control over local inference workflows. Key features include:
@@ -81,6 +82,8 @@ Sigil is built for developers who want full control over local inference workflo
 
 - `start_dev.sh` handles coordinated startup of backend and frontend
 - Supports local-first workflows with no external dependencies
+
+[Back to Top](#top)
 
 ## Interface Walkthrough
 
@@ -146,12 +149,16 @@ Starshine - Light Theme
 
 This interface is ideal for local experimentation, debugging, and integrating lightweight LLMs into your workflow without external dependencies.
 
+[Back to Top](#top)
+
 ## Prerequisites
 
 *   Python 3.8+ (tested with 3.9)
 *   `pip` (Python package installer)
 *   Node.js and `npm` (for the frontend development server and building)
 *   A compatible Hugging Face transformer model downloaded locally (e.g., TinyLlama). The model directory should contain files like `*.safetensors` or `pytorch_model.bin`, `config.json`, `tokenizer.json`, etc.
+
+[Back to Top](#top)
 
 ## Setup
 
@@ -187,6 +194,8 @@ This interface is ideal for local experimentation, debugging, and integrating li
     *   Place the downloaded model directories inside the `backend/models/` directory. This allows loading them by name (e.g., `TinyLlama-1.1B-Chat-v1.0`).
     *   Alternatively, you can still load models from any local path using the UI.
 
+[Back to Top](#top)
+
 ## Running the Development Environment
 
 1.  **Ensure your Python virtual environment is activated.**
@@ -209,6 +218,8 @@ This interface is ideal for local experimentation, debugging, and integrating li
 5.  **Stopping:**
     *   Press `Ctrl+C` in the terminal where `start_dev.sh` is running. The script will handle shutting down both the backend and frontend processes.
 
+[Back to Top](#top)
+
 ## Project Structure
 
 *   `start_dev.sh`: Main development environment startup script. Manages backend/frontend processes.
@@ -229,6 +240,8 @@ This interface is ideal for local experimentation, debugging, and integrating li
 *   `venv/`: (Created by you) Python virtual environment.
 *   `assets/`: Contains images and GIFs for the README.
 
+[Back to Top](#top)
+
 ## Customization
 
 *   **Generation Parameters:**
@@ -239,6 +252,8 @@ This interface is ideal for local experimentation, debugging, and integrating li
 *   **Model Loading Logic:** Found within the `load_model_internal` and `load_model_by_name` functions in `backend/core/model_loader.py` and the corresponding API endpoints in `backend/api/routes/models.py` (implied location).
 *   **Themes:** Add new `.css` files to `frontend/public/themes/`. They will be automatically available via the `/themes` endpoint.
 
+[Back to Top](#top)
+
 ## 🪪 License
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -248,3 +263,5 @@ This project is licensed under the MIT License — use it, remix it, extend it.
 ---
 
 Explore the TUI version: [Prometheus on GitHub](https://github.com/Thrasher-Intelligence/prometheus)
+
+[Back to Top](#top)
