@@ -22,6 +22,7 @@ Use Sigil as a starting point for your own local AI workflows, or extend it to s
     - [Model Loading](#model-loading)
     - [Chat Interface](#chat-interface)
     - [Themes](#themes)
+    - [Examples of a few themes](#examples-of-a-few-themes)
     - [Developer Tools and Feedback](#developer-tools-and-feedback)
   - [Prerequisites](#prerequisites)
   - [Setup](#setup)
@@ -238,7 +239,9 @@ This interface is ideal for local experimentation, debugging, and integrating li
 
 ## 🪪 License
 
-MIT License — use it, remix it, extend it.
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+This project is licensed under the MIT License — use it, remix it, extend it.
 
 ---
 
