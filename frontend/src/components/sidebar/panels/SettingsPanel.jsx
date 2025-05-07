@@ -5,7 +5,7 @@ import {
   DEFAULT_TEMPERATURE,
   DEFAULT_TOP_P,
   DEFAULT_MAX_TOKENS
-} from '../../constants'; // Import shared constants
+} from '../../../constants'; // Import shared constants
 import PropTypes from 'prop-types';
 import './SettingsPanel.css'; // Import component styles
 

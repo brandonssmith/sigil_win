@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
 import ThemeLoader from './components/ThemeLoader.jsx';
 import { API_BASE_URL } from './constants.js'; // Import shared constants
-import Sidebar from './components/Sidebar.jsx'; // <-- Import the new Sidebar
-import TabContainer from './components/Tabs/TabContainer.jsx'; // <-- ADDED: Import TabContainer
+import Sidebar from './components/sidebar/Sidebar.jsx'; // <-- Updated import path after moving Sidebar
+import TabContainer from './components/ui/tabs/TabContainer.jsx'; // <-- ADDED: Import TabContainer
 import { useTabs } from './hooks/useTabs.js'; // <-- IMPORTED
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js'; // <-- IMPORTED
 import { useChat } from './hooks/useChat.js'; // <-- IMPORT useChat

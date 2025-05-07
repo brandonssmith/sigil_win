@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import CombinedPanel from './panels/CombinedPanel.jsx'; // Adjust path as necessary
+import CombinedPanel from './panels/CombinedPanel.jsx'; // Path remains the same after restructure
 // import SavedChatsPanel from './SavedChatsPanel'; // No longer needed here
 import './Sidebar.css'; // We'll create this file for styling
 

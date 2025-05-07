@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import SettingsPanel from './SettingsPanel.jsx';
-import ModelLoadPanel from './ModelLoadPanel.jsx';
-import PrecisionSettingsPanel from './PrecisionSettingsPanel.jsx';
-import SavedChatsPanel from './SavedChatsPanel.jsx';
+import SettingsPanel from './SettingsPanel';
+import ModelLoadPanel from './ModelLoadPanel';
+import PrecisionSettingsPanel from './PrecisionSettingsPanel';
+import SavedChatsPanel from './SavedChatsPanel';
 import PropTypes from 'prop-types';
-import ModeToggleSwitch from '../ui/ModeToggleSwitch';
+import ModeToggleSwitch from '../../ui/ModeToggleSwitch';
 
 // This component receives all props needed by both SettingsPanel and ModelLoadPanel
 const CombinedPanel = (props) => {
