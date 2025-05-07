@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import SettingsPanel from './SettingsPanel.jsx';
-import ModelLoadPanel from '../ModelLoadPanel.jsx';
-import PrecisionSettingsPanel from '../PrecisionSettingsPanel.jsx';
-import SavedChatsPanel from '../SavedChatsPanel.jsx';
+import ModelLoadPanel from './ModelLoadPanel.jsx';
+import PrecisionSettingsPanel from './PrecisionSettingsPanel.jsx';
+import SavedChatsPanel from './SavedChatsPanel.jsx';
 import PropTypes from 'prop-types';
 import ModeToggleSwitch from '../ModeToggleSwitch';
 import '../ModeToggleSwitch.css';

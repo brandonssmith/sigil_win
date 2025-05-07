@@ -77,7 +77,7 @@ function PrecisionSettingsPanel() {
     } else {
         // Both 'cpu' and 'gpu-fp32' map to 'fp32' on the backend.
         // 'fp32' is the safe default and required for CPU.
-        backendValue = 'fp32'; 
+        backendValue = 'fp32';
     }
 
     try {
@@ -108,32 +108,32 @@ function PrecisionSettingsPanel() {
       <form>
         <div>
           <label style={{ display: 'block', marginBottom: '5px' }}>
-            <input 
-              type="radio" 
-              name="precision" 
-              value="gpu-fp32" 
-              checked={selectedPrecision === 'gpu-fp32'} 
+            <input
+              type="radio"
+              name="precision"
+              value="gpu-fp32"
+              checked={selectedPrecision === 'gpu-fp32'}
               onChange={handlePrecisionChange}
               disabled={isUpdating || selectedPrecision === 'error'}
             />
             GPU (Standard Precision - fp32)
           </label>
           <label style={{ display: 'block', marginBottom: '5px' }}>
-            <input 
-              type="radio" 
-              name="precision" 
-              value="gpu-fp16" 
-              checked={selectedPrecision === 'gpu-fp16'} 
+            <input
+              type="radio"
+              name="precision"
+              value="gpu-fp16"
+              checked={selectedPrecision === 'gpu-fp16'}
               onChange={handlePrecisionChange}
               disabled={isUpdating || selectedPrecision === 'error'}
             />
             GPU (Half Precision - fp16)
           </label>
-          {/* 
+          {/*
             Note: The "CPU Only" option is removed as it's implicitly handled.
             Selecting 'GPU (Standard Precision - fp32)' sets the backend to 'fp32',
-            which is compatible with both CPU and GPU. The actual device used 
-            depends on availability detected by the backend during model load. 
+            which is compatible with both CPU and GPU. The actual device used
+            depends on availability detected by the backend during model load.
           */}
         </div>
         {selectedPrecision === 'error' && <p style={{color: 'red'}}>Failed to load or update precision.</p>}

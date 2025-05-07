@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { API_BASE_URL } from '../constants'; // Import shared constant
+import { API_BASE_URL } from '../../constants'; // Import shared constant
 import './ModelLoadPanel.css'; // <-- Import the new CSS file
 
 // Base API URL - Moved to constants.js
@@ -127,7 +127,7 @@ function ModelLoadPanel({
     checkModelStatus();
   }, [checkModelStatus]);
 
-  // --- Updated handleLoadModel --- 
+  // --- Updated handleLoadModel ---
   const handleLoadModel = async (modelName) => {
     if (!modelName) {
       setLoadStatus('error', 'Invalid model selected.'); // Use updated callback format
@@ -137,7 +137,7 @@ function ModelLoadPanel({
     try {
       setLoading(true);
       // Use updated callback format for loading status
-      setLoadStatus('loading', `Loading ${modelName}...`); 
+      setLoadStatus('loading', `Loading ${modelName}...`);
 
       const response = await fetch(`${API_BASE_URL}/api/v1/model/load/${modelName}`, {
         method: "POST",
@@ -157,14 +157,14 @@ function ModelLoadPanel({
       const result = await response.json();
       // Pass the status string and the model name separately to the handler in App.jsx
       setLoadStatus('loaded', modelName);
-    } catch (err) {       
+    } catch (err) {
       console.error("Error loading model:", err);
       // Pass the 'error' status string and potentially the error message
-      setLoadStatus('error', `Failed to load model: ${err.message}`); 
+      setLoadStatus('error', `Failed to load model: ${err.message}`);
     } finally {
       // setLoading(false); // App.jsx handles main loading state, maybe remove here? Or keep for button disable?
       // Let's keep it for now to ensure button state is managed locally during the load attempt
-       setLoading(false); 
+       setLoading(false);
     }
   };
 
@@ -320,7 +320,7 @@ function ModelLoadPanel({
         )}
       </div>
 
-      {/* --- Display Device Status --- (NEW) */} 
+      {/* --- Display Device Status --- (NEW) */}
       <div className="device-status-display" style={{ fontSize: '0.9em', marginBottom: '15px', opacity: 0.8 }}>
         <span>Device Detected: <strong>{getDeviceDisplay()}</strong></span>
       </div>
@@ -351,7 +351,7 @@ function ModelLoadPanel({
       )}
 
       {searchLoading && <p>Searching...</p>}
-      {searchError && <p className="error-message">Search error: {searchError}</p>}
+      {searchError && <p className="error-message">Search error: {searchError}</p>}\
       {searchResults.length > 0 && (
         <div className="search-results" style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '12px' }}>
           {searchResults.map((res) => (

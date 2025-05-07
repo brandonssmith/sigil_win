@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { API_BASE_URL } from '../constants'; // Assuming you have this constants file
+import { API_BASE_URL } from '../../constants'; // Assuming you have this constants file
 import './SavedChatsPanel.css'; // <-- Import the CSS file
 
 function SavedChatsPanel({ onSelectSession, onRenameSession }) {
@@ -11,7 +11,7 @@ function SavedChatsPanel({ onSelectSession, onRenameSession }) {
   const [sessionLoadError, setSessionLoadError] = useState(null); // Error specific to loading a session
   const [deletingSessionId, setDeletingSessionId] = useState(null); // Track deleting session
   const [deleteError, setDeleteError] = useState(null); // Error specific to deleting
-  
+
   // --- ADDED: State for editing ---
   const [editingSessionId, setEditingSessionId] = useState(null); // Track which session is being edited
   const [editingName, setEditingName] = useState(''); // Current value in the edit input
@@ -19,7 +19,7 @@ function SavedChatsPanel({ onSelectSession, onRenameSession }) {
   const [isRenaming, setIsRenaming] = useState(false); // Loading state for rename API call
   // --- END ADDED State ---
 
-  // --- Fetch Sessions --- 
+  // --- Fetch Sessions ---
   const fetchSessions = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -53,7 +53,7 @@ function SavedChatsPanel({ onSelectSession, onRenameSession }) {
   // --- Handle click on a session item --- 
   const handleSessionClick = async (threadId) => {
     // Prevent loading if deleting, editing, or already loading
-    if (loadingSessionId || deletingSessionId === threadId || editingSessionId === threadId) return; 
+    if (loadingSessionId || deletingSessionId === threadId || editingSessionId === threadId) return;
 
     console.log(`Attempting to load session: ${threadId}`);
     setLoadingSessionId(threadId);
@@ -77,14 +77,14 @@ function SavedChatsPanel({ onSelectSession, onRenameSession }) {
       console.error("Error loading session:", err);
       setSessionLoadError(`Failed to load session ${threadId}: ${err.message}`);
     } finally {
-      setLoadingSessionId(null); // Clear loading state 
+      setLoadingSessionId(null); // Clear loading state
     }
   };
-  
+
   // --- Handle Deleting a Session --- 
   const handleDeleteSession = async (threadId, event) => {
     event.stopPropagation(); // Prevent the click from triggering handleSessionClick
-    
+
     // Prevent deleting if already deleting another, editing this one, or loading this one
     if (deletingSessionId || loadingSessionId === threadId || editingSessionId === threadId) return;
 
@@ -187,10 +187,10 @@ function SavedChatsPanel({ onSelectSession, onRenameSession }) {
 
       // --- Success --- 
       console.log(`Session ${editingSessionId} renamed to "${newName}" successfully.`);
-      
+
       // 1. Update local session list state
-      setSessions(prevSessions => 
-        prevSessions.map(session => 
+      setSessions(prevSessions =>
+        prevSessions.map(session =>
           session.thread_id === editingSessionId ? { ...session, title: newName } : session
         )
       );
@@ -223,7 +223,7 @@ function SavedChatsPanel({ onSelectSession, onRenameSession }) {
         const formattedDate = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
         const formattedTime = `${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}`;
         return { title: `${formattedDate} ${formattedTime}`, id: session.thread_id };
-    } 
+    }
     return { title: session.thread_id, id: session.thread_id }; // Fallback to raw ID
   };
 
@@ -237,7 +237,7 @@ function SavedChatsPanel({ onSelectSession, onRenameSession }) {
       {deleteError && <p className="error-message">Delete Error: {deleteError}</p>}
       {/* --- ADDED: Rename Error display --- */}
       {renameError && <p className="error-message">Rename Error: {renameError}</p>}
-      
+
       {!isLoading && !error && sessions.length === 0 && (
         <p>No saved sessions found.</p>
       )}
@@ -248,10 +248,10 @@ function SavedChatsPanel({ onSelectSession, onRenameSession }) {
             const isThisLoading = loadingSessionId === session.thread_id;
             const isThisDeleting = deletingSessionId === session.thread_id;
             const isThisEditing = editingSessionId === session.thread_id;
-            
+
             return (
-              <li 
-                key={session.thread_id} 
+              <li
+                key={session.thread_id}
                 className={`session-item ${isThisLoading ? 'is-loading' : ''} ${isThisDeleting ? 'is-deleting' : ''} ${isThisEditing ? 'is-editing' : ''}`}
                 // Allow click only if not editing, deleting, or loading this specific item
                 onClick={!isThisDeleting && !isThisEditing && !isThisLoading ? () => handleSessionClick(session.thread_id) : undefined}
@@ -260,12 +260,12 @@ function SavedChatsPanel({ onSelectSession, onRenameSession }) {
                 {/* --- MODIFIED: Conditional Rendering for Edit State --- */} 
                 {isThisEditing ? (
                   <div className="session-edit-controls">
-                    <input 
+                    <input
                       type="text"
                       value={editingName}
                       onChange={(e) => setEditingName(e.target.value)}
                       onClick={(e) => e.stopPropagation()} // Prevent click propagating to li
-                      onKeyDown={(e) => { 
+                      onKeyDown={(e) => {
                           if (e.key === 'Enter') handleSaveEdit(e);
                           if (e.key === 'Escape') handleCancelEdit(e);
                       }}
@@ -273,16 +273,16 @@ function SavedChatsPanel({ onSelectSession, onRenameSession }) {
                       autoFocus // Focus the input when it appears
                       className="session-edit-input"
                     />
-                    <button 
-                      onClick={handleSaveEdit} 
-                      disabled={isRenaming || !editingName.trim()} 
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={isRenaming || !editingName.trim()}
                       className="session-edit-button save"
                       title="Save Name (Enter)"
                     >
                       &#x2714; {/* Check mark */}
                     </button>
-                    <button 
-                      onClick={handleCancelEdit} 
+                    <button
+                      onClick={handleCancelEdit}
                       disabled={isRenaming}
                       className="session-edit-button cancel"
                       title="Cancel Edit (Esc)"
@@ -294,9 +294,9 @@ function SavedChatsPanel({ onSelectSession, onRenameSession }) {
                   <> { /* Original display + edit/delete buttons */}
                     <div className="session-info" onClick={() => handleSessionClick(session.thread_id)}> {/* Wrap text content */}
                       {isThisLoading && <strong>Loading...</strong>}
-                      {isThisDeleting && <strong>Deleting...</strong>} 
+                      {isThisDeleting && <strong>Deleting...</strong>}
                       {!isThisLoading && !isThisDeleting && <strong>{display.title}</strong>}
-                      
+
                       {/* Optionally show ID if title is different and not loading/deleting */}
                       {!isThisLoading && !isThisDeleting && display.title !== display.id && <span>{display.id}</span>}
                     </div>
