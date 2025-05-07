@@ -14,13 +14,6 @@ import { useTabs } from './hooks/useTabs.js'; // <-- IMPORTED
 // Base API URL - Moved to constants.js
 // const API_BASE_URL = 'http://localhost:8000';
 
-// Default settings (could also fetch from backend on initial load)
-const DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant.";
-const DEFAULT_TEMPERATURE = 0.7;
-const DEFAULT_TEMPERATURE_CHAT = 0.7;
-const DEFAULT_TOP_P = 0.95;
-const DEFAULT_MAX_TOKENS = 1000;
-
 // --- ADDED: Tab Constants ---
 const NEW_CHAT_TAB_ID = '__NEW_CHAT__';
 
