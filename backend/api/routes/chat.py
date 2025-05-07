@@ -73,6 +73,7 @@ def chat(req: ChatRequest, request: Request): # Add request: Request
         # --- End Call ---
 
         # Clean the response before returning
+        # Considering handling this differently in the future
         cleaned_response_text = clean_response(response_text)
         truncated_response_text = truncate_at_stop_token(cleaned_response_text)
         return {"response": truncated_response_text}

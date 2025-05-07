@@ -9,6 +9,7 @@ import { API_BASE_URL } from './constants.js'; // Import shared constants
 import DeviceIndicator from './components/DeviceIndicator.jsx'; // <-- Import the new component
 import Sidebar from './components/Sidebar.jsx'; // <-- Import the new Sidebar
 import TabContainer from './components/Tabs/TabContainer.jsx'; // <-- ADDED: Import TabContainer
+import { useTabs } from './hooks/useTabs.js'; // <-- IMPORTED
 
 // Base API URL - Moved to constants.js
 // const API_BASE_URL = 'http://localhost:8000';
@@ -44,11 +45,11 @@ function App() {
   const loadingMessageIdRef = useRef(null); // Ref to store loading message ID
   const [currentThreadId, setCurrentThreadId] = useState(null); // State for current chat session ID
 
-  // --- ADDED: Tab State ---
-  const [openTabs, setOpenTabs] = useState([
-    { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false }
-  ]);
-  const [activeTabId, setActiveTabId] = useState(NEW_CHAT_TAB_ID);
+  // --- Tab State - Now managed by useTabs hook ---
+  // const [openTabs, setOpenTabs] = useState([
+  //   { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false }
+  // ]);
+  // const [activeTabId, setActiveTabId] = useState(NEW_CHAT_TAB_ID);
   // --- END: Tab State ---
 
   // --- ADDED: State for currently loaded session settings ---
@@ -91,31 +92,99 @@ function App() {
   const [currentDevice, setCurrentDevice] = useState(null); // <-- NEW: State for device (cuda/cpu)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // <-- ADDED: Sidebar state
 
-  // --- Define Callbacks First ---
-  // Moved handleClearChat definition UP
-  const handleClearChat = useCallback(() => {
+  // --- Callbacks for useTabs hook ---
+  const appLevelClearChatActions = useCallback(() => {
     setChatHistory([]);
-    setError(null); // Also clear any existing errors
-    setCurrentThreadId(null); // Reset thread ID on clear
-    setActiveTabId(NEW_CHAT_TAB_ID); // Switch back to New Chat tab
-    // --- ADDED: Clear loaded session settings ---
-    setCurrentSessionSettings(null); // Revert to defaults when clearing
-    // --- END ---
-    // --- ADDED: Reset pending new chat settings ---
+    setError(null);
+    setCurrentThreadId(null);
+    setCurrentSessionSettings(null);
     setNewChatSettings({
         systemPrompt: DEFAULTS.SYSTEM_PROMPT,
         temperature: DEFAULTS.TEMPERATURE,
         topP: DEFAULTS.TOP_P,
         maxTokens: DEFAULTS.MAX_TOKENS,
     });
-    // --- END ADDED ---
-    // Ensure only one "New Chat" tab remains if others were closed
-    setOpenTabs(prevTabs => [
-      { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false },
-      ...prevTabs.filter(tab => tab.id !== NEW_CHAT_TAB_ID && tab.canClose) // Keep existing closable tabs
-    ]);
-    console.log("Chat cleared, thread ID reset, settings reverted to default, and switched to New Chat tab.");
-  }, [setChatHistory, setError, setCurrentThreadId, setActiveTabId, setCurrentSessionSettings, setOpenTabs, setNewChatSettings]); // Added setNewChatSettings
+    console.log("App: Cleared chat state for New Chat tab or reset.");
+  }, [setChatHistory, setError, setCurrentThreadId, setCurrentSessionSettings, setNewChatSettings]);
+
+  // Forward declaration for appLevelLoadSession
+  const handleLoadSession = useCallback((sessionData) => {
+    // Definition will remain below, but appLevelLoadSession needs it
+    if (!sessionData || !sessionData.thread_id || !sessionData.messages) {
+        console.error("App: Attempted to load invalid session data:", sessionData);
+        setError("Invalid session data received.");
+        return;
+    }
+    console.log(`App: Loading session ${sessionData.thread_id} into state (from handleLoadSession)`);
+
+    const formattedHistory = sessionData.messages.map((msg, index) => ({
+        role: msg.role || 'unknown',
+        content: msg.content || '',
+        text: msg.content || '',
+        id: `${msg.role || 'msg'}-${sessionData.thread_id}-${index}-${Date.now()}`,
+        sender: msg.role === 'assistant' ? 'backend' : (msg.role || 'unknown')
+    }));
+    setChatHistory(formattedHistory);
+    setCurrentThreadId(sessionData.thread_id);
+    
+    const loadedSettings = {
+        systemPrompt: sessionData.system_prompt ?? DEFAULTS.SYSTEM_PROMPT,
+        temperature: sessionData.sampling_settings?.temperature ?? DEFAULTS.TEMPERATURE,
+        topP: sessionData.sampling_settings?.top_p ?? DEFAULTS.TOP_P,
+        maxTokens: sessionData.sampling_settings?.max_new_tokens ?? DEFAULTS.MAX_TOKENS,
+    };
+    setCurrentSessionSettings(loadedSettings);
+    console.log("App: Applied session settings:", loadedSettings);
+    setError(null);
+    // setIsLoading(false); // setIsLoading is handled by appLevelLoadSession caller
+}, [setCurrentSessionSettings, setChatHistory, setCurrentThreadId, setError /*, setIsLoading (removed) */]);
+
+
+  const appLevelLoadSession = useCallback(async (tabIdToLoad) => {
+    console.log(`App: Request to load session for tab ${tabIdToLoad} (from appLevelLoadSession)`);
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chat/session/${tabIdToLoad}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: `HTTP error! status: ${response.status}` }));
+        throw new Error(errorData.detail || `Failed to fetch session ${tabIdToLoad}`);
+      }
+      const sessionData = await response.json();
+      handleLoadSession(sessionData); // Call the refactored handleLoadSession
+    } catch (e) {
+      console.error(`Error fetching session ${tabIdToLoad}:`, e);
+      setError(`Failed to load session ${tabIdToLoad}: ${e.message}`);
+      setChatHistory([]);
+      setCurrentThreadId(null);
+      setCurrentSessionSettings(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setIsLoading, setError, handleLoadSession, setChatHistory, setCurrentThreadId, setCurrentSessionSettings]);
+
+  // --- Initialize useTabs Hook ---
+  const {
+    openTabs, // USE ORIGINAL NAME
+    activeTabId, // USE ORIGINAL NAME
+    handleTabSelect, // USE ORIGINAL NAME
+    handleTabClose,  // USE ORIGINAL NAME
+    handleTabRename, // USE ORIGINAL NAME
+    loadInitialSessionTabs,
+    addSessionTabAndMakeActive,
+    resetTabsToDefault,
+  } = useTabs({
+    onClearChatRequest: appLevelClearChatActions,
+    onLoadSessionRequest: appLevelLoadSession,
+    NEW_CHAT_TAB_ID,
+  });
+  // --- END: useTabs Hook ---
+
+  const handleClearChat = useCallback(() => {
+    appLevelClearChatActions(); 
+    resetTabsToDefault();
+    console.log("Chat cleared, state reset, and tabs reverted to default via useTabs.");
+  }, [appLevelClearChatActions, resetTabsToDefault]);
 
   const handleModelLoadStatusChange = (status, modelName = null) => {
     // Clear previous errors when starting to load or if load is successful
@@ -150,191 +219,19 @@ function App() {
     // handleClearChat(); // Maybe revisit this decision later
   };
 
-  // --- ADDED: Handler for loading a selected session ---
-  // This callback is passed down and called by SavedChatsPanel (or other components)
-  // when a specific session needs to be loaded into the main view.
-  const handleLoadSession = useCallback((sessionData) => {
-      // Validate sessionData structure (basic check)
-      if (!sessionData || !sessionData.thread_id || !sessionData.messages) {
-          console.error("App: Attempted to load invalid session data:", sessionData);
-          setError("Invalid session data received.");
-          return; // Prevent further processing
-      }
+  // --- MODIFIED: handleLoadSession (now primarily updates app state based on sessionData) ---
+  // const handleLoadSession = useCallback((sessionData) => { ... MOVED UP ... });
 
-      console.log(`App: Loading session ${sessionData.thread_id}`);
+  // --- REMOVED: Old Tab Handlers ---
+  // const handleTabSelect = useCallback(async (tabId) => { ... });
+  // const handleTabClose = useCallback(async (tabIdToClose) => { ... });
+  // const handleTabRename = useCallback((threadId, newName) => { ... });
 
-      // --- Update App State ---
-      // --- FIXED: Re-add message formatting ---
-      // Backend messages need IDs for the React list key and 'text' field
-      const formattedHistory = sessionData.messages.map((msg, index) => ({
-          // Ensure role and content exist, provide defaults if not (though backend should guarantee)
-          role: msg.role || 'unknown', 
-          content: msg.content || '', 
-          // Map backend structure to frontend structure
-          text: msg.content || '', // Use content for display text
-          id: `${msg.role || 'msg'}-${sessionData.thread_id}-${index}-${Date.now()}`, // Create a unique ID
-          sender: msg.role === 'assistant' ? 'backend' : (msg.role || 'unknown') // Map role to sender ('user', 'backend', 'system', etc.)
-      }));
-      setChatHistory(formattedHistory); // Use the formatted history
-      // --- END FIXED ---
-      setCurrentThreadId(sessionData.thread_id);
-      
-      // Settings: Apply settings from the loaded session
-      const loadedSettings = {
-          systemPrompt: sessionData.system_prompt ?? DEFAULTS.SYSTEM_PROMPT,
-          temperature: sessionData.sampling_settings?.temperature ?? DEFAULTS.TEMPERATURE,
-          topP: sessionData.sampling_settings?.top_p ?? DEFAULTS.TOP_P,
-          // --- FIXED: Typo session_data -> sessionData ---
-          maxTokens: sessionData.sampling_settings?.max_new_tokens ?? DEFAULTS.MAX_TOKENS, 
-          // --- END FIXED ---
-      };
-      setCurrentSessionSettings(loadedSettings);
-      console.log("App: Applied session settings:", loadedSettings);
-      
-      // --- Sync tab state --- 
-      setActiveTabId(sessionData.thread_id);
-      // Add tab if not already open (e.g., loaded via sidebar without tab existing)
-      setOpenTabs(prevTabs => {
-          if (prevTabs.some(tab => tab.id === sessionData.thread_id)) {
-              // Tab exists, potentially update label if it changed (though handleLoadSession might not be the best place for this)
-              // It's better handled by the rename function or initial load
-              return prevTabs.map(tab => 
-                  tab.id === sessionData.thread_id 
-                  ? { ...tab, label: sessionData.custom_title || sessionData.title || tab.label } // Prioritize custom_title, then title, keep existing if none
-                  : tab
-              );
-          }
-          // Determine label - prioritize custom_title, then title from list, else fallback
-          const label = sessionData.custom_title || sessionData.title || `Session ${sessionData.thread_id.substring(0, 6)}...`;
-          return [...prevTabs, { id: sessionData.thread_id, label: label, canClose: true }];
-      });
-      // --- END Sync tab state ---
-      setError(null); // Clear any previous errors
-      setIsLoading(false); // Ensure loading indicator is off
 
-  }, [setCurrentSessionSettings, setChatHistory, setCurrentThreadId, setActiveTabId, setOpenTabs, setError, setIsLoading]); // Dependencies
-
-  // --- ADDED: Tab Selection Handler --- 
-  const handleTabSelect = useCallback(async (tabId) => {
-    if (tabId === activeTabId) return; // Do nothing if already active
-
-    console.log(`Switching to tab: ${tabId}`);
-    setActiveTabId(tabId);
-
-    if (tabId === NEW_CHAT_TAB_ID) {
-      // Switch to a new chat - clear history, thread ID, and revert settings
-      handleClearChat();
-    } else {
-      // Switch to an existing session tab - load its data (incl. settings via handleLoadSession)
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/chat/session/${tabId}`);
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ detail: `HTTP error! status: ${response.status}` }));
-          throw new Error(errorData.detail || `Failed to fetch session ${tabId}`);
-        }
-        const sessionData = await response.json();
-        handleLoadSession(sessionData); // This now also handles setting the tab label based on custom_title/title
-      } catch (e) {
-        console.error(`Error fetching session ${tabId}:`, e);
-        setError(`Failed to load session ${tabId}: ${e.message}`);
-        setChatHistory([]); // Clear chat area on error
-        setCurrentThreadId(null); // Clear thread ID
-        setActiveTabId(tabId); // Still set the tab as active even if load failed
-        setCurrentSessionSettings(null); // Revert settings on error
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  }, [activeTabId, handleClearChat, handleLoadSession, setActiveTabId, setIsLoading, setError, setChatHistory, setCurrentThreadId, setCurrentSessionSettings, setOpenTabs]); // Added setOpenTabs and other dependencies from handleLoadSession
-  // --- END: Tab Selection Handler ---
-
-  // --- MODIFIED: Tab Close Handler --- 
-  const handleTabClose = useCallback(async (tabIdToClose) => {
-      if (tabIdToClose === NEW_CHAT_TAB_ID) return; // Cannot close the "New Chat" tab
-
-      console.log(`Attempting to close tab: ${tabIdToClose}`);
-
-      // Find the index of the tab to close
-      const closingTabIndex = openTabs.findIndex(tab => tab.id === tabIdToClose);
-      if (closingTabIndex === -1) {
-          console.warn(`Tab with ID ${tabIdToClose} not found in openTabs.`);
-          return; // Tab not found
-      }
-
-      // Determine the next active tab ID *before* removing the tab
-      let nextActiveTabId = activeTabId;
-      let switchToNewChat = false;
-      if (activeTabId === tabIdToClose) {
-          if (closingTabIndex > 0) {
-              nextActiveTabId = openTabs[closingTabIndex - 1].id;
-          } else {
-              // If the first tab (after New Chat potentially) is closed, select New Chat
-              const newChatTab = openTabs.find(t => t.id === NEW_CHAT_TAB_ID);
-              nextActiveTabId = newChatTab.id; // Should always exist
-              switchToNewChat = true;
-              // Removed more complex fallback logic, always switch to New Chat if the active one is closed and it's the first actual session tab.
-          }
-      }
-
-      // Optimistically remove the tab from the UI
-      const updatedTabs = openTabs.filter(tab => tab.id !== tabIdToClose);
-      setOpenTabs(updatedTabs);
-
-      // Switch to the new active tab if needed
-      if (nextActiveTabId !== activeTabId) {
-          console.log(`Switching active tab to ${nextActiveTabId} after closing ${tabIdToClose}`);
-          if (switchToNewChat) {
-              handleClearChat(); // Handles setting active tab and clearing settings
-          } else {
-              // Manually set active tab first, then load session (which sets settings)
-              // No need to call handleTabSelect as we don't want infinite loops and already set state
-              setActiveTabId(nextActiveTabId);
-              // Fetch and load the session data for the newly activated tab
-              setIsLoading(true);
-              setError(null);
-              try {
-                  const response = await fetch(`${API_BASE_URL}/api/v1/chat/session/${nextActiveTabId}`);
-                  if (!response.ok) {
-                      const errorData = await response.json().catch(() => ({ detail: `HTTP error! status: ${response.status}` }));
-                      throw new Error(errorData.detail || `Failed to fetch session ${nextActiveTabId}`);
-                  }
-                  const sessionData = await response.json();
-                  handleLoadSession(sessionData); // Load data and settings for the newly active tab
-              } catch (e) {
-                  console.error(`Error fetching session ${nextActiveTabId} after closing tab:`, e);
-                  setError(`Failed to load session ${nextActiveTabId}: ${e.message}`);
-                  // Fallback to New Chat on error loading next tab
-                  handleClearChat();
-              } finally {
-                  setIsLoading(false);
-              }
-          }
-      }
-  // Only delete from backend if the close was successful? Or should it be separate?
-  // For now, let's assume close only affects UI state, deletion is explicit via SavedChatsPanel
-
-  }, [openTabs, activeTabId, handleClearChat, handleLoadSession, setActiveTabId, setIsLoading, setError, setOpenTabs]); // Dependencies updated
-  // --- END: Tab Close Handler ---
-
-  // --- ADDED: Tab Rename Handler ---
-  const handleTabRename = useCallback((threadId, newName) => {
-    setOpenTabs(prevTabs =>
-      prevTabs.map(tab =>
-        tab.id === threadId ? { ...tab, label: newName } : tab
-      )
-    );
-    console.log(`App: Renamed tab ${threadId} to "${newName}" in UI state.`);
-  }, [setOpenTabs]); // Dependency on setOpenTabs (stable)
-  // --- END: Tab Rename Handler ---
-
-  // --- NEW: Handler to update current session's settings ---
   const handleCurrentSessionSettingsChange = useCallback((updatedSettings) => {
     setCurrentSessionSettings(updatedSettings);
   }, []);
 
-  // --- useEffect Hooks ---
   useEffect(() => {
     fetch(`${API_BASE_URL}/themes`)
       .then(res => res.json())
@@ -355,30 +252,23 @@ function App() {
       })
       .then(sessions => {
         if (sessions && Array.isArray(sessions)) {
-          const sessionTabs = sessions.map(session => ({
+          const sessionTabsData = sessions.map(session => ({
             id: session.thread_id,
-            // Use the title from the backend (which prioritizes custom_title)
-            label: session.title || `Session ${session.thread_id.substring(0, 6)}...`, // Use title directly
+            label: session.title || `Session ${session.thread_id.substring(0, 6)}...`,
             canClose: true
           }));
-          // Add fetched sessions to the initial 'New Chat' tab
-          // Avoid adding duplicates if already open (though unlikely on initial load)
-          setOpenTabs(prevTabs => [
-             ...prevTabs.filter(t => t.id === NEW_CHAT_TAB_ID), // Keep New Chat tab
-             ...sessionTabs.filter(st => !prevTabs.some(pt => pt.id === st.id)) // Add new session tabs
-          ]);
+          loadInitialSessionTabs(sessionTabsData); // USE HOOK FUNCTION
         } else {
           console.warn('No saved sessions found or invalid format.');
         }
       })
       .catch(err => {
         console.error("Error fetching saved sessions:", err);
-        // Handle error appropriately, maybe show a message to the user
-        setError("Could not load saved sessions."); // Set error state
+        setError("Could not load saved sessions.");
       });
     // --- END: Fetch saved sessions ---
 
-  }, []); // Empty dependency array: Run only on initial mount
+  }, [loadInitialSessionTabs]); // ADDED loadInitialSessionTabs dependency
 
   // --- Keyboard Shortcuts --- useEffect
   useEffect(() => {
@@ -393,7 +283,7 @@ function App() {
       else if (event.ctrlKey && event.shiftKey && event.key === 'C') {
         event.preventDefault();
         console.log("Clear Chat shortcut triggered");
-        handleClearChat();
+        handleClearChat(); // Uses new handleClearChat
       }
       // Submit on Enter (but not Shift+Enter)
       else if (event.key === 'Enter' && !event.shiftKey && !isLoading) {
@@ -422,8 +312,8 @@ function App() {
   }, [chatHistory, isLoading]);
 
   // --- Send Message Handler (Modified for v2) ---
-  const sendMessage = useCallback(async (currentChatHistory) => {
-    if (!userInput.trim()) return; // Don't send empty messages
+  const sendMessage = useCallback(async (currentChatHistoryFromArg) => { // Renamed currentChatHistory to currentChatHistoryFromArg for clarity
+    if (!userInput.trim()) return;
     if (appModelLoadStatus !== 'loaded') {
         setError("Model is not loaded. Cannot send message.");
         return;
@@ -434,13 +324,11 @@ function App() {
     const newUserMessageId = `user-${Date.now()}`;
     const newUserMessage = { sender: 'user', text: userInput, id: newUserMessageId };
 
-    // Optimistically add user message
-    const updatedChatHistory = [...currentChatHistory, newUserMessage];
+    const updatedChatHistory = [...currentChatHistoryFromArg, newUserMessage];
     setChatHistory(updatedChatHistory);
-    const currentUserInput = userInput; // Capture current user input before clearing
-    setUserInput(''); // Clear input field immediately
+    const currentUserInput = userInput;
+    setUserInput('');
 
-    // Add loading indicator message
     const loadingId = `loading-${Date.now()}`;
     loadingMessageIdRef.current = loadingId;
     setChatHistory(prev => [...prev, { sender: 'backend', text: '', id: loadingId }]);
@@ -448,13 +336,14 @@ function App() {
     try {
         const payload = {
             mode: appChatMode,
-            thread_id: currentThreadId, // Send current thread ID
+            // currentThreadId is from App's state, activeTabId from hook
+            thread_id: currentThreadId, 
         };
 
-        // Determine settings to send based on whether this is a new chat or existing session
         let settingsToSend;
         let systemPromptToSend;
-        if (currentThreadId === null) {
+        // Use activeTabId from hook here
+        if (activeTabId === NEW_CHAT_TAB_ID || currentThreadId === null) {
             settingsToSend = {
                 temperature: newChatSettings.temperature,
                 top_p: newChatSettings.topP,
@@ -475,8 +364,7 @@ function App() {
 
         if (appChatMode === 'instruction') {
             payload.message = currentUserInput;
-        } else { // 'chat' mode
-            // Format history, including the new user message
+        } else { 
             payload.messages = formatChatHistoryForBackend(updatedChatHistory);
         }
 
@@ -497,52 +385,33 @@ function App() {
 
         const data = await response.json();
         const backendResponse = data.response;
-        const newThreadId = data.thread_id; // Get thread_id from response
+        const newThreadId = data.thread_id;
 
         const backendMessageId = `backend-${Date.now()}`;
         const backendMessage = { sender: 'backend', text: backendResponse, id: backendMessageId };
 
-        // Add backend message and remove loading indicator in a single state update
-        const loadingIdToRemove = loadingMessageIdRef.current; // Capture before clearing
+        const loadingIdToRemove = loadingMessageIdRef.current;
         setChatHistory(prev => {
             const withoutLoading = prev.filter(msg => msg.id !== loadingIdToRemove);
             return [...withoutLoading, backendMessage];
         });
         loadingMessageIdRef.current = null;
 
-        // --- Tab & Session ID Handling ---
         if (newThreadId && newThreadId !== currentThreadId) {
-            setCurrentThreadId(newThreadId); // Update the current thread ID
+            setCurrentThreadId(newThreadId);
             console.log(`App: Switched to/created new thread ID: ${newThreadId}`);
 
-            // If this was the first message in the "New Chat" tab, update the tab
-            if (activeTabId === NEW_CHAT_TAB_ID) {
-                const newLabel = currentUserInput.substring(0, 30) + (currentUserInput.length > 30 ? '...' : '');
-                setOpenTabs(prevTabs => {
-                    // Remove the placeholder "New Chat" tab
-                    const filteredTabs = prevTabs.filter(tab => tab.id !== NEW_CHAT_TAB_ID);
-                    // Add the new session tab and a fresh "New Chat" tab
-                    return [
-                        { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false }, // Add back new chat
-                        ...filteredTabs,
-                        { id: newThreadId, label: newLabel, canClose: true }
-                    ];
-                });
-                setActiveTabId(newThreadId); // Make the new session tab active
-                 // Fetch updated session list for the sidebar (or update locally?)
-                 // For now, let's assume the sidebar will fetch on its own or be triggered later
-            } else if (currentThreadId === null) { // Edge case: loaded a deleted session? Switch to new tab
-                 const newLabel = currentUserInput.substring(0, 30) + (currentUserInput.length > 30 ? '...' : '');
-                 setOpenTabs(prevTabs => [
-                    ...prevTabs,
-                     { id: newThreadId, label: newLabel, canClose: true }
-                 ]);
-                 setActiveTabId(newThreadId);
-            }
-            // If it's an existing tab, the ID should match, no tab update needed here
-            // (Renaming is handled separately)
+            const newLabel = currentUserInput.substring(0, 30) + (currentUserInput.length > 30 ? '...' : '');
+            // Use hook's function and pass activeTabId from hook
+            addSessionTabAndMakeActive(newThreadId, newLabel, activeTabId);
+            
+        } else if (newThreadId && newThreadId === currentThreadId && activeTabId === NEW_CHAT_TAB_ID) {
+            // This case can happen if currentThreadId was already set by a previous interaction
+            // but the user is still technically on the "New Chat" tab interface.
+            // We should still "upgrade" the tab.
+            const newLabel = currentUserInput.substring(0, 30) + (currentUserInput.length > 30 ? '...' : '');
+            addSessionTabAndMakeActive(newThreadId, newLabel, activeTabId);
         }
-        // --- End Tab & Session ID Handling ---
 
     } catch (e) {
         console.error("Error sending message:", e);
@@ -562,7 +431,9 @@ function App() {
             loadingMessageIdRef.current = null;
         }
     }
-  }, [userInput, appChatMode, currentThreadId, activeTabId, appModelLoadStatus, newChatSettings, currentSessionSettings]); // Added currentSessionSettings
+  }, [userInput, appChatMode, currentThreadId, activeTabId, appModelLoadStatus, newChatSettings, currentSessionSettings, 
+      addSessionTabAndMakeActive // ADDED DEPENDENCY
+    ]);
 
   // --- Render --- 
   return (
@@ -589,15 +460,36 @@ function App() {
           themeList={themeList}
           // Pass chat management props
           onClearChat={handleClearChat}
-          onLoadSession={handleLoadSession} // Pass session loading handler
-          loadedSessionSettings={currentSessionSettings} // Pass currently applied settings
-          onTabRename={handleTabRename} // <-- Pass the rename handler
-          // --- ADDED: Pass New Chat Settings and Updater ---
-          activeTabId={activeTabId} // Let Sidebar know which tab is active
+          onLoadSession={(sessionData) => { // Modified onLoadSession for Sidebar
+            // When loading from sidebar, first ensure App state is updated
+            handleLoadSession(sessionData);
+            // Then, tell useTabs to make this tab active and ensure it's in openTabs
+            // This might involve adding a new function to useTabs like `ensureTabExistsAndSetActive`
+            // For now, we assume handleTabSelect can be called if the tab is known to exist or 
+            // that handleLoadSession might trigger a tab rename if label needs update.
+            // A more robust solution would be:
+            // 1. App calls handleLoadSession(sessionData)
+            // 2. App calls a hook function like hook.addOrUpdateTab(sessionData.thread_id, sessionData.title)
+            // 3. App calls hook.handleTabSelect(sessionData.thread_id)
+            // Let's simplify for now: Sidebar calls handleLoadSession, then if the tab isn't active,
+            // the user would click it, or we could programmatically call handleTabSelect.
+            // The simplest for now: Sidebar loads the session, and if the tab needs to be activated,
+            // it should ideally just call handleTabSelect(sessionData.thread_id) if the tab exists.
+            // If the tab might *not* exist, Sidebar should call something like addSessionTabAndMakeActive.
+            // Let's assume Sidebar's onLoadSession means "load this data and make it the active view".
+            // So, after App's handleLoadSession updates data:
+            if (sessionData && sessionData.thread_id) {
+                const tabLabel = sessionData.custom_title || sessionData.title || `Session ${sessionData.thread_id.substring(0,6)}...`;
+                // Ensure tab exists or is updated, and then make it active
+                addSessionTabAndMakeActive(sessionData.thread_id, tabLabel, activeTabId); // activeTabId here is the current one before switching
+                // The addSessionTabAndMakeActive will set it active.
+            }
+          }}
+          loadedSessionSettings={currentSessionSettings}
+          onTabRename={handleTabRename} // Pass from useTabs
+          activeTabId={activeTabId} // Pass from useTabs
           newChatSettings={newChatSettings}
           onNewChatSettingsChange={setNewChatSettings} // Pass the setter
-          // --- END ADDED ---
-          // --- ADDED: Pass settings change handler ---
           onSessionSettingsChange={handleCurrentSessionSettingsChange}
       />
       {/* --- END: Sidebar --- */}
