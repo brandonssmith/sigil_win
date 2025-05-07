@@ -1,12 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
 import ThemeLoader from './components/ThemeLoader.jsx';
-import ModelLoadPanel from './components/ModelLoadPanel.jsx';
-import ModeToggleSwitch from './components/ModeToggleSwitch.jsx';
-import { formatChatHistoryForBackend } from './utils/chatUtils.js'; // Import the utility function
-import { formatListText } from './utils/formatUtils.js'; // <-- Import the new list formatter
 import { API_BASE_URL } from './constants.js'; // Import shared constants
-import DeviceIndicator from './components/DeviceIndicator.jsx';
 import Sidebar from './components/Sidebar.jsx'; // <-- Import the new Sidebar
 import TabContainer from './components/Tabs/TabContainer.jsx'; // <-- ADDED: Import TabContainer
 import { useTabs } from './hooks/useTabs.js'; // <-- IMPORTED
