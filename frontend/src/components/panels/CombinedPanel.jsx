@@ -4,8 +4,7 @@ import ModelLoadPanel from './ModelLoadPanel.jsx';
 import PrecisionSettingsPanel from './PrecisionSettingsPanel.jsx';
 import SavedChatsPanel from './SavedChatsPanel.jsx';
 import PropTypes from 'prop-types';
-import ModeToggleSwitch from '../ModeToggleSwitch';
-import '../ModeToggleSwitch.css';
+import ModeToggleSwitch from '../ui/ModeToggleSwitch';
 
 // This component receives all props needed by both SettingsPanel and ModelLoadPanel
 const CombinedPanel = (props) => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import DeviceIndicator from './DeviceIndicator.jsx';
+import DeviceIndicator from './ui/DeviceIndicator.jsx';
 
 function AppHeader({
   onToggleSidebar,
