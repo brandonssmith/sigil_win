@@ -10,14 +10,21 @@ export const useTabs = ({
 
   // Function for App.jsx to call after fetching saved sessions
   const loadInitialSessionTabs = useCallback((sessionTabsData) => {
-    setOpenTabs([
-      { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false },
-      // Filter out NEW_CHAT_TAB_ID from sessionTabsData in case it's inadvertently included
-      ...sessionTabsData.filter(st => st.id !== NEW_CHAT_TAB_ID) 
-    ]);
-    // Keep activeTabId as NEW_CHAT_TAB_ID by default on initial load
-    // setActiveTabId(NEW_CHAT_TAB_ID); // Or logic to set to last opened tab if desired
-  }, [setOpenTabs, NEW_CHAT_TAB_ID]);
+    const newChatTabObject = { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false };
+    const uniqueSessionTabs = [];
+    const seenIds = new Set();
+
+    if (Array.isArray(sessionTabsData)) {
+      for (const tab of sessionTabsData) {
+        if (tab.id && tab.id !== NEW_CHAT_TAB_ID && !seenIds.has(tab.id)) {
+          uniqueSessionTabs.push({ ...tab, canClose: true }); // Ensure canClose is true
+          seenIds.add(tab.id);
+        }
+      }
+    }
+    setOpenTabs([newChatTabObject, ...uniqueSessionTabs]);
+    // setActiveTabId(NEW_CHAT_TAB_ID); // Keep New Chat active by default on initial load
+  }, [setOpenTabs, setActiveTabId, NEW_CHAT_TAB_ID]);
 
   // Handler for selecting a tab
   const handleTabSelect = useCallback(async (tabId) => {
@@ -87,39 +94,63 @@ export const useTabs = ({
 
   // Handler for renaming a tab
   const handleTabRename = useCallback((threadId, newName) => {
+    if (threadId === NEW_CHAT_TAB_ID) return; // Cannot rename the "New Chat" tab
     setOpenTabs(prevTabs =>
       prevTabs.map(tab =>
         tab.id === threadId ? { ...tab, label: newName } : tab
       )
     );
-  }, [setOpenTabs]);
+  }, [setOpenTabs, NEW_CHAT_TAB_ID]);
 
   // Function to add a new session tab and make it active (called by App.jsx's sendMessage)
   const addSessionTabAndMakeActive = useCallback((newThreadId, newLabel, currentActiveTabForSendLogic) => {
     setOpenTabs(prevTabs => {
-      let updatedTabs;
-      // If the new session originated from the "New Chat" tab
-      if (currentActiveTabForSendLogic === NEW_CHAT_TAB_ID) {
-        const newChatTab = { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false };
-        const existingSessionTabs = prevTabs.filter(tab => tab.id !== NEW_CHAT_TAB_ID);
-        updatedTabs = [
-          newChatTab, // Ensure "New Chat" tab is first
-          ...existingSessionTabs,
-          { id: newThreadId, label: newLabel, canClose: true }
-        ];
+      // Check if the tab (newThreadId) already exists in the list
+      const tabAlreadyExists = prevTabs.some(tab => tab.id === newThreadId);
+
+      if (tabAlreadyExists) {
+        // If tab exists, just update its label. Ensure NEW_CHAT_TAB_ID cannot be targeted this way by mistake.
+        return prevTabs.map(tab =>
+          (tab.id === newThreadId && newThreadId !== NEW_CHAT_TAB_ID) 
+            ? { ...tab, label: newLabel, canClose: true } // Ensure canClose is true
+            : tab
+        );
       } else {
-        // If the session didn't start from "New Chat" or if adding a tab for an existing session id
-        if (prevTabs.some(tab => tab.id === newThreadId)) {
-          // If tab exists, update its label (though renaming is usually explicit via handleTabRename)
-          updatedTabs = prevTabs.map(tab => tab.id === newThreadId ? { ...tab, label: newLabel } : tab);
-        } else {
-          // Add as a new tab
-          updatedTabs = [...prevTabs, { id: newThreadId, label: newLabel, canClose: true }];
+        // Tab does not exist, add it. Prevent adding NEW_CHAT_TAB_ID as a new session.
+        if (newThreadId === NEW_CHAT_TAB_ID) {
+            console.error("Attempted to add NEW_CHAT_TAB_ID as a new session tab.");
+            // Return previous tabs, ensuring NEW_CHAT_TAB_ID is present if it was somehow missing
+            if (!prevTabs.some(t => t.id === NEW_CHAT_TAB_ID)) {
+                return [{ id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false }, ...prevTabs];
+            }
+            return prevTabs;
         }
+
+        let updatedTabs;
+        const newSessionTabObject = { id: newThreadId, label: newLabel, canClose: true };
+
+        if (currentActiveTabForSendLogic === NEW_CHAT_TAB_ID) {
+          const newChatTab = { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false };
+          // Filter out NEW_CHAT_TAB_ID to avoid duplicating it, and also the newThreadId (belt-and-suspenders)
+          const existingSessionTabs = prevTabs.filter(tab => tab.id !== NEW_CHAT_TAB_ID && tab.id !== newThreadId);
+          updatedTabs = [
+            newChatTab,
+            ...existingSessionTabs,
+            newSessionTabObject
+          ];
+        } else {
+          // If not originating from New Chat, add to the end, ensuring NEW_CHAT_TAB is preserved.
+          const newChatTab = { id: NEW_CHAT_TAB_ID, label: 'New Chat', canClose: false };
+          const otherTabs = prevTabs.filter(tab => tab.id !== NEW_CHAT_TAB_ID && tab.id !== newThreadId);
+          updatedTabs = [newChatTab, ...otherTabs, newSessionTabObject];
+        }
+        return updatedTabs;
       }
-      return updatedTabs;
     });
-    setActiveTabId(newThreadId);
+    // Only set active if it's a valid session ID, not NEW_CHAT_TAB_ID (which should already be handled by handleTabSelect)
+    if (newThreadId !== NEW_CHAT_TAB_ID) {
+        setActiveTabId(newThreadId);
+    }
   }, [setOpenTabs, setActiveTabId, NEW_CHAT_TAB_ID]);
 
   // Function to reset tabs to initial "New Chat" state (called by App.jsx's handleClearChat)
