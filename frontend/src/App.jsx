@@ -6,12 +6,13 @@ import ModeToggleSwitch from './components/ModeToggleSwitch.jsx';
 import { formatChatHistoryForBackend } from './utils/chatUtils.js'; // Import the utility function
 import { formatListText } from './utils/formatUtils.js'; // <-- Import the new list formatter
 import { API_BASE_URL } from './constants.js'; // Import shared constants
-import DeviceIndicator from './components/DeviceIndicator.jsx'; // <-- Import the new component
+import DeviceIndicator from './components/DeviceIndicator.jsx';
 import Sidebar from './components/Sidebar.jsx'; // <-- Import the new Sidebar
 import TabContainer from './components/Tabs/TabContainer.jsx'; // <-- ADDED: Import TabContainer
 import { useTabs } from './hooks/useTabs.js'; // <-- IMPORTED
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js'; // <-- IMPORTED
 import { useChat } from './hooks/useChat.js'; // <-- IMPORT useChat
+import AppHeader from './components/AppHeader.jsx';
 
 // Base API URL - Moved to constants.js
 // const API_BASE_URL = 'http://localhost:8000';
@@ -295,40 +296,15 @@ function App() {
       />
 
       <div className={`main-content ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-          <header className="app-header">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="sidebar-toggle-btn header-btn">
-              {'☰'}
-            </button>
-            <h1 className="app-title">
-                Sigil
-                {currentLoadedModelName &&
-                    <span className="loaded-model-name">({currentLoadedModelName})</span>
-                }
-            </h1>
-            <div className="header-controls">
-                <div className="mode-selector">
-                    <button
-                        onClick={() => handleChatModeChange('instruction')}
-                        className={appChatMode === 'instruction' ? 'active' : ''}
-                    >
-                        Instruct
-                    </button>
-                    <button
-                        onClick={() => handleChatModeChange('chat')}
-                        className={appChatMode === 'chat' ? 'active' : ''}
-                    >
-                        Chat
-                    </button>
-                </div>
-                 <DeviceIndicator device={currentDevice} username={hfUsername} />
-            </div>
-            <div className="model-status-group">
-              {appModelLoadStatus === 'loaded' && <span className="model-status-indicator">Model Ready</span>}
-              {appModelLoadStatus === 'idle' && <span className="model-status-indicator">Waiting for Model</span>}
-              {appModelLoadStatus === 'error' && <span className="model-status-indicator error">Model Load Failed</span>}
-              {appModelLoadStatus === 'loading' && <span className="model-status-indicator loading">Loading Model...</span>}
-            </div>
-          </header>
+          <AppHeader
+              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+              currentLoadedModelName={currentLoadedModelName}
+              appChatMode={appChatMode}
+              onChatModeChange={handleChatModeChange}
+              currentDevice={currentDevice}
+              hfUsername={hfUsername}
+              appModelLoadStatus={appModelLoadStatus}
+          />
 
           <TabContainer
             tabs={openTabs}
