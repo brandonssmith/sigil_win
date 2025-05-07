@@ -229,22 +229,19 @@ function App() {
         return res.json();
       })
       .then(sessions => {
-        if (sessions && Array.isArray(sessions)) {
-          const sessionTabsData = sessions.map(session => ({
-            id: session.thread_id,
-            label: session.title || `Session ${session.thread_id.substring(0, 6)}...`,
-            canClose: true
-          }));
-          loadInitialSessionTabs(sessionTabsData);
+        if (sessions && Array.isArray(sessions) && sessions.length > 0) {
+          console.log(`App: Fetched ${sessions.length} saved sessions. These will not be opened as tabs by default.`);
         } else {
-          console.warn('No saved sessions found or invalid format.');
+          console.warn('App: No saved sessions found or invalid format.');
         }
+        resetTabsToDefault();
       })
       .catch(err => {
         console.error("Error fetching saved sessions:", err);
         setError("Could not load saved sessions."); // Global error
+        resetTabsToDefault();
       });
-  }, [loadInitialSessionTabs]); // loadInitialSessionTabs from useTabs
+  }, [resetTabsToDefault, setThemeList, setError]);
 
   useEffect(() => {
     if (isLoading || chatHook.chatHistory.length > 0) { // Use chatHistory from chatHook
