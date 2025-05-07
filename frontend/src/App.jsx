@@ -13,6 +13,7 @@ import { useTabs } from './hooks/useTabs.js'; // <-- IMPORTED
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js'; // <-- IMPORTED
 import { useChat } from './hooks/useChat.js'; // <-- IMPORT useChat
 import AppHeader from './components/AppHeader.jsx';
+import ChatInterface from './components/ChatInterface.jsx';
 
 // Base API URL - Moved to constants.js
 // const API_BASE_URL = 'http://localhost:8000';
@@ -313,59 +314,18 @@ function App() {
             onTabClose={handleTabClose}
           />
 
-          <div className="chat-area">
-            <div className="messages-area">
-              {appModelLoadStatus === 'idle' && !chatHook.chatHistory.length && ( // Use chatHook.chatHistory
-                <div className="message system-message">
-                  <p>Please load a model using the 'Load Model' panel in the sidebar to begin.</p>
-                </div>
-              )}
-              {appModelLoadStatus === 'error' && (
-                 <div className="message system-message error-message">
-                   <p>Failed to load model. Check console for details.</p>
-                 </div>
-              )}
-              {/* Display global errors first, then chat-specific errors if any */}
-              {error && !isLoading && ( // Global error
-                 <div className="message system-message error-message">
-                   <p>Error: {error}</p>
-                 </div>
-              )}
-              {chatHook.sendError && !chatHook.isSendingMessage && ( // Chat-specific error from useChat
-                 <div className="message system-message error-message">
-                   <p>Chat Error: {chatHook.sendError}</p>
-                 </div>
-              )}
-
-              {chatHook.chatHistory.map((msg) => ( // Use chatHook.chatHistory
-                <div key={msg.id} className={`message ${msg.sender}-message ${msg.id.startsWith('loading-') ? 'loading-message' : ''}`}>
-                  {msg.id.startsWith('loading-') ? (
-                    <div className="dots-container"><span>.</span><span>.</span><span>.</span></div>
-                  ) : (
-                    <p>{msg.text}</p>
-                  )}
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <div className="input-area">
-              <textarea
-                value={chatHook.userInput} // Use chatHook.userInput
-                onChange={(e) => chatHook.setUserInput(e.target.value)} // Use chatHook.setUserInput
-                placeholder={appModelLoadStatus === 'loaded' ? (chatHook.isSendingMessage ? "Generating response..." : "Type your message here...") : "Load a model first"}
-                rows="3"
-                disabled={isLoading || chatHook.isSendingMessage || appModelLoadStatus !== 'loaded'} // Use global isLoading and chatHook.isSendingMessage
-              />
-              <button
-                id="send-button"
-                onClick={() => chatHook.sendMessage(chatHook.chatHistory)} // Use chatHook.sendMessage and chatHook.chatHistory
-                disabled={isLoading || chatHook.isSendingMessage || !chatHook.userInput.trim() || appModelLoadStatus !== 'loaded'} // Use global isLoading and chatHook state
-              >
-                Send
-              </button>
-            </div>
-          </div>
+          <ChatInterface
+            chatHistory={chatHook.chatHistory}
+            sendError={chatHook.sendError}
+            isSendingMessage={chatHook.isSendingMessage}
+            userInput={chatHook.userInput}
+            setUserInput={chatHook.setUserInput}
+            sendMessage={chatHook.sendMessage}
+            appModelLoadStatus={appModelLoadStatus}
+            globalIsLoading={isLoading}
+            globalError={error}
+            messagesEndRef={messagesEndRef}
+          />
       </div>
     </div>
   );
