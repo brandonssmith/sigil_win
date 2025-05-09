@@ -1,6 +1,10 @@
-# Sigil – Local LLM Runner with Web UI
+# Sigil_Win – Local LLM Runner with Web UI
 
 Sigil is a local-first application for running Hugging Face transformer models directly on your machine. Built with a FastAPI backend and a React/Vite web interface, Sigil provides a streamlined environment for loading, interacting with, and customizing transformer models through a modern UI and flexible API.
+
+## This is a fork for using sigil on Windows. As of May 9, 2025 it is currently undergoing testing to see if all functions work.
+
+## Note: This app runs from Windows Powershell and will not work correctly under a standard Windows command line shell.
 
 Designed for developers and researchers, Sigil offers a modular and transparent alternative to hosted inference platforms. Whether you're experimenting with small models, adjusting generation settings, or building a custom interface, Sigil gives you the tools to work with local models efficiently, no external dependencies required.
 

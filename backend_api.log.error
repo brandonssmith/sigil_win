@@ -1,0 +1,16 @@
+C:\Users\brand\AppData\Roaming\Python\Python312\site-packages\pydantic\_internal\_fields.py:158: UserWarning: Field "model_precision" in Settings has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ('settings_',)`.
+  warnings.warn(
+C:\Users\brand\AppData\Roaming\Python\Python312\site-packages\pydantic\_internal\_fields.py:158: UserWarning: Field "model_base_directory" in Settings has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ('settings_',)`.
+  warnings.warn(
+INFO:     Started server process [5996]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5996]

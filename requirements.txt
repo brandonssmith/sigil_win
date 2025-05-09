@@ -41,7 +41,7 @@ typing-inspection==0.4.0
 typing_extensions==4.13.1
 urllib3==2.3.0
 uvicorn==0.34.0
-uvloop==0.21.0
+# uvloop removed for Windows compatibility - uvicorn will use asyncio instead
 watchfiles==1.0.4
 websockets==15.0.1
 pytest
